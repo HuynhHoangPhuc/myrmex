@@ -1,0 +1,10 @@
+go 1.26
+
+use (
+	./gen/go
+	./pkg
+	./services/core
+	./services/module-hr
+	./services/module-subject
+	./services/module-timetable
+)

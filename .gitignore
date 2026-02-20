@@ -1,0 +1,33 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Env
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+postgres_data/
+nats_data/
+
+# Build
+/bin/
+/tmp/
+
+# Local tooling
+.tanstack/
+
+# Planning artifacts
+/plans/
