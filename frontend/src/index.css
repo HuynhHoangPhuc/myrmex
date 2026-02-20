@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+/*
+  Tailwind v4 theme: CSS variables defined via @theme are available as
+  bg-background, text-foreground, border-input etc. through the
+  --color-* naming convention.
+*/
+@theme inline {
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(222.2 84% 4.9%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222.2 84% 4.9%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222.2 84% 4.9%);
+  --color-primary: hsl(221.2 83.2% 53.3%);
+  --color-primary-foreground: hsl(210 40% 98%);
+  --color-secondary: hsl(210 40% 96.1%);
+  --color-secondary-foreground: hsl(222.2 47.4% 11.2%);
+  --color-muted: hsl(210 40% 96.1%);
+  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
+  --color-accent: hsl(210 40% 96.1%);
+  --color-accent-foreground: hsl(222.2 47.4% 11.2%);
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-border: hsl(214.3 31.8% 91.4%);
+  --color-input: hsl(214.3 31.8% 91.4%);
+  --color-ring: hsl(221.2 83.2% 53.3%);
+  /* Sidebar palette */
+  --color-sidebar-background: hsl(222.2 84% 4.9%);
+  --color-sidebar-foreground: hsl(210 40% 98%);
+  --color-sidebar-primary: hsl(221.2 83.2% 53.3%);
+  --color-sidebar-primary-foreground: hsl(210 40% 98%);
+  --color-sidebar-accent: hsl(217.2 32.6% 17.5%);
+  --color-sidebar-accent-foreground: hsl(210 40% 98%);
+  --color-sidebar-border: hsl(217.2 32.6% 17.5%);
+  /* Border radius */
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border box-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+  }
+}
