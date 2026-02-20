@@ -1,0 +1,18 @@
+name: hr
+version: 1.0.0
+description: Human Resource management - teachers, departments, availability
+depends:
+  - core: ">=1.0.0"
+grpc_services:
+  - TeacherService
+  - DepartmentService
+events:
+  publishes:
+    - hr.teacher.created
+    - hr.teacher.updated
+    - hr.teacher.deleted
+    - hr.department.created
+    - hr.availability.updated
+  subscribes:
+    - core.user.created
+db_schema: hr

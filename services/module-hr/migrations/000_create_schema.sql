@@ -1,0 +1,5 @@
+-- +goose Up
+CREATE SCHEMA IF NOT EXISTS hr;
+
+-- +goose Down
+DROP SCHEMA IF EXISTS hr CASCADE;
