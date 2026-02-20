@@ -1,0 +1,15 @@
+name: timetable
+version: 1.0.0
+description: Timetable scheduling with CSP solver (backtracking + AC-3 + MRV + LCV), semester management, auto-schedule generation and manual override.
+depends:
+  - hr: ">=1.0.0"
+  - subject: ">=1.0.0"
+grpc_services:
+  - TimetableService
+  - SemesterService
+events:
+  publishes:
+    - timetable.schedule.generated
+    - timetable.entry.assigned
+  subscribes: []
+db_schema: timetable

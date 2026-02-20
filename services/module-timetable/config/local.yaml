@@ -1,0 +1,14 @@
+database:
+  url: "postgres://postgres:postgres@localhost:5432/myrmex?sslmode=disable"
+
+server:
+  grpc_port: 50054
+
+nats:
+  url: "nats://localhost:4222"
+
+hr:
+  grpc_addr: "localhost:50052"
+
+subject:
+  grpc_addr: "localhost:50053"
