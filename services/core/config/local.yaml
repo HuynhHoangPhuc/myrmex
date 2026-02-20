@@ -1,0 +1,23 @@
+server:
+  http_port: 8080
+  grpc_port: 50051
+
+database:
+  url: "postgres://myrmex:myrmex_dev@localhost:5432/myrmex?sslmode=disable&search_path=core"
+
+nats:
+  url: "nats://localhost:4222"
+
+jwt:
+  secret: "myrmex-dev-secret-change-in-production"
+  access_expiry: "15m"
+  refresh_expiry: "168h"
+
+log:
+  level: "development"
+
+llm:
+  provider: "openai"          # "openai" or "claude"
+  api_key: ""                 # set via LLM_API_KEY env var in production
+  model: "gpt-4o-mini"        # use claude-haiku-4-5 for claude provider
+  base_url: "https://api.openai.com/v1"  # override for Ollama: http://localhost:11434/v1
