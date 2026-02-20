@@ -1,0 +1,14 @@
+syntax = "proto3";
+package core.v1;
+option go_package = "github.com/myrmex-erp/myrmex/gen/go/core/v1;corev1";
+
+message PaginationRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message PaginationResponse {
+  int32 total = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}

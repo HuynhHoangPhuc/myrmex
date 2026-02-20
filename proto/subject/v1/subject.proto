@@ -1,0 +1,74 @@
+syntax = "proto3";
+package subject.v1;
+option go_package = "github.com/myrmex-erp/myrmex/gen/go/subject/v1;subjectv1";
+
+import "core/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+service SubjectService {
+  rpc CreateSubject(CreateSubjectRequest) returns (CreateSubjectResponse);
+  rpc GetSubject(GetSubjectRequest) returns (GetSubjectResponse);
+  rpc ListSubjects(ListSubjectsRequest) returns (ListSubjectsResponse);
+  rpc UpdateSubject(UpdateSubjectRequest) returns (UpdateSubjectResponse);
+  rpc DeleteSubject(DeleteSubjectRequest) returns (DeleteSubjectResponse);
+}
+
+message Subject {
+  string id = 1;
+  string code = 2;
+  string name = 3;
+  int32 credits = 4;
+  string department_id = 5;
+  string description = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message CreateSubjectRequest {
+  string code = 1;
+  string name = 2;
+  int32 credits = 3;
+  string department_id = 4;
+  string description = 5;
+}
+
+message CreateSubjectResponse {
+  Subject subject = 1;
+}
+
+message GetSubjectRequest {
+  string id = 1;
+}
+
+message GetSubjectResponse {
+  Subject subject = 1;
+}
+
+message ListSubjectsRequest {
+  core.v1.PaginationRequest pagination = 1;
+  optional string department_id = 2;
+}
+
+message ListSubjectsResponse {
+  repeated Subject subjects = 1;
+  core.v1.PaginationResponse pagination = 2;
+}
+
+message UpdateSubjectRequest {
+  string id = 1;
+  optional string code = 2;
+  optional string name = 3;
+  optional int32 credits = 4;
+  optional string department_id = 5;
+  optional string description = 6;
+}
+
+message UpdateSubjectResponse {
+  Subject subject = 1;
+}
+
+message DeleteSubjectRequest {
+  string id = 1;
+}
+
+message DeleteSubjectResponse {}

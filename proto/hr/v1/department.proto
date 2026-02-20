@@ -1,0 +1,46 @@
+syntax = "proto3";
+package hr.v1;
+option go_package = "github.com/myrmex-erp/myrmex/gen/go/hr/v1;hrv1";
+
+import "core/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+service DepartmentService {
+  rpc CreateDepartment(CreateDepartmentRequest) returns (CreateDepartmentResponse);
+  rpc GetDepartment(GetDepartmentRequest) returns (GetDepartmentResponse);
+  rpc ListDepartments(ListDepartmentsRequest) returns (ListDepartmentsResponse);
+}
+
+message Department {
+  string id = 1;
+  string name = 2;
+  string code = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message CreateDepartmentRequest {
+  string name = 1;
+  string code = 2;
+}
+
+message CreateDepartmentResponse {
+  Department department = 1;
+}
+
+message GetDepartmentRequest {
+  string id = 1;
+}
+
+message GetDepartmentResponse {
+  Department department = 1;
+}
+
+message ListDepartmentsRequest {
+  core.v1.PaginationRequest pagination = 1;
+}
+
+message ListDepartmentsResponse {
+  repeated Department departments = 1;
+  core.v1.PaginationResponse pagination = 2;
+}

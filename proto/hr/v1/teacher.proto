@@ -1,0 +1,100 @@
+syntax = "proto3";
+package hr.v1;
+option go_package = "github.com/myrmex-erp/myrmex/gen/go/hr/v1;hrv1";
+
+import "core/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+service TeacherService {
+  rpc CreateTeacher(CreateTeacherRequest) returns (CreateTeacherResponse);
+  rpc GetTeacher(GetTeacherRequest) returns (GetTeacherResponse);
+  rpc ListTeachers(ListTeachersRequest) returns (ListTeachersResponse);
+  rpc UpdateTeacher(UpdateTeacherRequest) returns (UpdateTeacherResponse);
+  rpc DeleteTeacher(DeleteTeacherRequest) returns (DeleteTeacherResponse);
+  rpc ListTeacherAvailability(ListTeacherAvailabilityRequest) returns (ListTeacherAvailabilityResponse);
+  rpc UpdateTeacherAvailability(UpdateTeacherAvailabilityRequest) returns (UpdateTeacherAvailabilityResponse);
+}
+
+message Teacher {
+  string id = 1;
+  string full_name = 2;
+  string email = 3;
+  string department_id = 4;
+  string title = 5;
+  bool is_active = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message TimeSlot {
+  int32 day_of_week = 1;
+  int32 start_period = 2;
+  int32 end_period = 3;
+}
+
+message CreateTeacherRequest {
+  string full_name = 1;
+  string email = 2;
+  string department_id = 3;
+  string title = 4;
+}
+
+message CreateTeacherResponse {
+  Teacher teacher = 1;
+}
+
+message GetTeacherRequest {
+  string id = 1;
+}
+
+message GetTeacherResponse {
+  Teacher teacher = 1;
+}
+
+message ListTeachersRequest {
+  core.v1.PaginationRequest pagination = 1;
+  optional string department_id = 2;
+}
+
+message ListTeachersResponse {
+  repeated Teacher teachers = 1;
+  core.v1.PaginationResponse pagination = 2;
+}
+
+message UpdateTeacherRequest {
+  string id = 1;
+  optional string full_name = 2;
+  optional string email = 3;
+  optional string department_id = 4;
+  optional string title = 5;
+  optional bool is_active = 6;
+}
+
+message UpdateTeacherResponse {
+  Teacher teacher = 1;
+}
+
+message DeleteTeacherRequest {
+  string id = 1;
+}
+
+message DeleteTeacherResponse {}
+
+message ListTeacherAvailabilityRequest {
+  string teacher_id = 1;
+}
+
+message ListTeacherAvailabilityResponse {
+  string teacher_id = 1;
+  repeated TimeSlot available_slots = 2;
+}
+
+message UpdateTeacherAvailabilityRequest {
+  string teacher_id = 1;
+  repeated TimeSlot available_slots = 2;
+}
+
+message UpdateTeacherAvailabilityResponse {
+  string teacher_id = 1;
+  repeated TimeSlot available_slots = 2;
+}

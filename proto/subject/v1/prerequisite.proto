@@ -1,0 +1,53 @@
+syntax = "proto3";
+package subject.v1;
+option go_package = "github.com/myrmex-erp/myrmex/gen/go/subject/v1;subjectv1";
+
+service PrerequisiteService {
+  rpc AddPrerequisite(AddPrerequisiteRequest) returns (AddPrerequisiteResponse);
+  rpc RemovePrerequisite(RemovePrerequisiteRequest) returns (RemovePrerequisiteResponse);
+  rpc ListPrerequisites(ListPrerequisitesRequest) returns (ListPrerequisitesResponse);
+  rpc ValidateDAG(ValidateDAGRequest) returns (ValidateDAGResponse);
+  rpc TopologicalSort(TopologicalSortRequest) returns (TopologicalSortResponse);
+}
+
+message Prerequisite {
+  string subject_id = 1;
+  string prerequisite_id = 2;
+}
+
+message AddPrerequisiteRequest {
+  string subject_id = 1;
+  string prerequisite_id = 2;
+}
+
+message AddPrerequisiteResponse {
+  Prerequisite prerequisite = 1;
+}
+
+message RemovePrerequisiteRequest {
+  string subject_id = 1;
+  string prerequisite_id = 2;
+}
+
+message RemovePrerequisiteResponse {}
+
+message ListPrerequisitesRequest {
+  string subject_id = 1;
+}
+
+message ListPrerequisitesResponse {
+  repeated Prerequisite prerequisites = 1;
+}
+
+message ValidateDAGRequest {}
+
+message ValidateDAGResponse {
+  bool is_valid = 1;
+  repeated string cycle_path = 2;
+}
+
+message TopologicalSortRequest {}
+
+message TopologicalSortResponse {
+  repeated string subject_ids = 1;
+}

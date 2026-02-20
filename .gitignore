@@ -31,3 +31,9 @@ nats_data/
 
 # Planning artifacts
 /plans/
+**/plans/
+
+# Local service binaries
+/services/*/server
+/services/*/core
+/services/*/module-*

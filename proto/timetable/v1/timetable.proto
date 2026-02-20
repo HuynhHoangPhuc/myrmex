@@ -1,0 +1,91 @@
+syntax = "proto3";
+package timetable.v1;
+option go_package = "github.com/myrmex-erp/myrmex/gen/go/timetable/v1;timetablev1";
+
+import "google/protobuf/timestamp.proto";
+
+service TimetableService {
+  rpc GenerateSchedule(GenerateScheduleRequest) returns (GenerateScheduleResponse);
+  rpc GetSchedule(GetScheduleRequest) returns (GetScheduleResponse);
+  rpc UpdateScheduleEntry(UpdateScheduleEntryRequest) returns (UpdateScheduleEntryResponse);
+  rpc SuggestTeachers(SuggestTeachersRequest) returns (SuggestTeachersResponse);
+  rpc ManualAssign(ManualAssignRequest) returns (ManualAssignResponse);
+}
+
+message ScheduleEntry {
+  string id = 1;
+  string subject_id = 2;
+  string teacher_id = 3;
+  int32 day_of_week = 4;
+  int32 start_period = 5;
+  int32 end_period = 6;
+  string room = 7;
+}
+
+message Schedule {
+  string id = 1;
+  string semester_id = 2;
+  repeated ScheduleEntry entries = 3;
+  string status = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+message GenerateScheduleRequest {
+  string semester_id = 1;
+  int32 timeout_seconds = 2;
+}
+
+message GenerateScheduleResponse {
+  Schedule schedule = 1;
+  bool is_partial = 2;
+  int32 unassigned_count = 3;
+}
+
+message GetScheduleRequest {
+  string id = 1;
+}
+
+message GetScheduleResponse {
+  Schedule schedule = 1;
+}
+
+message UpdateScheduleEntryRequest {
+  string schedule_id = 1;
+  string entry_id = 2;
+  optional string teacher_id = 3;
+  optional int32 day_of_week = 4;
+  optional int32 start_period = 5;
+  optional int32 end_period = 6;
+  optional string room = 7;
+}
+
+message UpdateScheduleEntryResponse {
+  ScheduleEntry entry = 1;
+}
+
+message SuggestTeachersRequest {
+  string subject_id = 1;
+  int32 day_of_week = 2;
+  int32 start_period = 3;
+  int32 end_period = 4;
+}
+
+message SuggestTeachersResponse {
+  repeated TeacherSuggestion suggestions = 1;
+}
+
+message TeacherSuggestion {
+  string teacher_id = 1;
+  string teacher_name = 2;
+  float score = 3;
+}
+
+message ManualAssignRequest {
+  string schedule_id = 1;
+  string entry_id = 2;
+  string teacher_id = 3;
+}
+
+message ManualAssignResponse {
+  ScheduleEntry entry = 1;
+}

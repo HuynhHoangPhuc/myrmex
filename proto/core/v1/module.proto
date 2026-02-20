@@ -1,0 +1,49 @@
+syntax = "proto3";
+package core.v1;
+option go_package = "github.com/myrmex-erp/myrmex/gen/go/core/v1;corev1";
+
+service ModuleRegistryService {
+  rpc RegisterModule(RegisterModuleRequest) returns (RegisterModuleResponse);
+  rpc UnregisterModule(UnregisterModuleRequest) returns (UnregisterModuleResponse);
+  rpc ListModules(ListModulesRequest) returns (ListModulesResponse);
+  rpc GetModuleHealth(GetModuleHealthRequest) returns (GetModuleHealthResponse);
+}
+
+message ModuleInfo {
+  string name = 1;
+  string version = 2;
+  string grpc_address = 3;
+  string status = 4;
+}
+
+message RegisterModuleRequest {
+  string name = 1;
+  string version = 2;
+  string grpc_address = 3;
+}
+
+message RegisterModuleResponse {
+  ModuleInfo module = 1;
+}
+
+message UnregisterModuleRequest {
+  string name = 1;
+}
+
+message UnregisterModuleResponse {}
+
+message ListModulesRequest {}
+
+message ListModulesResponse {
+  repeated ModuleInfo modules = 1;
+}
+
+message GetModuleHealthRequest {
+  string name = 1;
+}
+
+message GetModuleHealthResponse {
+  string name = 1;
+  string status = 2;
+  string message = 3;
+}
