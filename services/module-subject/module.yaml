@@ -1,0 +1,4 @@
+name: module-subject
+version: "0.1.0"
+grpc_address: "localhost:50053"
+description: "Subject management module with DAG-based prerequisite validation"
