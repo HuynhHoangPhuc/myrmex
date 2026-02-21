@@ -36,6 +36,14 @@ func NewSubjectClient(addr string) (*SubjectClient, error) {
 	}, nil
 }
 
+// NewSubjectClientWithServices constructs a client from existing gRPC service clients.
+func NewSubjectClientWithServices(
+	subject subjectv1.SubjectServiceClient,
+	prerequisite subjectv1.PrerequisiteServiceClient,
+) *SubjectClient {
+	return &SubjectClient{subject: subject, prerequisite: prerequisite}
+}
+
 // ListSubjectsByIDs fetches subject details for a set of subject IDs.
 func (c *SubjectClient) ListSubjectsByIDs(ctx context.Context, ids []uuid.UUID) ([]SubjectInfo, error) {
 	// Subject service ListSubjects returns all; we filter to the offered set.
@@ -51,7 +59,10 @@ func (c *SubjectClient) ListSubjectsByIDs(ctx context.Context, ids []uuid.UUID) 
 
 	var result []SubjectInfo
 	for _, s := range resp.Subjects {
-		id, _ := uuid.Parse(s.Id)
+		id, err := uuid.Parse(s.Id)
+		if err != nil {
+			return nil, fmt.Errorf("parse subject id %q: %w", s.Id, err)
+		}
 		if !wanted[id] {
 			continue
 		}

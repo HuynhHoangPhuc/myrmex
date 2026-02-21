@@ -7,13 +7,18 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 )
 
+// PublisherJetStream is the minimal JetStream capability required by Publisher.
+type PublisherJetStream interface {
+	Publish(ctx context.Context, subj string, data []byte, opts ...jetstream.PublishOpt) (*jetstream.PubAck, error)
+}
+
 // Publisher wraps JetStream for publishing domain events.
 type Publisher struct {
-	js jetstream.JetStream
+	js PublisherJetStream
 }
 
 // NewPublisher creates a new event publisher.
-func NewPublisher(js jetstream.JetStream) *Publisher {
+func NewPublisher(js PublisherJetStream) *Publisher {
 	return &Publisher{js: js}
 }
 

@@ -35,6 +35,7 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 - [ ] AI Chat integration: Claude Haiku 4.5 provider + tool registry
 - [ ] Tool registry: Domain operations (create subject, assign teacher, generate schedule)
 - [ ] WebSocket chat: Streaming responses + auto-reconnect
+- [ ] Service + pkg test suites: Expanded unit and integration tests covering command/query handlers plus shared package helpers across core, modules, and `pkg`
 - [ ] E2E workflow: Register → Create subject → Assign teacher → Generate schedule
 
 #### Remaining

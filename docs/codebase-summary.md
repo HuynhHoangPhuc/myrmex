@@ -12,6 +12,11 @@ Myrmex is a Go monorepo with 5 modules using `go.work`:
 
 **Total Codebase**: ~254K tokens (321 files, 985K chars)
 
+## Repomix Snapshot
+
+- `repomix-output.xml` was generated via `repomix` on 2026-02-21 and captures a compact representation of the repository, including token counts and a security scan that excludes certain docs and config files flagged as sensitive.
+- Use the compaction output when navigating large/generated files such as `gen/go/*` or proto artifacts that are otherwise too heavy to load directly.
+
 ## Monorepo Structure
 
 ```

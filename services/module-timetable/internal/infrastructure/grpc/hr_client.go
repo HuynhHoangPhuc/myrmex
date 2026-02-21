@@ -26,6 +26,11 @@ func NewHRClient(addr string) (*HRClient, error) {
 	return &HRClient{teacher: hrv1.NewTeacherServiceClient(conn)}, nil
 }
 
+// NewHRClientWithTeacherClient constructs a client from a pre-built gRPC client.
+func NewHRClientWithTeacherClient(teacher hrv1.TeacherServiceClient) *HRClient {
+	return &HRClient{teacher: teacher}
+}
+
 // ListTeachers fetches all active teachers from the HR module.
 func (c *HRClient) ListTeachers(ctx context.Context) ([]service.TeacherInfo, error) {
 	resp, err := c.teacher.ListTeachers(ctx, &hrv1.ListTeachersRequest{})
@@ -37,7 +42,10 @@ func (c *HRClient) ListTeachers(ctx context.Context) ([]service.TeacherInfo, err
 		if !t.IsActive {
 			continue
 		}
-		id, _ := uuid.Parse(t.Id)
+		id, err := uuid.Parse(t.Id)
+		if err != nil {
+			return nil, fmt.Errorf("parse teacher id %q: %w", t.Id, err)
+		}
 		result = append(result, service.TeacherInfo{
 			ID:              id,
 			FullName:        t.FullName,
