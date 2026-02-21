@@ -1,4 +1,4 @@
-module github.com/myrmex-erp/myrmex/pkg
+module github.com/HuynhHoangPhuc/myrmex/pkg
 
 go 1.25.0
 

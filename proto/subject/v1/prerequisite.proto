@@ -1,6 +1,6 @@
 syntax = "proto3";
 package subject.v1;
-option go_package = "github.com/myrmex-erp/myrmex/gen/go/subject/v1;subjectv1";
+option go_package = "github.com/HuynhHoangPhuc/myrmex/gen/go/subject/v1;subjectv1";
 
 service PrerequisiteService {
   rpc AddPrerequisite(AddPrerequisiteRequest) returns (AddPrerequisiteResponse);

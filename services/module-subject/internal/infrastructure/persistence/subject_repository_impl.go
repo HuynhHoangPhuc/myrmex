@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/infrastructure/persistence/sqlc"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/infrastructure/persistence/sqlc"
 )
 
 // SubjectRepositoryImpl implements repository.SubjectRepository using sqlc.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/valueobject"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/valueobject"
 )
 
 // Prerequisite represents a directed dependency edge between two subjects.

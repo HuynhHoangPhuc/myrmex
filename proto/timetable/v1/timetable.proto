@@ -1,6 +1,6 @@
 syntax = "proto3";
 package timetable.v1;
-option go_package = "github.com/myrmex-erp/myrmex/gen/go/timetable/v1;timetablev1";
+option go_package = "github.com/HuynhHoangPhuc/myrmex/gen/go/timetable/v1;timetablev1";
 
 import "google/protobuf/timestamp.proto";
 

@@ -11,9 +11,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
-	"github.com/myrmex-erp/myrmex/services/core/internal/application/command"
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/auth"
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/llm"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/command"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/auth"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/llm"
 )
 
 const (

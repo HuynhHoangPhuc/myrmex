@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/entity"
 )
 
 // ConstraintChecker evaluates hard and soft scheduling constraints.

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/core/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/entity"
 )
 
 type UserRepository interface {

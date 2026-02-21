@@ -7,7 +7,7 @@
 package hrv1
 
 import (
-	v1 "github.com/myrmex-erp/myrmex/gen/go/core/v1"
+	v1 "github.com/HuynhHoangPhuc/myrmex/gen/go/core/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -980,7 +980,7 @@ const file_hr_v1_teacher_proto_rawDesc = "" +
 	"\rUpdateTeacher\x12\x1b.hr.v1.UpdateTeacherRequest\x1a\x1c.hr.v1.UpdateTeacherResponse\x12J\n" +
 	"\rDeleteTeacher\x12\x1b.hr.v1.DeleteTeacherRequest\x1a\x1c.hr.v1.DeleteTeacherResponse\x12h\n" +
 	"\x17ListTeacherAvailability\x12%.hr.v1.ListTeacherAvailabilityRequest\x1a&.hr.v1.ListTeacherAvailabilityResponse\x12n\n" +
-	"\x19UpdateTeacherAvailability\x12'.hr.v1.UpdateTeacherAvailabilityRequest\x1a(.hr.v1.UpdateTeacherAvailabilityResponseB0Z.github.com/myrmex-erp/myrmex/gen/go/hr/v1;hrv1b\x06proto3"
+	"\x19UpdateTeacherAvailability\x12'.hr.v1.UpdateTeacherAvailabilityRequest\x1a(.hr.v1.UpdateTeacherAvailabilityResponseB4Z2github.com/HuynhHoangPhuc/myrmex/gen/go/hr/v1;hrv1b\x06proto3"
 
 var (
 	file_hr_v1_teacher_proto_rawDescOnce sync.Once

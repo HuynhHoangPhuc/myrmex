@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/entity"
 )
 
 // SemesterRepository defines persistence operations for Semester aggregates.

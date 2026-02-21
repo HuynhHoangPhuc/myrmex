@@ -6,8 +6,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/agent"
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/llm"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/agent"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/llm"
 )
 
 const (

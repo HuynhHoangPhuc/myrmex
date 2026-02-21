@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/repository"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/repository"
 )
 
 // CreateSubjectCommand carries the data needed to create a new subject.

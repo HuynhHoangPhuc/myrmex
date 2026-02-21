@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/myrmex-erp/myrmex/services/core/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/entity"
 )
 
 type ModuleRepository interface {

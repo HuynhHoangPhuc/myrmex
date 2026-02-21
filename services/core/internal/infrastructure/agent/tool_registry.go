@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/llm"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/llm"
 )
 
 // RegisteredTool pairs an LLM tool definition with its execution metadata.

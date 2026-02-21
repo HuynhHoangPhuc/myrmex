@@ -553,7 +553,7 @@ const file_subject_v1_prerequisite_proto_rawDesc = "" +
 	"\x12RemovePrerequisite\x12%.subject.v1.RemovePrerequisiteRequest\x1a&.subject.v1.RemovePrerequisiteResponse\x12`\n" +
 	"\x11ListPrerequisites\x12$.subject.v1.ListPrerequisitesRequest\x1a%.subject.v1.ListPrerequisitesResponse\x12N\n" +
 	"\vValidateDAG\x12\x1e.subject.v1.ValidateDAGRequest\x1a\x1f.subject.v1.ValidateDAGResponse\x12Z\n" +
-	"\x0fTopologicalSort\x12\".subject.v1.TopologicalSortRequest\x1a#.subject.v1.TopologicalSortResponseB:Z8github.com/myrmex-erp/myrmex/gen/go/subject/v1;subjectv1b\x06proto3"
+	"\x0fTopologicalSort\x12\".subject.v1.TopologicalSortRequest\x1a#.subject.v1.TopologicalSortResponseB>Z<github.com/HuynhHoangPhuc/myrmex/gen/go/subject/v1;subjectv1b\x06proto3"
 
 var (
 	file_subject_v1_prerequisite_proto_rawDescOnce sync.Once

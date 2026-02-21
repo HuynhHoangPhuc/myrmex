@@ -7,7 +7,7 @@
 package timetablev1
 
 import (
-	v1 "github.com/myrmex-erp/myrmex/gen/go/core/v1"
+	v1 "github.com/HuynhHoangPhuc/myrmex/gen/go/core/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -676,7 +676,7 @@ const file_timetable_v1_semester_proto_rawDesc = "" +
 	"\vGetSemester\x12 .timetable.v1.GetSemesterRequest\x1a!.timetable.v1.GetSemesterResponse\x12X\n" +
 	"\rListSemesters\x12\".timetable.v1.ListSemestersRequest\x1a#.timetable.v1.ListSemestersResponse\x12d\n" +
 	"\x11AddOfferedSubject\x12&.timetable.v1.AddOfferedSubjectRequest\x1a'.timetable.v1.AddOfferedSubjectResponse\x12m\n" +
-	"\x14RemoveOfferedSubject\x12).timetable.v1.RemoveOfferedSubjectRequest\x1a*.timetable.v1.RemoveOfferedSubjectResponseB>Z<github.com/myrmex-erp/myrmex/gen/go/timetable/v1;timetablev1b\x06proto3"
+	"\x14RemoveOfferedSubject\x12).timetable.v1.RemoveOfferedSubjectRequest\x1a*.timetable.v1.RemoveOfferedSubjectResponseBBZ@github.com/HuynhHoangPhuc/myrmex/gen/go/timetable/v1;timetablev1b\x06proto3"
 
 var (
 	file_timetable_v1_semester_proto_rawDescOnce sync.Once

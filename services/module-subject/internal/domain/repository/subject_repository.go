@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/entity"
 )
 
 // SubjectRepository defines persistence operations for Subject aggregates.

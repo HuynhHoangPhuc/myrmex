@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/repository"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/valueobject"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/repository"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/valueobject"
 )
 
 // PublishScheduleCommand requests transitioning a draft schedule to published.

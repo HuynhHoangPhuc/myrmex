@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-hr/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/module-hr/internal/infrastructure/persistence/sqlc"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/infrastructure/persistence/sqlc"
 )
 
 // DepartmentRepositoryImpl implements domain.DepartmentRepository using sqlc-generated queries.

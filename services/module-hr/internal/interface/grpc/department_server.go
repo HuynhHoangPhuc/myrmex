@@ -3,11 +3,11 @@ package grpc
 import (
 	"context"
 
-	corev1 "github.com/myrmex-erp/myrmex/gen/go/core/v1"
-	hrv1 "github.com/myrmex-erp/myrmex/gen/go/hr/v1"
-	"github.com/myrmex-erp/myrmex/services/module-hr/internal/application/command"
-	"github.com/myrmex-erp/myrmex/services/module-hr/internal/application/query"
-	"github.com/myrmex-erp/myrmex/services/module-hr/internal/domain/entity"
+	corev1 "github.com/HuynhHoangPhuc/myrmex/gen/go/core/v1"
+	hrv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/hr/v1"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/application/command"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/application/query"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/domain/entity"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

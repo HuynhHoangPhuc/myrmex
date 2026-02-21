@@ -670,7 +670,7 @@ const file_core_v1_user_proto_rawDesc = "" +
 	"\n" +
 	"UpdateUser\x12\x1a.core.v1.UpdateUserRequest\x1a\x1b.core.v1.UpdateUserResponse\x12E\n" +
 	"\n" +
-	"DeleteUser\x12\x1a.core.v1.DeleteUserRequest\x1a\x1b.core.v1.DeleteUserResponseB4Z2github.com/myrmex-erp/myrmex/gen/go/core/v1;corev1b\x06proto3"
+	"DeleteUser\x12\x1a.core.v1.DeleteUserRequest\x1a\x1b.core.v1.DeleteUserResponseB8Z6github.com/HuynhHoangPhuc/myrmex/gen/go/core/v1;corev1b\x06proto3"
 
 var (
 	file_core_v1_user_proto_rawDescOnce sync.Once

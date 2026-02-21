@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	infragrpc "github.com/myrmex-erp/myrmex/services/module-timetable/internal/infrastructure/grpc"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/service"
+	infragrpc "github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/infrastructure/grpc"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/service"
 )
 
 // SuggestTeachersQuery requests a ranked list of teachers for a subject/slot.

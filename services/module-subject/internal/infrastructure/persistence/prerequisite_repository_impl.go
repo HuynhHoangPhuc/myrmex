@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/valueobject"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/infrastructure/persistence/sqlc"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/valueobject"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/infrastructure/persistence/sqlc"
 )
 
 // PrerequisiteRepositoryImpl implements repository.PrerequisiteRepository using sqlc.

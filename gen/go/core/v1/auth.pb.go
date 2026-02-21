@@ -389,7 +389,7 @@ const file_core_v1_auth_proto_rawDesc = "" +
 	"\vAuthService\x126\n" +
 	"\x05Login\x12\x15.core.v1.LoginRequest\x1a\x16.core.v1.LoginResponse\x12?\n" +
 	"\bRegister\x12\x18.core.v1.RegisterRequest\x1a\x19.core.v1.RegisterResponse\x12K\n" +
-	"\fRefreshToken\x12\x1c.core.v1.RefreshTokenRequest\x1a\x1d.core.v1.RefreshTokenResponseB4Z2github.com/myrmex-erp/myrmex/gen/go/core/v1;corev1b\x06proto3"
+	"\fRefreshToken\x12\x1c.core.v1.RefreshTokenRequest\x1a\x1d.core.v1.RefreshTokenResponseB8Z6github.com/HuynhHoangPhuc/myrmex/gen/go/core/v1;corev1b\x06proto3"
 
 var (
 	file_core_v1_auth_proto_rawDescOnce sync.Once

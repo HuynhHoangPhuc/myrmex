@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/core/internal/domain/valueobject"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/valueobject"
 )
 
 type User struct {

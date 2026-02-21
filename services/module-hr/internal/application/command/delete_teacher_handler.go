@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-hr/internal/domain/repository"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/domain/repository"
 )
 
 // DeleteTeacherCommand carries the teacher ID for soft-delete.

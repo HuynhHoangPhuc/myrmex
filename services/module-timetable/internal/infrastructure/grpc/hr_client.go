@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	hrv1 "github.com/myrmex-erp/myrmex/gen/go/hr/v1"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/service"
+	hrv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/hr/v1"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

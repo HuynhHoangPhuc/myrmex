@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/repository"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/repository"
 )
 
 // ListPrerequisitesQuery carries the subject ID to list prerequisites for.

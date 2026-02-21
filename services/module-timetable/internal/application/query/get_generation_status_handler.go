@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/repository"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/valueobject"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/repository"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/valueobject"
 )
 
 // GenerationStatus summarises the current state of an async generation job.

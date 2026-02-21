@@ -884,7 +884,7 @@ const file_timetable_v1_timetable_proto_rawDesc = "" +
 	"\vGetSchedule\x12 .timetable.v1.GetScheduleRequest\x1a!.timetable.v1.GetScheduleResponse\x12j\n" +
 	"\x13UpdateScheduleEntry\x12(.timetable.v1.UpdateScheduleEntryRequest\x1a).timetable.v1.UpdateScheduleEntryResponse\x12^\n" +
 	"\x0fSuggestTeachers\x12$.timetable.v1.SuggestTeachersRequest\x1a%.timetable.v1.SuggestTeachersResponse\x12U\n" +
-	"\fManualAssign\x12!.timetable.v1.ManualAssignRequest\x1a\".timetable.v1.ManualAssignResponseB>Z<github.com/myrmex-erp/myrmex/gen/go/timetable/v1;timetablev1b\x06proto3"
+	"\fManualAssign\x12!.timetable.v1.ManualAssignRequest\x1a\".timetable.v1.ManualAssignResponseBBZ@github.com/HuynhHoangPhuc/myrmex/gen/go/timetable/v1;timetablev1b\x06proto3"
 
 var (
 	file_timetable_v1_timetable_proto_rawDescOnce sync.Once

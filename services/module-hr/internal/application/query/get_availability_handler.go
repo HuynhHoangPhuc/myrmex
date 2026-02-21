@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-hr/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/module-hr/internal/domain/repository"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/domain/repository"
 )
 
 // GetAvailabilityQuery fetches all availability slots for a teacher.

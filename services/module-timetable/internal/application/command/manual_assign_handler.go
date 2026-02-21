@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/repository"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/repository"
 )
 
 // ManualAssignCommand requests assigning a specific teacher to an existing entry.

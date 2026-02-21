@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/myrmex-erp/myrmex/services/core/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/core/internal/domain/repository"
-	"github.com/myrmex-erp/myrmex/services/core/internal/domain/valueobject"
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/auth"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/repository"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/valueobject"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/auth"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/pkg/eventstore"
-	pkgnats "github.com/myrmex-erp/myrmex/pkg/nats"
+	"github.com/HuynhHoangPhuc/myrmex/pkg/eventstore"
+	pkgnats "github.com/HuynhHoangPhuc/myrmex/pkg/nats"
 )
 
 type RegisterUserCommand struct {

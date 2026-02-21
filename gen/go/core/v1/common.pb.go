@@ -144,7 +144,7 @@ const file_core_v1_common_proto_rawDesc = "" +
 	"\x12PaginationResponse\x12\x14\n" +
 	"\x05total\x18\x01 \x01(\x05R\x05total\x12\x12\n" +
 	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x03 \x01(\x05R\bpageSizeB4Z2github.com/myrmex-erp/myrmex/gen/go/core/v1;corev1b\x06proto3"
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSizeB8Z6github.com/HuynhHoangPhuc/myrmex/gen/go/core/v1;corev1b\x06proto3"
 
 var (
 	file_core_v1_common_proto_rawDescOnce sync.Once

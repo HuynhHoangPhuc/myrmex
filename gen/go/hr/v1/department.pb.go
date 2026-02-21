@@ -7,7 +7,7 @@
 package hrv1
 
 import (
-	v1 "github.com/myrmex-erp/myrmex/gen/go/core/v1"
+	v1 "github.com/HuynhHoangPhuc/myrmex/gen/go/core/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -418,7 +418,7 @@ const file_hr_v1_department_proto_rawDesc = "" +
 	"\x11DepartmentService\x12S\n" +
 	"\x10CreateDepartment\x12\x1e.hr.v1.CreateDepartmentRequest\x1a\x1f.hr.v1.CreateDepartmentResponse\x12J\n" +
 	"\rGetDepartment\x12\x1b.hr.v1.GetDepartmentRequest\x1a\x1c.hr.v1.GetDepartmentResponse\x12P\n" +
-	"\x0fListDepartments\x12\x1d.hr.v1.ListDepartmentsRequest\x1a\x1e.hr.v1.ListDepartmentsResponseB0Z.github.com/myrmex-erp/myrmex/gen/go/hr/v1;hrv1b\x06proto3"
+	"\x0fListDepartments\x12\x1d.hr.v1.ListDepartmentsRequest\x1a\x1e.hr.v1.ListDepartmentsResponseB4Z2github.com/HuynhHoangPhuc/myrmex/gen/go/hr/v1;hrv1b\x06proto3"
 
 var (
 	file_hr_v1_department_proto_rawDescOnce sync.Once

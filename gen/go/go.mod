@@ -1,4 +1,4 @@
-module github.com/myrmex-erp/myrmex/gen/go
+module github.com/HuynhHoangPhuc/myrmex/gen/go
 
 go 1.25.0
 

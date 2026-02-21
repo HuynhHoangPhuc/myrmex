@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/myrmex-erp/myrmex/services/core/internal/application/command"
-	"github.com/myrmex-erp/myrmex/services/core/internal/application/query"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/command"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/query"
 )
 
 type ModuleHandler struct {

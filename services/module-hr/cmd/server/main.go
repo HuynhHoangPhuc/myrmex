@@ -14,12 +14,12 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	hrv1 "github.com/myrmex-erp/myrmex/gen/go/hr/v1"
-	"github.com/myrmex-erp/myrmex/services/module-hr/internal/application/command"
-	"github.com/myrmex-erp/myrmex/services/module-hr/internal/application/query"
-	"github.com/myrmex-erp/myrmex/services/module-hr/internal/infrastructure/persistence"
-	"github.com/myrmex-erp/myrmex/services/module-hr/internal/infrastructure/persistence/sqlc"
-	grpcif "github.com/myrmex-erp/myrmex/services/module-hr/internal/interface/grpc"
+	hrv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/hr/v1"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/application/command"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/application/query"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/infrastructure/persistence"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/infrastructure/persistence/sqlc"
+	grpcif "github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/interface/grpc"
 )
 
 func main() {

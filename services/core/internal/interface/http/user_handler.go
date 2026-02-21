@@ -5,9 +5,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/core/internal/application/command"
-	"github.com/myrmex-erp/myrmex/services/core/internal/application/query"
-	"github.com/myrmex-erp/myrmex/services/core/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/command"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/query"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/entity"
 )
 
 type UserHandler struct {

@@ -1,11 +1,11 @@
-module github.com/myrmex-erp/myrmex/services/module-timetable
+module github.com/HuynhHoangPhuc/myrmex/services/module-timetable
 
 go 1.26
 
 require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.8.0
-	github.com/myrmex-erp/myrmex/gen/go v0.0.0
+	github.com/HuynhHoangPhuc/myrmex/gen/go v0.0.0
 	github.com/nats-io/nats.go v1.39.0
 	github.com/spf13/viper v1.21.0
 	go.uber.org/zap v1.27.1
@@ -39,4 +39,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 )
 
-replace github.com/myrmex-erp/myrmex/gen/go => ../../gen/go
+replace github.com/HuynhHoangPhuc/myrmex/gen/go => ../../gen/go

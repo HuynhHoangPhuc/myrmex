@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/auth"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/auth"
 )
 
 // AuthMiddleware validates JWT tokens from the Authorization header.

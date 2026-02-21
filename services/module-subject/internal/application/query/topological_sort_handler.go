@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/service"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/service"
 )
 
 // TopologicalSortHandler handles topological sort queries over the DAG.

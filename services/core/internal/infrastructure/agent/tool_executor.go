@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/llm"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/llm"
 )
 
 // ErrToolNotFound is returned when an unknown tool name is called.

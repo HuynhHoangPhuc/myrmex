@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/myrmex-erp/myrmex/services/core/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/core/internal/domain/repository"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/repository"
 )
 
 type RegisterModuleCommand struct {

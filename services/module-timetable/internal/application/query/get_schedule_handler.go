@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/repository"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/repository"
 )
 
 // GetScheduleQuery requests a single schedule with all its entries.

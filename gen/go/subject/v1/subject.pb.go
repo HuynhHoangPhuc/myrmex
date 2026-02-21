@@ -7,7 +7,7 @@
 package subjectv1
 
 import (
-	v1 "github.com/myrmex-erp/myrmex/gen/go/core/v1"
+	v1 "github.com/HuynhHoangPhuc/myrmex/gen/go/core/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -707,7 +707,7 @@ const file_subject_v1_subject_proto_rawDesc = "" +
 	"GetSubject\x12\x1d.subject.v1.GetSubjectRequest\x1a\x1e.subject.v1.GetSubjectResponse\x12Q\n" +
 	"\fListSubjects\x12\x1f.subject.v1.ListSubjectsRequest\x1a .subject.v1.ListSubjectsResponse\x12T\n" +
 	"\rUpdateSubject\x12 .subject.v1.UpdateSubjectRequest\x1a!.subject.v1.UpdateSubjectResponse\x12T\n" +
-	"\rDeleteSubject\x12 .subject.v1.DeleteSubjectRequest\x1a!.subject.v1.DeleteSubjectResponseB:Z8github.com/myrmex-erp/myrmex/gen/go/subject/v1;subjectv1b\x06proto3"
+	"\rDeleteSubject\x12 .subject.v1.DeleteSubjectRequest\x1a!.subject.v1.DeleteSubjectResponseB>Z<github.com/HuynhHoangPhuc/myrmex/gen/go/subject/v1;subjectv1b\x06proto3"
 
 var (
 	file_subject_v1_subject_proto_rawDescOnce sync.Once

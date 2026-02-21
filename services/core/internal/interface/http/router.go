@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/auth"
-	"github.com/myrmex-erp/myrmex/services/core/internal/interface/middleware"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/auth"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/interface/middleware"
 	"go.uber.org/zap"
 )
 

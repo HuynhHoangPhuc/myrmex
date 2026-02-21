@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/repository"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/service"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/valueobject"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/repository"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/service"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/valueobject"
 )
 
 // AddPrerequisiteCommand carries the data to add a prerequisite edge.

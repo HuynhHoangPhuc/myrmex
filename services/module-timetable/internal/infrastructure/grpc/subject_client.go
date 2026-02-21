@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	subjectv1 "github.com/myrmex-erp/myrmex/gen/go/subject/v1"
+	subjectv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/subject/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

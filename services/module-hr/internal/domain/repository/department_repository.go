@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-hr/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/domain/entity"
 )
 
 // DepartmentRepository defines persistence operations for Department.

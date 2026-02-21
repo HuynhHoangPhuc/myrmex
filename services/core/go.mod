@@ -1,4 +1,4 @@
-module github.com/myrmex-erp/myrmex/services/core
+module github.com/HuynhHoangPhuc/myrmex/services/core
 
 go 1.26
 

@@ -14,16 +14,16 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	timetablev1 "github.com/myrmex-erp/myrmex/gen/go/timetable/v1"
+	timetablev1 "github.com/HuynhHoangPhuc/myrmex/gen/go/timetable/v1"
 
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/application/command"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/application/query"
-	infragrpc "github.com/myrmex-erp/myrmex/services/module-timetable/internal/infrastructure/grpc"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/infrastructure/messaging"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/infrastructure/persistence"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/infrastructure/persistence/sqlc"
-	grpcif "github.com/myrmex-erp/myrmex/services/module-timetable/internal/interface/grpc"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/service"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/application/command"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/application/query"
+	infragrpc "github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/infrastructure/grpc"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/infrastructure/messaging"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/infrastructure/persistence"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/infrastructure/persistence/sqlc"
+	grpcif "github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/interface/grpc"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/service"
 )
 
 func main() {

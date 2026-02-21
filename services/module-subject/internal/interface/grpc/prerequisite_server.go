@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	subjectv1 "github.com/myrmex-erp/myrmex/gen/go/subject/v1"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/application/command"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/application/query"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/entity"
+	subjectv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/subject/v1"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/application/command"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/application/query"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/entity"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

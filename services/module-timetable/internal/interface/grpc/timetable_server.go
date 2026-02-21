@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	timetablev1 "github.com/myrmex-erp/myrmex/gen/go/timetable/v1"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/application/command"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/application/query"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/entity"
+	timetablev1 "github.com/HuynhHoangPhuc/myrmex/gen/go/timetable/v1"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/application/command"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/application/query"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/entity"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

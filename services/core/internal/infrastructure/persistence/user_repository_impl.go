@@ -6,9 +6,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/myrmex-erp/myrmex/services/core/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/core/internal/domain/valueobject"
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/persistence/sqlc"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/valueobject"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/persistence/sqlc"
 )
 
 type UserRepositoryImpl struct {

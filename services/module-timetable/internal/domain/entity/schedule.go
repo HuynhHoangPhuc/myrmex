@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/valueobject"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/valueobject"
 )
 
 // Schedule is the aggregate root for a proposed or published timetable.

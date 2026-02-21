@@ -1,12 +1,12 @@
-module github.com/myrmex-erp/myrmex/services/module-subject
+module github.com/HuynhHoangPhuc/myrmex/services/module-subject
 
 go 1.26
 
 require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.8.0
-	github.com/myrmex-erp/myrmex/gen/go v0.0.0
-	github.com/myrmex-erp/myrmex/pkg v0.0.0
+	github.com/HuynhHoangPhuc/myrmex/gen/go v0.0.0
+	github.com/HuynhHoangPhuc/myrmex/pkg v0.0.0
 	github.com/spf13/viper v1.21.0
 	go.uber.org/zap v1.27.1
 	google.golang.org/grpc v1.79.1
@@ -36,6 +36,6 @@ require (
 )
 
 replace (
-	github.com/myrmex-erp/myrmex/gen/go => ../../gen/go
-	github.com/myrmex-erp/myrmex/pkg => ../../pkg
+	github.com/HuynhHoangPhuc/myrmex/gen/go => ../../gen/go
+	github.com/HuynhHoangPhuc/myrmex/pkg => ../../pkg
 )

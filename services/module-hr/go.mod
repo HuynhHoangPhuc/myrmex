@@ -1,11 +1,11 @@
-module github.com/myrmex-erp/myrmex/services/module-hr
+module github.com/HuynhHoangPhuc/myrmex/services/module-hr
 
 go 1.26
 
 require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.8.0
-	github.com/myrmex-erp/myrmex/gen/go v0.0.0
+	github.com/HuynhHoangPhuc/myrmex/gen/go v0.0.0
 	github.com/spf13/viper v1.21.0
 	go.uber.org/zap v1.27.1
 	google.golang.org/grpc v1.79.1
@@ -32,4 +32,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 )
 
-replace github.com/myrmex-erp/myrmex/gen/go => ../../gen/go
+replace github.com/HuynhHoangPhuc/myrmex/gen/go => ../../gen/go

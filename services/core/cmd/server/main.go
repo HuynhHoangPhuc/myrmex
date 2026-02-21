@@ -16,16 +16,16 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/myrmex-erp/myrmex/pkg/eventstore"
-	pkgnats "github.com/myrmex-erp/myrmex/pkg/nats"
-	"github.com/myrmex-erp/myrmex/services/core/internal/application/command"
-	"github.com/myrmex-erp/myrmex/services/core/internal/application/query"
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/agent"
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/auth"
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/llm"
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/persistence"
-	"github.com/myrmex-erp/myrmex/services/core/internal/infrastructure/persistence/sqlc"
-	httpif "github.com/myrmex-erp/myrmex/services/core/internal/interface/http"
+	"github.com/HuynhHoangPhuc/myrmex/pkg/eventstore"
+	pkgnats "github.com/HuynhHoangPhuc/myrmex/pkg/nats"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/command"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/query"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/agent"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/auth"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/llm"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/persistence"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/persistence/sqlc"
+	httpif "github.com/HuynhHoangPhuc/myrmex/services/core/internal/interface/http"
 )
 
 func main() {

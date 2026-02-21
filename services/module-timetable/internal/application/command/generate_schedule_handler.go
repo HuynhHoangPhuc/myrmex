@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	infragrpc "github.com/myrmex-erp/myrmex/services/module-timetable/internal/infrastructure/grpc"
+	infragrpc "github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/infrastructure/grpc"
 
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/entity"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/repository"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/service"
-	"github.com/myrmex-erp/myrmex/services/module-timetable/internal/domain/valueobject"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/repository"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/service"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/valueobject"
 )
 
 // GenerateScheduleCommand requests async schedule generation for a semester.

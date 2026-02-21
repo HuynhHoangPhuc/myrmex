@@ -14,13 +14,13 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	subjectv1 "github.com/myrmex-erp/myrmex/gen/go/subject/v1"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/application/command"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/application/query"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/domain/service"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/infrastructure/persistence"
-	"github.com/myrmex-erp/myrmex/services/module-subject/internal/infrastructure/persistence/sqlc"
-	grpcif "github.com/myrmex-erp/myrmex/services/module-subject/internal/interface/grpc"
+	subjectv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/subject/v1"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/application/command"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/application/query"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/service"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/infrastructure/persistence"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/infrastructure/persistence/sqlc"
+	grpcif "github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/interface/grpc"
 )
 
 func main() {

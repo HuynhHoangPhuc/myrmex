@@ -490,7 +490,7 @@ const file_core_v1_module_proto_rawDesc = "" +
 	"\x0eRegisterModule\x12\x1e.core.v1.RegisterModuleRequest\x1a\x1f.core.v1.RegisterModuleResponse\x12W\n" +
 	"\x10UnregisterModule\x12 .core.v1.UnregisterModuleRequest\x1a!.core.v1.UnregisterModuleResponse\x12H\n" +
 	"\vListModules\x12\x1b.core.v1.ListModulesRequest\x1a\x1c.core.v1.ListModulesResponse\x12T\n" +
-	"\x0fGetModuleHealth\x12\x1f.core.v1.GetModuleHealthRequest\x1a .core.v1.GetModuleHealthResponseB4Z2github.com/myrmex-erp/myrmex/gen/go/core/v1;corev1b\x06proto3"
+	"\x0fGetModuleHealth\x12\x1f.core.v1.GetModuleHealthRequest\x1a .core.v1.GetModuleHealthResponseB8Z6github.com/HuynhHoangPhuc/myrmex/gen/go/core/v1;corev1b\x06proto3"
 
 var (
 	file_core_v1_module_proto_rawDescOnce sync.Once
