@@ -17,7 +17,15 @@ type ScheduleEntry struct {
 	IsManualOverride bool
 	CreatedAt        time.Time
 
-	// Denormalised fields populated by query handlers (not persisted here).
-	TimeSlot *TimeSlot
-	Room     *Room
+	// Denormalised write-time fields (persisted in schedule_entries table).
+	SubjectName  string
+	SubjectCode  string
+	TeacherName  string
+	DepartmentID uuid.UUID
+
+	// Display-only fields populated via JOIN on read (not persisted directly).
+	DayOfWeek   int
+	StartPeriod int
+	EndPeriod   int
+	RoomName    string
 }

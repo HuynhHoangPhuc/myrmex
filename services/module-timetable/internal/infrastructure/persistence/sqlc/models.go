@@ -50,7 +50,7 @@ type TimetableSchedule struct {
 	CreatedAt      pgtype.Timestamptz `db:"created_at"`
 }
 
-// TimetableScheduleEntry mirrors the timetable.schedule_entries table row.
+// TimetableScheduleEntry mirrors the timetable.schedule_entries table row (after migration 007).
 type TimetableScheduleEntry struct {
 	ID               pgtype.UUID        `db:"id"`
 	ScheduleID       pgtype.UUID        `db:"schedule_id"`
@@ -60,4 +60,19 @@ type TimetableScheduleEntry struct {
 	TimeSlotID       pgtype.UUID        `db:"time_slot_id"`
 	IsManualOverride bool               `db:"is_manual_override"`
 	CreatedAt        pgtype.Timestamptz `db:"created_at"`
+	// Denormalised columns added by migration 007.
+	SubjectName  string      `db:"subject_name"`
+	SubjectCode  string      `db:"subject_code"`
+	TeacherName  string      `db:"teacher_name"`
+	DepartmentID pgtype.UUID `db:"department_id"`
+}
+
+// TimetableScheduleEntryRow is returned by ListEntriesBySchedule (JOIN query).
+// Extends TimetableScheduleEntry with time-slot and room display fields.
+type TimetableScheduleEntryRow struct {
+	TimetableScheduleEntry
+	DayOfWeek   int32  `db:"day_of_week"`
+	StartPeriod int32  `db:"start_period"`
+	EndPeriod   int32  `db:"end_period"`
+	RoomName    string `db:"room_name"`
 }

@@ -182,6 +182,34 @@ func (q *Queries) ListSchedulesBySemester(ctx context.Context, semesterID pgtype
 	})
 }
 
+// ListSchedulesPaged returns schedules with optional semester filter and pagination.
+// Pass a zero-value UUID as semesterID to skip the filter.
+func (q *Queries) ListSchedulesPaged(ctx context.Context, semesterID pgtype.UUID, limit, offset int32) ([]TimetableSchedule, error) {
+	rows, err := q.pool.Query(ctx, `
+		SELECT * FROM timetable.schedules
+		WHERE ($1::uuid IS NULL OR NOT $1::uuid = '00000000-0000-0000-0000-000000000000'::uuid AND semester_id = $1)
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3`,
+		semesterID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (TimetableSchedule, error) {
+		return scanScheduleRow(row)
+	})
+}
+
+// CountSchedulesPaged returns the total schedule count with optional semester filter.
+func (q *Queries) CountSchedulesPaged(ctx context.Context, semesterID pgtype.UUID) (int64, error) {
+	var n int64
+	err := q.pool.QueryRow(ctx, `
+		SELECT COUNT(*) FROM timetable.schedules
+		WHERE ($1::uuid IS NULL OR NOT $1::uuid = '00000000-0000-0000-0000-000000000000'::uuid AND semester_id = $1)`,
+		semesterID).Scan(&n)
+	return n, err
+}
+
 func (q *Queries) UpdateScheduleResult(ctx context.Context, id pgtype.UUID, score float64, hardViolations int32, softPenalty float64) (TimetableSchedule, error) {
 	row := q.pool.QueryRow(ctx, `
 		UPDATE timetable.schedules SET score=$2, hard_violations=$3, soft_penalty=$4, generated_at=NOW()
@@ -204,14 +232,20 @@ type CreateScheduleEntryParams struct {
 	RoomID           pgtype.UUID
 	TimeSlotID       pgtype.UUID
 	IsManualOverride bool
+	SubjectName      string
+	SubjectCode      string
+	TeacherName      string
+	DepartmentID     pgtype.UUID
 }
 
 func (q *Queries) CreateScheduleEntry(ctx context.Context, p CreateScheduleEntryParams) (TimetableScheduleEntry, error) {
 	row := q.pool.QueryRow(ctx, `
 		INSERT INTO timetable.schedule_entries
-		  (schedule_id, subject_id, teacher_id, room_id, time_slot_id, is_manual_override)
-		VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-		p.ScheduleID, p.SubjectID, p.TeacherID, p.RoomID, p.TimeSlotID, p.IsManualOverride)
+		  (schedule_id, subject_id, teacher_id, room_id, time_slot_id, is_manual_override,
+		   subject_name, subject_code, teacher_name, department_id)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+		p.ScheduleID, p.SubjectID, p.TeacherID, p.RoomID, p.TimeSlotID, p.IsManualOverride,
+		p.SubjectName, p.SubjectCode, p.TeacherName, p.DepartmentID)
 	return scanEntry(row)
 }
 
@@ -220,15 +254,26 @@ func (q *Queries) GetScheduleEntry(ctx context.Context, id pgtype.UUID) (Timetab
 	return scanEntry(row)
 }
 
-func (q *Queries) ListEntriesBySchedule(ctx context.Context, scheduleID pgtype.UUID) ([]TimetableScheduleEntry, error) {
-	rows, err := q.pool.Query(ctx,
-		`SELECT * FROM timetable.schedule_entries WHERE schedule_id=$1 ORDER BY created_at`, scheduleID)
+// ListEntriesByScheduleEnriched returns entries with time-slot and room fields via JOIN.
+func (q *Queries) ListEntriesByScheduleEnriched(ctx context.Context, scheduleID pgtype.UUID) ([]TimetableScheduleEntryRow, error) {
+	rows, err := q.pool.Query(ctx, `
+		SELECT
+		  e.id, e.schedule_id, e.subject_id, e.teacher_id, e.room_id, e.time_slot_id,
+		  e.is_manual_override, e.created_at,
+		  e.subject_name, e.subject_code, e.teacher_name, e.department_id,
+		  ts.day_of_week, ts.start_period, ts.end_period,
+		  r.name AS room_name
+		FROM timetable.schedule_entries e
+		JOIN timetable.time_slots ts ON e.time_slot_id = ts.id
+		JOIN timetable.rooms r       ON e.room_id      = r.id
+		WHERE e.schedule_id = $1
+		ORDER BY ts.day_of_week, ts.start_period`, scheduleID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (TimetableScheduleEntry, error) {
-		return scanEntryRow(row)
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (TimetableScheduleEntryRow, error) {
+		return scanEntryEnrichedRow(row)
 	})
 }
 
@@ -312,17 +357,24 @@ func scanScheduleRow(row pgx.CollectableRow) (TimetableSchedule, error) {
 
 func scanEntry(row pgx.Row) (TimetableScheduleEntry, error) {
 	var e TimetableScheduleEntry
-	err := row.Scan(&e.ID, &e.ScheduleID, &e.SubjectID, &e.TeacherID,
-		&e.RoomID, &e.TimeSlotID, &e.IsManualOverride, &e.CreatedAt)
+	err := row.Scan(
+		&e.ID, &e.ScheduleID, &e.SubjectID, &e.TeacherID,
+		&e.RoomID, &e.TimeSlotID, &e.IsManualOverride, &e.CreatedAt,
+		&e.SubjectName, &e.SubjectCode, &e.TeacherName, &e.DepartmentID,
+	)
 	if err != nil {
 		return e, fmt.Errorf("scan entry: %w", err)
 	}
 	return e, nil
 }
 
-func scanEntryRow(row pgx.CollectableRow) (TimetableScheduleEntry, error) {
-	var e TimetableScheduleEntry
-	err := row.Scan(&e.ID, &e.ScheduleID, &e.SubjectID, &e.TeacherID,
-		&e.RoomID, &e.TimeSlotID, &e.IsManualOverride, &e.CreatedAt)
+func scanEntryEnrichedRow(row pgx.CollectableRow) (TimetableScheduleEntryRow, error) {
+	var e TimetableScheduleEntryRow
+	err := row.Scan(
+		&e.ID, &e.ScheduleID, &e.SubjectID, &e.TeacherID,
+		&e.RoomID, &e.TimeSlotID, &e.IsManualOverride, &e.CreatedAt,
+		&e.SubjectName, &e.SubjectCode, &e.TeacherName, &e.DepartmentID,
+		&e.DayOfWeek, &e.StartPeriod, &e.EndPeriod, &e.RoomName,
+	)
 	return e, err
 }
