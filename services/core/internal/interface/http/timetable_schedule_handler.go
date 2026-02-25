@@ -51,16 +51,72 @@ func (h *TimetableHandler) GetSchedule(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"schedule": resp.Schedule})
+	c.JSON(http.StatusOK, scheduleToJSON(resp.Schedule))
 }
 
-// ListSchedules is a stub — proto TimetableService has no ListSchedules RPC.
-// TODO: add ListSchedules RPC to timetable proto and implement here.
+// ListSchedules calls the TimetableService.ListSchedules RPC and returns
+// a ListResponse-compatible JSON body: { data, total, page, page_size }.
 func (h *TimetableHandler) ListSchedules(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"schedules":  []any{},
-		"pagination": nil,
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "25"))
+
+	resp, err := h.timetable.ListSchedules(c.Request.Context(), &timetablev1.ListSchedulesRequest{
+		SemesterId: c.Query("semester_id"),
+		Page:       int32(page),
+		PageSize:   int32(pageSize),
 	})
+	if err != nil {
+		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
+		return
+	}
+
+	data := make([]gin.H, len(resp.Schedules))
+	for i, s := range resp.Schedules {
+		data[i] = scheduleToJSON(s)
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"data":      data,
+		"total":     resp.Total,
+		"page":      resp.Page,
+		"page_size": resp.PageSize,
+	})
+}
+
+// scheduleToJSON converts a proto Schedule to a JSON-friendly map that matches
+// the frontend Schedule type. Avoids proto Timestamp serialization issues.
+func scheduleToJSON(s *timetablev1.Schedule) gin.H {
+	createdAt := ""
+	if s.CreatedAt != nil {
+		createdAt = s.CreatedAt.AsTime().Format(time.RFC3339)
+	}
+	entries := make([]gin.H, len(s.Entries))
+	for i, e := range s.Entries {
+		entries[i] = gin.H{
+			"id":                 e.Id,
+			"subject_id":         e.SubjectId,
+			"subject_code":       e.SubjectCode,
+			"subject_name":       e.SubjectName,
+			"teacher_id":         e.TeacherId,
+			"teacher_name":       e.TeacherName,
+			"room_id":            e.Room,
+			"room_name":          e.RoomName,
+			"day_of_week":        e.DayOfWeek,
+			"start_period":       e.StartPeriod,
+			"end_period":         e.EndPeriod,
+			"is_manual_override": e.IsManualOverride,
+			"department_id":      e.DepartmentId,
+		}
+	}
+	return gin.H{
+		"id":              s.Id,
+		"semester_id":     s.SemesterId,
+		"status":          s.Status,
+		"score":           s.Score,
+		"hard_violations": s.HardViolations,
+		"soft_violations": s.SoftViolations,
+		"entries":         entries,
+		"created_at":      createdAt,
+	}
 }
 
 // ManualAssign assigns a teacher to a schedule entry via PUT /schedules/:id/entries/:entryId.
