@@ -343,11 +343,15 @@ Myrmex is a microservice architecture with modular services communicating via gR
      ]
    - Analyzes message, calls tool: create_subject(name="Math 101", credits=3, ...)
 
-4. Tool Executor
+4. Tool Executor (Self-Referential HTTP)
    - Receives LLM tool call
    - Validates parameters
-   - Calls Module-Subject gRPC: CreateSubject
+   - Dispatches via HTTP to core's own API (selfURL + internal JWT token)
+     Example: POST /api/timetable/semesters/{id}/generate (with internal JWT header)
+   - Tool endpoint routes to appropriate module gRPC (Module-Subject, Module-HR, Module-Timetable)
    - Returns result to LLM
+   - Note: selfURL is core's HTTP base URL (e.g., "http://localhost:8000")
+   - Note: internalJWT is a service-level JWT with 24h TTL generated at startup
 
 5. LLM Response
    - Streams confirmation: "I've created subject Math 101 with 3 credits"

@@ -2,6 +2,54 @@
 
 All notable changes to the Myrmex project are documented here.
 
+## [2026-02-25] — AI Chat Tool Executor Fix + Comprehensive Tests & CI/CD
+
+**Status**: Complete
+
+### Summary
+Completed Phase 1 MVP: Fixed critical tool executor dispatch bug, implemented internal JWT token generation for self-referential HTTP calls, added 20+ test files achieving ≥70% coverage across all services, and created GitHub Actions CI/CD pipeline. Phase 1 status: 75% → 100%.
+
+### Track A: AI Chat Tool Executor Fix
+- **Tool Executor Refactor**: Fixed critical dispatch bug where `buildEndpoint()` now correctly returns `(url, method string)` tuple
+- **HTTP Method Routing**: Implemented proper HTTP method routing:
+  - `timetable.generate` → POST (triggers async generation)
+  - `timetable.suggest_teachers` → GET (query-based filtering)
+  - Read operations → GET; mutations → POST
+- **Query Parameter Encoding**: Implemented `buildQueryParams()` using `url.Values` for proper RFC 3986 encoding
+- **Internal JWT Generation**: Added `GenerateInternalToken()` in `jwt_service.go` with fixed 24h TTL for service-to-service communication
+- **Self-Referential Architecture**: Tool executor now uses `selfURL` (core's HTTP base) + `internalJWT` token instead of direct gRPC; allows correct router middleware execution
+- **Core Initialization**: Updated `cmd/server/main.go` to generate internal JWT at startup and pass to `NewToolExecutor()`
+
+### Track B: Comprehensive Tests & CI/CD
+- **Test Coverage**: Added 20+ test files across services:
+  - Core: `auth/`, `handler/`, `gateway/` test suites
+  - Module-HR: Department, teacher, availability tests
+  - Module-Subject: Subject, prerequisite, DAG tests
+  - Module-Timetable: Semester, room, schedule, CSP tests
+- **Coverage Achievement**: All critical packages now ≥70% (many at 80-100%)
+- **Bug Fix**: Fixed timetable gRPC build failure in `semester_server_test.go`
+- **CI/CD Pipeline**: Created `.github/workflows/ci.yml`:
+  - Go 1.26 build, vet, test (120s timeout)
+  - Frontend TypeScript check (Node 20)
+  - Runs on push to main + pull requests
+  - All tests pass on clean build
+
+### Quality Metrics
+- Go build: `go build ./...` ✓
+- Go vet: `go vet ./...` ✓
+- Test coverage: >70% per service ✓
+- TypeScript check: `tsc --noEmit` ✓
+- CI/CD: GitHub Actions pipeline operational ✓
+- No breaking changes to existing APIs
+
+### Phase 1 Status Update
+- **Overall**: 75% → 100% complete
+- **All success criteria**: Achieved
+- **Timeline**: On track (Q1 2026)
+- **Ready for**: Phase 2 (Analytics & Reporting)
+
+---
+
 ## [Unreleased]
 
 ### Added
