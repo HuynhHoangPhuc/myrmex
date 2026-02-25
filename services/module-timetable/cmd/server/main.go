@@ -114,6 +114,7 @@ func main() {
 		generateScheduleHandler,
 		manualAssignHandler,
 		getScheduleHandler,
+		listSchedulesHandler,
 		suggestTeachersHandler,
 	)
 	semesterServer := grpcif.NewSemesterServer(

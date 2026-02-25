@@ -50,6 +50,26 @@ func (r *ScheduleRepositoryImpl) ListBySemester(ctx context.Context, semesterID 
 	return result, nil
 }
 
+func (r *ScheduleRepositoryImpl) ListPaged(ctx context.Context, semesterID uuid.UUID, limit, offset int32) ([]*entity.Schedule, error) {
+	rows, err := r.q.ListSchedulesPaged(ctx, uuidToPg(semesterID), limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("list schedules paged: %w", err)
+	}
+	result := make([]*entity.Schedule, len(rows))
+	for i, row := range rows {
+		result[i] = scheduleToEntity(row)
+	}
+	return result, nil
+}
+
+func (r *ScheduleRepositoryImpl) CountSchedules(ctx context.Context, semesterID uuid.UUID) (int64, error) {
+	n, err := r.q.CountSchedulesPaged(ctx, uuidToPg(semesterID))
+	if err != nil {
+		return 0, fmt.Errorf("count schedules: %w", err)
+	}
+	return n, nil
+}
+
 func (r *ScheduleRepositoryImpl) UpdateResult(ctx context.Context, id uuid.UUID, score float64, hardViolations int, softPenalty float64) (*entity.Schedule, error) {
 	row, err := r.q.UpdateScheduleResult(ctx, uuidToPg(id), score, int32(hardViolations), softPenalty)
 	if err != nil {
@@ -74,6 +94,10 @@ func (r *ScheduleRepositoryImpl) CreateEntry(ctx context.Context, e *entity.Sche
 		RoomID:           uuidToPg(e.RoomID),
 		TimeSlotID:       uuidToPg(e.TimeSlotID),
 		IsManualOverride: e.IsManualOverride,
+		SubjectName:      e.SubjectName,
+		SubjectCode:      e.SubjectCode,
+		TeacherName:      e.TeacherName,
+		DepartmentID:     uuidToPg(e.DepartmentID),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create schedule entry: %w", err)
@@ -90,13 +114,13 @@ func (r *ScheduleRepositoryImpl) GetEntry(ctx context.Context, id uuid.UUID) (*e
 }
 
 func (r *ScheduleRepositoryImpl) ListEntries(ctx context.Context, scheduleID uuid.UUID) ([]*entity.ScheduleEntry, error) {
-	rows, err := r.q.ListEntriesBySchedule(ctx, uuidToPg(scheduleID))
+	rows, err := r.q.ListEntriesByScheduleEnriched(ctx, uuidToPg(scheduleID))
 	if err != nil {
 		return nil, fmt.Errorf("list entries: %w", err)
 	}
 	result := make([]*entity.ScheduleEntry, len(rows))
 	for i, row := range rows {
-		result[i] = entryToEntity(row)
+		result[i] = enrichedEntryToEntity(row)
 	}
 	return result, nil
 }
@@ -155,7 +179,20 @@ func entryToEntity(r sqlc.TimetableScheduleEntry) *entity.ScheduleEntry {
 		TimeSlotID:       pgToUUID(r.TimeSlotID),
 		IsManualOverride: r.IsManualOverride,
 		CreatedAt:        r.CreatedAt.Time,
+		SubjectName:      r.SubjectName,
+		SubjectCode:      r.SubjectCode,
+		TeacherName:      r.TeacherName,
+		DepartmentID:     pgToUUID(r.DepartmentID),
 	}
+}
+
+func enrichedEntryToEntity(r sqlc.TimetableScheduleEntryRow) *entity.ScheduleEntry {
+	e := entryToEntity(r.TimetableScheduleEntry)
+	e.DayOfWeek   = int(r.DayOfWeek)
+	e.StartPeriod = int(r.StartPeriod)
+	e.EndPeriod   = int(r.EndPeriod)
+	e.RoomName    = r.RoomName
+	return e
 }
 
 // pgTimestamptzToTimePtr converts an optional pgtype.Timestamptz to *time.Time.

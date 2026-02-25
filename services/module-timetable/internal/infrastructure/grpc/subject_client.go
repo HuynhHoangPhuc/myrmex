@@ -14,6 +14,8 @@ import (
 type SubjectInfo struct {
 	ID                      uuid.UUID
 	Code                    string
+	Name                    string
+	DepartmentID            uuid.UUID
 	Credits                 int
 	RequiredSpecializations []string // sourced from department mapping (empty if none)
 }
@@ -66,10 +68,13 @@ func (c *SubjectClient) ListSubjectsByIDs(ctx context.Context, ids []uuid.UUID) 
 		if !wanted[id] {
 			continue
 		}
+		deptID, _ := uuid.Parse(s.DepartmentId)
 		result = append(result, SubjectInfo{
-			ID:      id,
-			Code:    s.Code,
-			Credits: int(s.Credits),
+			ID:           id,
+			Code:         s.Code,
+			Name:         s.Name,
+			DepartmentID: deptID,
+			Credits:      int(s.Credits),
 		})
 	}
 	return result, nil

@@ -10,6 +10,7 @@ import (
 	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/entity"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // TimetableServer implements timetablev1.TimetableServiceServer.
@@ -19,6 +20,7 @@ type TimetableServer struct {
 	generateSchedule *command.GenerateScheduleHandler
 	manualAssign     *command.ManualAssignHandler
 	getSchedule      *query.GetScheduleHandler
+	listSchedules    *query.ListSchedulesHandler
 	suggestTeachers  *query.SuggestTeachersHandler
 }
 
@@ -26,12 +28,14 @@ func NewTimetableServer(
 	generateSchedule *command.GenerateScheduleHandler,
 	manualAssign     *command.ManualAssignHandler,
 	getSchedule      *query.GetScheduleHandler,
+	listSchedules    *query.ListSchedulesHandler,
 	suggestTeachers  *query.SuggestTeachersHandler,
 ) *TimetableServer {
 	return &TimetableServer{
 		generateSchedule: generateSchedule,
 		manualAssign:     manualAssign,
 		getSchedule:      getSchedule,
+		listSchedules:    listSchedules,
 		suggestTeachers:  suggestTeachers,
 	}
 }
@@ -103,7 +107,7 @@ func (s *TimetableServer) ManualAssign(ctx context.Context, req *timetablev1.Man
 	}
 
 	return &timetablev1.ManualAssignResponse{
-		Entry: entryToProto(entry, nil),
+		Entry: entryToProto(entry),
 	}, nil
 }
 
@@ -135,6 +139,37 @@ func (s *TimetableServer) SuggestTeachers(ctx context.Context, req *timetablev1.
 	return &timetablev1.SuggestTeachersResponse{Suggestions: suggestions}, nil
 }
 
+func (s *TimetableServer) ListSchedules(ctx context.Context, req *timetablev1.ListSchedulesRequest) (*timetablev1.ListSchedulesResponse, error) {
+	var semesterID uuid.UUID
+	if req.SemesterId != "" {
+		var err error
+		semesterID, err = uuid.Parse(req.SemesterId)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid semester_id")
+		}
+	}
+
+	result, err := s.listSchedules.Handle(ctx, query.ListSchedulesQuery{
+		SemesterID: semesterID,
+		Page:       req.Page,
+		PageSize:   req.PageSize,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "list schedules: %v", err)
+	}
+
+	schedules := make([]*timetablev1.Schedule, len(result.Schedules))
+	for i, s := range result.Schedules {
+		schedules[i] = scheduleToProto(s, nil)
+	}
+	return &timetablev1.ListSchedulesResponse{
+		Schedules: schedules,
+		Total:     int32(result.Total),
+		Page:      result.Page,
+		PageSize:  result.PageSize,
+	}, nil
+}
+
 func (s *TimetableServer) UpdateScheduleEntry(ctx context.Context, req *timetablev1.UpdateScheduleEntryRequest) (*timetablev1.UpdateScheduleEntryResponse, error) {
 	// Minimal implementation — field updates delegated to ManualAssign for teacher changes.
 	return nil, status.Error(codes.Unimplemented, "use ManualAssign for teacher changes")
@@ -143,28 +178,35 @@ func (s *TimetableServer) UpdateScheduleEntry(ctx context.Context, req *timetabl
 // --- proto mapping helpers ---
 
 func scheduleToProto(s *entity.Schedule, entries []*entity.ScheduleEntry) *timetablev1.Schedule {
-	proto := &timetablev1.Schedule{
-		Id:         s.ID.String(),
-		SemesterId: s.SemesterID.String(),
-		Status:     s.Status.String(),
+	p := &timetablev1.Schedule{
+		Id:             s.ID.String(),
+		SemesterId:     s.SemesterID.String(),
+		Status:         s.Status.String(),
+		Score:          s.Score,
+		HardViolations: int32(s.HardViolations),
+		SoftViolations: s.SoftPenalty,
+		CreatedAt:      timestamppb.New(s.CreatedAt),
 	}
 	for _, e := range entries {
-		proto.Entries = append(proto.Entries, entryToProto(e, e.TimeSlot))
-	}
-	return proto
-}
-
-func entryToProto(e *entity.ScheduleEntry, slot *entity.TimeSlot) *timetablev1.ScheduleEntry {
-	p := &timetablev1.ScheduleEntry{
-		Id:        e.ID.String(),
-		SubjectId: e.SubjectID.String(),
-		TeacherId: e.TeacherID.String(),
-		Room:      e.RoomID.String(),
-	}
-	if slot != nil {
-		p.DayOfWeek   = int32(slot.DayOfWeek)
-		p.StartPeriod = int32(slot.StartPeriod)
-		p.EndPeriod   = int32(slot.EndPeriod)
+		p.Entries = append(p.Entries, entryToProto(e))
 	}
 	return p
+}
+
+func entryToProto(e *entity.ScheduleEntry) *timetablev1.ScheduleEntry {
+	return &timetablev1.ScheduleEntry{
+		Id:               e.ID.String(),
+		SubjectId:        e.SubjectID.String(),
+		TeacherId:        e.TeacherID.String(),
+		Room:             e.RoomID.String(),
+		DayOfWeek:        int32(e.DayOfWeek),
+		StartPeriod:      int32(e.StartPeriod),
+		EndPeriod:        int32(e.EndPeriod),
+		SubjectName:      e.SubjectName,
+		SubjectCode:      e.SubjectCode,
+		TeacherName:      e.TeacherName,
+		RoomName:         e.RoomName,
+		IsManualOverride: e.IsManualOverride,
+		DepartmentId:     e.DepartmentID.String(),
+	}
 }
