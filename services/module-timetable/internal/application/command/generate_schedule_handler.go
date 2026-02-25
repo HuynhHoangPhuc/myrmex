@@ -141,7 +141,7 @@ func (h *GenerateScheduleHandler) runSolver(scheduleID uuid.UUID, semester *enti
 		}
 	}
 
-	// 5. Build CSP inputs
+	// 5. Build CSP inputs + name lookup maps for denormalised fields
 	teacherSpecs := make(map[uuid.UUID]map[string]bool, len(teachers))
 	for _, t := range teachers {
 		specSet := make(map[string]bool, len(t.Specializations))
@@ -157,8 +157,19 @@ func (h *GenerateScheduleHandler) runSolver(scheduleID uuid.UUID, semester *enti
 	}
 
 	subjectSpecs := make(map[uuid.UUID][]string, len(subjects))
+	subjectNames := make(map[uuid.UUID]string, len(subjects))
+	subjectCodes := make(map[uuid.UUID]string, len(subjects))
+	subjectDepts := make(map[uuid.UUID]uuid.UUID, len(subjects))
 	for _, s := range subjects {
 		subjectSpecs[s.ID] = s.RequiredSpecializations
+		subjectNames[s.ID] = s.Name
+		subjectCodes[s.ID] = s.Code
+		subjectDepts[s.ID] = s.DepartmentID
+	}
+
+	teacherNames := make(map[uuid.UUID]string, len(teachers))
+	for _, t := range teachers {
+		teacherNames[t.ID] = t.FullName
 	}
 
 	checker := service.NewConstraintChecker(teacherAvailability, teacherSpecs, subjectSpecs, teacherMaxHours)
@@ -190,9 +201,13 @@ func (h *GenerateScheduleHandler) runSolver(scheduleID uuid.UUID, semester *enti
 		return
 	}
 
-	// 9. Persist entries
+	// 9. Persist entries with denormalised names
 	for _, entry := range result.Entries {
-		entry.ScheduleID = scheduleID
+		entry.ScheduleID   = scheduleID
+		entry.SubjectName  = subjectNames[entry.SubjectID]
+		entry.SubjectCode  = subjectCodes[entry.SubjectID]
+		entry.TeacherName  = teacherNames[entry.TeacherID]
+		entry.DepartmentID = subjectDepts[entry.SubjectID]
 		_, _ = h.scheduleRepo.CreateEntry(context.Background(), entry)
 	}
 
