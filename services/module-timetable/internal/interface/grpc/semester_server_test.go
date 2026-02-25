@@ -145,6 +145,14 @@ func (m *mockScheduleRepository) ListBySemester(_ context.Context, _ uuid.UUID) 
 	return nil, nil
 }
 
+func (m *mockScheduleRepository) ListPaged(_ context.Context, _ uuid.UUID, _, _ int32) ([]*entity.Schedule, error) {
+	return nil, nil
+}
+
+func (m *mockScheduleRepository) CountSchedules(_ context.Context, _ uuid.UUID) (int64, error) {
+	return 0, nil
+}
+
 func (m *mockScheduleRepository) UpdateResult(_ context.Context, _ uuid.UUID, _ float64, _ int, _ float64) (*entity.Schedule, error) {
 	return nil, nil
 }
@@ -292,7 +300,7 @@ func TestTimetableServer_GenerateSchedule_Success(t *testing.T) {
 	)
 	getHandler := query.NewGetScheduleHandler(scheduleRepo)
 	conn := startTimetableTestServer(t, func(server *grpc.Server) {
-		timetablev1.RegisterTimetableServiceServer(server, NewTimetableServer(generatorHandler, nil, getHandler, nil))
+		timetablev1.RegisterTimetableServiceServer(server, NewTimetableServer(generatorHandler, nil, getHandler, nil, nil))
 	})
 
 	client := timetablev1.NewTimetableServiceClient(conn)
