@@ -1,5 +1,5 @@
 database:
-  url: "postgres://postgres:postgres@localhost:5432/myrmex?sslmode=disable"
+  url: "postgres://myrmex:myrmex_dev@localhost:5432/myrmex?sslmode=disable&search_path=subject"
 
 server:
   grpc_port: 50053

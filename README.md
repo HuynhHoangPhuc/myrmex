@@ -11,17 +11,27 @@
 
 ## Quick Start
 
-### Prerequisites
-- Go 1.26+
-- Docker & Docker Compose
-- Node.js 18+
-- PostgreSQL 16 (via Docker)
+### Docker Demo (Recommended)
+
+Requires only Docker & Docker Compose.
+
+```bash
+# Optional: set LLM_API_KEY for AI chat feature
+cp .env.example .env
+# edit .env and set LLM_API_KEY=your-key
+
+# Start everything (builds images, runs migrations, seeds demo data)
+make demo
+
+# Open http://localhost:3000
+```
+
+To stop: `make demo-down` | To wipe data and restart fresh: `make demo-reset`
 
 ### Local Development Setup
 
 ```bash
-# Clone and navigate to project
-cd /path/to/myrmex
+# Prerequisites: Go 1.26+, Node.js 18+, Docker
 
 # Start infrastructure (PostgreSQL, NATS, Redis)
 make up
@@ -42,13 +52,13 @@ cd services/module-hr && go run ./cmd/server
 cd services/module-subject && go run ./cmd/server
 cd services/module-timetable && go run ./cmd/server
 
-# In another terminal, start frontend
+# In another terminal, start frontend (Vite dev server proxies /api and /ws)
 cd frontend && npm install && npm run dev
 ```
 
 ### Accessing the System
 - **Frontend**: http://localhost:3000
-- **API Gateway**: http://localhost:8000
+- **API Gateway**: http://localhost:8080
 - **gRPC Services**: localhost:50051-50054
 - **NATS JetStream**: localhost:4222
 - **PostgreSQL**: localhost:5432 (user: myrmex, pass: myrmex_dev)
@@ -169,7 +179,7 @@ WebSocket  /ws/chat?token=ACCESS_TOKEN  # Stream chat responses
 **Core Service** (services/core/config/local.yaml):
 ```yaml
 server:
-  port: 8000
+  http_port: 8080
   grpc_port: 50051
 
 auth:
@@ -208,10 +218,10 @@ go test -cover ./...
 
 | Issue | Solution |
 |-------|----------|
-| Port already in use | Kill process: `lsof -i :8000` then `kill -9 <PID>` |
+| Port already in use | Kill process: `lsof -i :8080` then `kill -9 <PID>` |
 | Database connection error | Check `docker ps`, ensure PostgreSQL is running, verify DATABASE_URL |
 | Proto changes not reflected | Run `make proto` before rebuild |
-| Frontend API 404 | Ensure API gateway is running on :8000 and CORS is configured |
+| Frontend API 404 | Ensure API gateway is running on :8080 and CORS is configured |
 | NATS connection error | Check `docker logs nats`, ensure port 4222 is open |
 
 ## Contributing

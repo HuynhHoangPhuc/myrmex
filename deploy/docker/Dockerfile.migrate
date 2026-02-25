@@ -1,0 +1,15 @@
+FROM golang:1.26-alpine
+RUN apk add --no-cache postgresql-client
+RUN go install github.com/pressly/goose/v3/cmd/goose@latest
+
+# Copy migration files for each service
+COPY services/core/migrations/ /migrations/core/
+COPY services/module-hr/migrations/ /migrations/module-hr/
+COPY services/module-subject/migrations/ /migrations/module-subject/
+COPY services/module-timetable/migrations/ /migrations/module-timetable/
+
+COPY deploy/docker/seed.sql /seed/seed.sql
+COPY deploy/docker/migrate-and-seed.sh /migrate-and-seed.sh
+RUN chmod +x /migrate-and-seed.sh
+
+ENTRYPOINT ["/migrate-and-seed.sh"]

@@ -18,6 +18,11 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    // Proxy /api and /ws to the Go core service in local dev (mirrors nginx config in Docker)
+    proxy: {
+      '/api': 'http://localhost:8080',
+      '/ws': { target: 'ws://localhost:8080', ws: true },
+    },
   },
   build: {
     // Warn if initial bundle exceeds 200kb

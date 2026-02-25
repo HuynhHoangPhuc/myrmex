@@ -2,14 +2,107 @@
 
 ## Table of Contents
 
-1. [Local Development Setup](#local-development-setup)
-2. [Environment Variables](#environment-variables)
-3. [Database Migrations](#database-migrations)
-4. [Building Services](#building-services)
-5. [Running Services](#running-services)
-6. [Docker Compose Deployment](#docker-compose-deployment)
-7. [Troubleshooting](#troubleshooting)
-8. [Production Deployment](#production-deployment-future)
+1. [Docker Demo (Recommended)](#docker-demo-recommended)
+2. [Local Development Setup](#local-development-setup)
+3. [Environment Variables](#environment-variables)
+4. [Database Migrations](#database-migrations)
+5. [Building Services](#building-services)
+6. [Running Services](#running-services)
+7. [Docker Compose Deployment](#docker-compose-deployment)
+8. [Troubleshooting](#troubleshooting)
+9. [Production Deployment](#production-deployment-future)
+
+---
+
+## Docker Demo (Recommended)
+
+### Quickstart: One-Command Setup
+
+The fastest way to experience Myrmex is via Docker:
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/myrmex.git
+cd myrmex
+
+# (Optional) Set up LLM API key for AI chat feature
+cp .env.example .env
+# Edit .env and add your Claude/OpenAI API key if desired
+
+# Start the entire system with one command
+make demo
+
+# Open in browser
+# Frontend: http://localhost:3000
+# API Gateway: http://localhost:8080
+```
+
+That's it! All services (core, HR, Subject, Timetable modules), databases (PostgreSQL, NATS, Redis), and frontend start automatically. Migrations run, seed data is loaded.
+
+### Common Commands
+
+```bash
+# View logs from all services
+make demo-logs
+
+# Stop all services (preserves data)
+make demo-down
+
+# Stop and reset database (wipe all data, start fresh)
+make demo-reset
+
+# View running containers
+docker ps
+```
+
+### What Gets Started
+
+The `make demo` command starts:
+- **PostgreSQL 16**: Database (port 5432)
+- **NATS 2.10**: Message bus (port 4222)
+- **Redis 7**: Cache (port 6379)
+- **Core Service**: HTTP gateway + JWT auth (port 8080)
+- **Module-HR**: Department & teacher management (port 50052)
+- **Module-Subject**: Subject & prerequisite management (port 50053)
+- **Module-Timetable**: Schedule generation & management (port 50054)
+- **Frontend**: React UI served via nginx (port 3000)
+
+All services communicate via Docker network. Migrations and seed data run automatically.
+
+### Troubleshooting Docker Demo
+
+**Ports already in use:**
+```bash
+# Free up ports or change in docker-compose
+# Default: 3000 (frontend), 8080 (API), 5432 (DB)
+docker ps  # See what's running
+docker kill <container-id>
+```
+
+**Database issues:**
+```bash
+# Reset database completely
+make demo-reset
+
+# Check database logs
+docker compose -f deploy/docker/compose.yml logs postgres
+```
+
+**Inspect services:**
+```bash
+# Check if API is responding
+curl http://localhost:8080/api/health
+
+# List all running containers
+docker compose -f deploy/docker/compose.yml ps
+```
+
+### Next Steps After Demo
+
+1. **Register a user**: Visit http://localhost:3000 and click "Register"
+2. **Create departments, teachers, subjects**: Use the UI
+3. **Generate a schedule**: Add semesters, rooms, and time slots, then use the CSP solver
+4. **Try AI chat** (requires LLM_API_KEY): Click chat icon to ask the agent to create data or generate schedules
 
 ---
 
@@ -63,7 +156,7 @@ NATS_URL="nats://localhost:4222"
 
 # Core Service
 CORE_JWT_SECRET="your-secret-key-min-32-chars-long!!"
-CORE_HTTP_PORT=8000
+CORE_HTTP_PORT=8080
 CORE_GRPC_PORT=50051
 CORE_LLM_PROVIDER="claude" # or "openai"
 CORE_LLM_MODEL="claude-haiku-4-5-20251001"
@@ -82,7 +175,7 @@ SUBJECT_GRPC_PORT=50053
 TIMETABLE_GRPC_PORT=50054
 
 # Frontend
-VITE_API_URL="http://localhost:8000"
+VITE_API_URL="http://localhost:8080"
 ```
 
 Load environment variables:
@@ -148,7 +241,7 @@ Open 4 separate terminal tabs/windows and start each service:
 ```bash
 cd services/core
 go run ./cmd/server
-# Output: Server listening on :8000 (HTTP) and :50051 (gRPC)
+# Output: Server listening on :8080 (HTTP) and :50051 (gRPC)
 ```
 
 **Terminal 2: HR Service**
@@ -189,7 +282,7 @@ npm run dev
 
 ### Step 9: Verify Setup
 
-1. **HTTP Gateway**: `curl http://localhost:8000/api/health`
+1. **HTTP Gateway**: `curl http://localhost:8080/api/health`
    - Should return `200 OK`
 
 2. **Frontend**: Open http://localhost:3000
@@ -208,7 +301,7 @@ npm run dev
 
 ```yaml
 server:
-  http_port: 8000          # HTTP gateway port
+  http_port: 8080          # HTTP gateway port
   grpc_port: 50051         # gRPC server port
   request_timeout: 30s     # Timeout for gRPC calls
 
@@ -259,7 +352,7 @@ logging:
 
 ```env
 VITE_API_URL=http://localhost:8000
-VITE_CHAT_WS_URL=ws://localhost:8000/ws/chat
+VITE_CHAT_WS_URL=ws://localhost:8080/ws/chat
 ```
 
 ---
@@ -474,7 +567,7 @@ services:
     build:
       context: .
       dockerfile: services/core/Dockerfile
-    ports: 8000:8000, 50051:50051
+    ports: 8080:8080, 50051:50051
     environment:
       DATABASE_URL: postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable
       NATS_URL: nats://nats:4222
@@ -526,13 +619,13 @@ docker compose -f deploy/docker/compose.yml down
 
 ```bash
 # Find process using port
-lsof -i :8000
+lsof -i :8080
 
 # Kill process
 kill -9 <PID>
 
 # Or use alternative port
-CORE_HTTP_PORT=8001 go run ./cmd/server
+CORE_HTTP_PORT=8081 go run ./cmd/server
 ```
 
 ### Database Connection Error
@@ -585,7 +678,7 @@ go run ./cmd/server
 
 ```bash
 # Verify API gateway is running
-curl http://localhost:8000/api/health
+curl http://localhost:8080/api/health
 
 # Check CORS headers
 curl -H "Origin: http://localhost:3000" http://localhost:8000/api/health
@@ -614,7 +707,7 @@ go tool goose -dir migrations postgres "$DATABASE_URL" up
 
 ```bash
 # Core HTTP gateway
-curl http://localhost:8000/api/health
+curl http://localhost:8080/api/health
 
 # Core gRPC health
 grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check

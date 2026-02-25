@@ -1,4 +1,4 @@
-.PHONY: proto build test lint up down migrate seed reset-db
+.PHONY: proto build test lint up down migrate seed reset-db demo demo-down demo-logs demo-reset
 
 SERVICES := core module-hr module-subject module-timetable
 export PATH := $(HOME)/go/bin:$(PATH)
@@ -51,3 +51,23 @@ reset-db:
 	done
 	$(MAKE) migrate
 	$(MAKE) seed
+
+demo:
+	docker compose -f deploy/docker/compose.yml up --build -d
+	@echo ""
+	@echo "Myrmex is starting up..."
+	@echo "  Frontend: http://localhost:3000"
+	@echo "  API:      http://localhost:8080"
+	@echo ""
+	@echo "Run 'make demo-logs' to see logs"
+	@echo "Run 'make demo-down' to stop"
+
+demo-down:
+	docker compose -f deploy/docker/compose.yml down
+
+demo-logs:
+	docker compose -f deploy/docker/compose.yml logs -f
+
+demo-reset:
+	docker compose -f deploy/docker/compose.yml down -v
+	$(MAKE) demo

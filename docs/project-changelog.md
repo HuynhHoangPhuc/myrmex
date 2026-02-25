@@ -2,6 +2,73 @@
 
 All notable changes to the Myrmex project are documented here.
 
+## [2026-02-25] — Demo-in-a-Box: Docker One-Liner Deployment
+
+**Status**: Complete
+
+### Summary
+Completed Phase 1 deployment polish: containerized entire system (4 Go services + frontend) into single-command Docker Compose setup with auto-migration and seed data. `make demo` now spins up full Myrmex at localhost:3000 (UI) + localhost:8080 (API) with zero manual configuration.
+
+### Phase 1: Configuration & Environment Overrides
+- **SetEnvKeyReplacer**: Added `v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))` to all 4 service main.go files (core, module-hr, module-subject, module-timetable)
+  - Enables env var override of nested config keys (e.g., `DATABASE_URL` → `database.url`)
+- **Database Credentials**: Fixed module-hr, module-subject, module-timetable config/local.yaml:
+  - Changed from `postgres:postgres` to `myrmex:myrmex_dev` (matches compose)
+  - Added schema-specific `search_path` (hr, subject, timetable per module)
+- **SelfURL Configuration**: Made core service selfURL configurable:
+  - Added `server.self_url` key to core config/local.yaml
+  - Reads from env var `SERVER_SELF_URL` with fallback to `http://localhost:{port}`
+  - Enables Docker internal networking (core:8080 instead of localhost:8080)
+
+### Phase 2: Dockerfiles & Docker Compose
+- **Module-HR Dockerfile**: Created new workspace-aware Dockerfile (mirrors module-subject/timetable pattern)
+- **Core Dockerfile Fix**: Fixed to use workspace context (copy pkg/, gen/, go.work before service dir)
+- **Frontend Nginx Config**: Created nginx-docker.conf with reverse proxy:
+  - `/api/` → http://core:8080/api/ (eliminates CORS + CSP issues)
+  - `/ws/` → http://core:8080/ws/ (WebSocket proxying)
+  - Static assets cached, SPA fallback to /index.html
+- **Docker Compose Expansion**: Expanded deploy/docker/compose.yml:
+  - Services: postgres, nats, redis (infrastructure)
+  - Services: migrate (goose + seed runner)
+  - Services: core, module-hr, module-subject, module-timetable (Go services)
+  - Services: frontend (React UI via nginx)
+  - Environment vars: DATABASE_URL, NATS_URL, gRPC addresses, LLM_API_KEY override
+  - Dependencies: Proper service health checks and startup ordering
+
+### Phase 3: Makefile & Developer Experience
+- **Makefile Targets**:
+  - `make demo` — Start entire system (docker compose up --build -d)
+  - `make demo-down` — Stop services (preserves data)
+  - `make demo-logs` — Tail logs from all services
+  - `make demo-reset` — Wipe database and restart fresh
+- **Frontend API URLs**: Changed defaults to relative paths:
+  - client.ts: `/api` (instead of hardcoded localhost:8080)
+  - use-schedule-stream.ts: `/api` (same pattern)
+  - use-chat.ts: `window.location.host` for WebSocket (dynamic)
+  - Enables same-origin requests through nginx proxy
+- **Vite Dev Server**: Added proxy config for local development:
+  - `/api` → http://localhost:8080 (Go services)
+  - `/ws` → ws://localhost:8080 (WebSocket)
+  - Works seamlessly with existing `npm run dev` workflow
+- **.env.example**: Created template for optional LLM_API_KEY configuration
+- **README Updates**: Added Docker Demo section, fixed port references (8000 → 8080)
+
+### Quality Metrics
+- All services compile: `go build ./...` ✓
+- Docker images build: `docker compose -f deploy/docker/compose.yml build` ✓
+- Services start: `docker compose up` → all healthy ✓
+- Migrations run automatically ✓
+- Seed data loads (3 depts, 8 teachers, 10 subjects, 5 rooms) ✓
+- Frontend accessible at localhost:3000 ✓
+- API accessible at localhost:8080/api/health ✓
+- No breaking changes to existing APIs
+
+### Deployment Complexity Reduced
+- **Before**: ~10 manual steps across 5+ terminals (postgres, nats, 4 services, frontend)
+- **After**: `git clone && make demo` (one command, fully automated)
+
+---
+
 ## [2026-02-25] — AI Chat Tool Executor Fix + Comprehensive Tests & CI/CD
 
 **Status**: Complete

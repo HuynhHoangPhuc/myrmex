@@ -334,6 +334,21 @@ Phase 4: Enterprise
 
 ## Change Log
 
+### 2026-02-25 (Demo-in-a-Box: Docker One-Liner Deployment)
+- Added `v.SetEnvKeyReplacer` to all 4 services (core, HR, subject, timetable) for env var override support
+- Fixed DB credentials in module-hr, module-subject, module-timetable config/local.yaml (myrmex:myrmex_dev + search_path)
+- Made selfURL configurable in core service (reads `server.self_url` with fallback)
+- Created Dockerfile for module-hr (workspace-aware build)
+- Fixed core Dockerfile for workspace-aware build
+- Created frontend nginx-docker.conf with reverse proxy (/api and /ws routes)
+- Expanded deploy/docker/compose.yml with all 4 services + frontend + migrate service
+- Added `make demo`, `make demo-down`, `make demo-logs`, `make demo-reset` targets
+- Changed frontend API defaults to relative paths (/api) with Vite dev proxy
+- Fixed WebSocket URL construction for relative paths via window.location.host
+- Updated README: added Docker Demo section, fixed port references (8000 → 8080)
+- Created .env.example for optional LLM_API_KEY
+- Phase 1 deployment polish: 100% → Ready for Demo-in-a-Box
+
 ### 2026-02-25 (Demoable Schedule Calendar Implementation)
 - Completed schedule data enrichment (denormalized fields in ScheduleEntry)
 - Implemented ListSchedules RPC with pagination + semester filtering

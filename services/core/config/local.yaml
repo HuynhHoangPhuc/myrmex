@@ -1,6 +1,7 @@
 server:
   http_port: 8080
   grpc_port: 50051
+  self_url: "http://localhost:8080"
 
 database:
   url: "postgres://myrmex:myrmex_dev@localhost:5432/myrmex?sslmode=disable&search_path=core"

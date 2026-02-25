@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -36,6 +37,7 @@ func main() {
 	v.AddConfigPath("config")
 	v.AddConfigPath(".")
 	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	if err := v.ReadInConfig(); err != nil {
 		log.Fatalf("read config: %v", err)
 	}
@@ -92,7 +94,10 @@ func main() {
 	if err != nil {
 		zapLog.Fatal("failed to generate internal service token", zap.Error(err))
 	}
-	selfURL := fmt.Sprintf("http://localhost:%d", v.GetInt("server.http_port"))
+	selfURL := v.GetString("server.self_url")
+	if selfURL == "" {
+		selfURL = fmt.Sprintf("http://localhost:%d", v.GetInt("server.http_port"))
+	}
 
 	// 7. Repositories (sqlc)
 	queries := sqlc.New(pool)

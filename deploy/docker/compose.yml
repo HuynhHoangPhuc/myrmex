@@ -1,4 +1,5 @@
 services:
+  # --- Infrastructure ---
   postgres:
     image: postgres:16-alpine
     environment:
@@ -29,6 +30,92 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+
+  # --- Migration & seed init container ---
+  migrate:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.migrate
+    environment:
+      DATABASE_URL: "postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # --- Go services ---
+  core:
+    build:
+      context: ../..
+      dockerfile: services/core/Dockerfile
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    environment:
+      DATABASE_URL: "postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable&search_path=core"
+      NATS_URL: "nats://nats:4222"
+      SERVER_SELF_URL: "http://core:8080"
+      HR_GRPC_ADDR: "module-hr:50052"
+      SUBJECT_GRPC_ADDR: "module-subject:50053"
+      TIMETABLE_GRPC_ADDR: "module-timetable:50054"
+      LLM_API_KEY: "${LLM_API_KEY:-}"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      nats:
+        condition: service_started
+
+  module-hr:
+    build:
+      context: ../..
+      dockerfile: services/module-hr/Dockerfile
+    ports:
+      - "50052:50052"
+    environment:
+      DATABASE_URL: "postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable&search_path=hr"
+      NATS_URL: "nats://nats:4222"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  module-subject:
+    build:
+      context: ../..
+      dockerfile: services/module-subject/Dockerfile
+    ports:
+      - "50053:50053"
+    environment:
+      DATABASE_URL: "postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable&search_path=subject"
+      NATS_URL: "nats://nats:4222"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  module-timetable:
+    build:
+      context: ../..
+      dockerfile: services/module-timetable/Dockerfile
+    ports:
+      - "50054:50054"
+    environment:
+      DATABASE_URL: "postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable&search_path=timetable"
+      NATS_URL: "nats://nats:4222"
+      HR_GRPC_ADDR: "module-hr:50052"
+      SUBJECT_GRPC_ADDR: "module-subject:50053"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # --- Frontend ---
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../frontend/nginx-docker.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - core
 
 volumes:
   postgres_data:

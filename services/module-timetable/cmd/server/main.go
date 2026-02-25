@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -33,6 +34,7 @@ func main() {
 	v.AddConfigPath("config")
 	v.AddConfigPath(".")
 	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	if err := v.ReadInConfig(); err != nil {
 		log.Fatalf("read config: %v", err)
 	}

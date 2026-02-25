@@ -2,12 +2,18 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { authStore } from '@/lib/stores/auth-store'
 import type { ChatMessage, WsClientMessage, WsServerEvent } from '@/chat/types'
 
-// WebSocket base URL derived from the API base URL (http → ws, https → wss)
+// WebSocket base URL derived from window.location when no env var is set.
+// With nginx proxy (Docker) or Vite proxy (local dev), /ws routes are proxied — use relative ws URL.
 function getWsBaseUrl(): string {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
-  // Strip /api suffix if present
-  const base = apiUrl.replace(/\/api$/, '')
-  return base.replace(/^http/, 'ws')
+  const apiUrl = import.meta.env.VITE_API_URL
+  if (apiUrl) {
+    // Explicit env var — strip /api suffix and convert to ws://
+    const base = apiUrl.replace(/\/api$/, '')
+    return base.replace(/^http/, 'ws')
+  }
+  // Relative WebSocket — use current window origin
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${proto}//${window.location.host}`
 }
 
 const WS_URL = `${getWsBaseUrl()}/ws/chat`
