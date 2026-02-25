@@ -6,7 +6,7 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 
 ## Phase 1: MVP - University Faculty Management (IN PROGRESS)
 
-**Timeline**: Q1 2026 (4 weeks) | **Status**: 65% Complete
+**Timeline**: Q1 2026 (4 weeks) | **Status**: 75% Complete
 
 ### Goals
 - Establish modular microservice foundation
@@ -29,13 +29,13 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 - [x] Frontend modules: HR, Subject, Timetable modules with CRUD UI
 
 #### In Progress
-- [ ] CSP Solver: Backtracking + heuristics (AC-3 + MRV + LCV)
-- [ ] Schedule Generation API: gRPC endpoint + async status tracking
-- [ ] Schedule UI: Calendar view with manual override + teacher suggestions
+- [x] CSP Solver: Backtracking + heuristics (AC-3 + MRV + LCV)
+- [x] Schedule Generation API: gRPC endpoint + async status tracking
+- [x] Schedule UI: Calendar view with manual override + teacher suggestions
 - [ ] AI Chat integration: Claude Haiku 4.5 provider + tool registry
 - [ ] Tool registry: Domain operations (create subject, assign teacher, generate schedule)
 - [ ] WebSocket chat: Streaming responses + auto-reconnect
-- [ ] Service + pkg test suites: Expanded unit and integration tests covering command/query handlers plus shared package helpers across core, modules, and `pkg`
+- [x] Service + pkg test suites: Expanded unit and integration tests covering command/query handlers plus shared package helpers across core, modules, and `pkg`
 - [ ] E2E workflow: Register → Create subject → Assign teacher → Generate schedule
 
 #### Remaining
@@ -45,7 +45,7 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 - [ ] Load testing: 1000 concurrent users validation
 - [ ] Documentation: Complete API docs, deployment guide, code standards
 - [ ] Security audit: OWASP Top 10 review
-- [ ] Seed data: Sample departments, subjects, teachers, semesters
+- [x] Seed data: Sample departments, subjects, teachers, semesters
 - [ ] CI/CD pipeline: GitHub Actions for build, test, lint
 
 ### Success Criteria
@@ -339,6 +339,14 @@ Phase 4: Enterprise
 ---
 
 ## Change Log
+
+### 2026-02-25 (Demoable Schedule Calendar Implementation)
+- Completed schedule data enrichment (denormalized fields in ScheduleEntry)
+- Implemented ListSchedules RPC with pagination + semester filtering
+- Built interactive schedule calendar UI (weekly grid, color-coded departments)
+- Created comprehensive seed data (3 depts, 8 teachers, 10 subjects, 5 rooms)
+- Added `make seed` target for easy database population
+- Phase 1 progress: 65% → 75% (schedule generation + UI now fully functional)
 
 ### 2026-02-21 (Initial Roadmap)
 - Created Phase 1-4 roadmap
