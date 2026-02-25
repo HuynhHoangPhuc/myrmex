@@ -21,13 +21,22 @@ jobs:
           cache: true
 
       - name: Build all services
-        run: go build ./...
+        run: |
+          for dir in gen/go pkg services/core services/module-hr services/module-subject services/module-timetable; do
+            go build ./$dir/...
+          done
 
       - name: Vet
-        run: go vet ./...
+        run: |
+          for dir in gen/go pkg services/core services/module-hr services/module-subject services/module-timetable; do
+            go vet ./$dir/...
+          done
 
       - name: Run tests
-        run: go test ./... -timeout 120s
+        run: |
+          for dir in pkg services/core services/module-hr services/module-subject services/module-timetable; do
+            go test ./$dir/... -timeout 120s
+          done
 
   frontend-check:
     name: Frontend TypeScript Check
