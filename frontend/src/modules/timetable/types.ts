@@ -42,7 +42,7 @@ export type ScheduleStatus = 'pending' | 'generating' | 'completed' | 'failed'
 
 export interface ScheduleEntry {
   id: string
-  schedule_id: string
+  schedule_id?: string
   subject_id: string
   subject_code: string
   subject_name: string
@@ -50,10 +50,9 @@ export interface ScheduleEntry {
   teacher_name: string
   room_id: string
   room_name: string
-  time_slot_id: string
-  day_of_week: number
-  start_time: string
-  end_time: string
+  day_of_week: number    // 1=Mon..6=Sat
+  start_period: number   // lesson period number (1-8)
+  end_period: number
   is_manual_override: boolean
   department_id: string
 }

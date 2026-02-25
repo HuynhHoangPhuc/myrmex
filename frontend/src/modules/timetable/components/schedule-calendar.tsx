@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Badge } from '@/components/ui/badge'
 import type { Schedule, ScheduleEntry } from '../types'
+import { periodToTimeLabel } from '../utils/period-to-time'
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -48,24 +49,20 @@ interface ScheduleCalendarProps {
   onEntryClick?: (entry: ScheduleEntry) => void
 }
 
-// CSS-grid based weekly calendar — days as rows, time slots as columns
+// CSS-grid based weekly calendar — days as rows, period slots as columns
 export function ScheduleCalendar({ schedule, onEntryClick }: ScheduleCalendarProps) {
-  // Collect unique time labels from entries
-  const timeLabels = React.useMemo(() => {
-    const labels = new Map<string, { start: string; end: string }>()
-    schedule.entries.forEach((e) => {
-      const key = `${e.start_time}-${e.end_time}`
-      labels.set(key, { start: e.start_time, end: e.end_time })
-    })
-    return Array.from(labels.entries())
-      .sort((a, b) => a[1].start.localeCompare(b[1].start))
+  // Collect unique start_period values and derive time labels
+  const periodCols = React.useMemo(() => {
+    const periods = new Set<number>()
+    schedule.entries.forEach((e) => periods.add(e.start_period))
+    return Array.from(periods).sort((a, b) => a - b)
   }, [schedule.entries])
 
-  // Index entries by day + time for O(1) lookup
+  // Index entries by day + start_period for O(1) lookup
   const entryMap = React.useMemo(() => {
     const map = new Map<string, ScheduleEntry[]>()
     schedule.entries.forEach((e) => {
-      const key = `${e.day_of_week}-${e.start_time}-${e.end_time}`
+      const key = `${e.day_of_week}-${e.start_period}`
       const list = map.get(key) ?? []
       list.push(e)
       map.set(key, list)
@@ -83,9 +80,10 @@ export function ScheduleCalendar({ schedule, onEntryClick }: ScheduleCalendarPro
         <thead>
           <tr>
             <th className="w-14 py-2 text-left text-xs text-muted-foreground font-normal border-b">Day</th>
-            {timeLabels.map(([key, t]) => (
-              <th key={key} className="px-1 py-2 text-center text-xs text-muted-foreground font-normal border-b">
-                {t.start}–{t.end}
+            {periodCols.map((period) => (
+              <th key={period} className="px-1 py-2 text-center text-xs text-muted-foreground font-normal border-b">
+                P{period}<br />
+                <span className="font-normal opacity-70">{periodToTimeLabel(period, period)}</span>
               </th>
             ))}
           </tr>
@@ -96,11 +94,11 @@ export function ScheduleCalendar({ schedule, onEntryClick }: ScheduleCalendarPro
             return (
               <tr key={day} className="border-b last:border-0">
                 <td className="py-2 pr-2 text-xs font-semibold text-muted-foreground align-top">{day}</td>
-                {timeLabels.map(([key, t]) => {
-                  const cellKey = `${dayOfWeek}-${t.start}-${t.end}`
+                {periodCols.map((period) => {
+                  const cellKey = `${dayOfWeek}-${period}`
                   const entries = entryMap.get(cellKey) ?? []
                   return (
-                    <td key={key} className="px-1 py-1 align-top min-w-[100px]">
+                    <td key={period} className="px-1 py-1 align-top min-w-[100px]">
                       <div className="space-y-1">
                         {entries.map((entry) => (
                           <EntryCard

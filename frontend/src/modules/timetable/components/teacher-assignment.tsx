@@ -9,6 +9,7 @@ import {
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { TeacherSuggestionList } from './teacher-suggestion-list'
 import { useAssignTeacher } from '../hooks/use-schedules'
+import { periodToTimeLabel } from '../utils/period-to-time'
 import type { ScheduleEntry, TeacherSuggestion } from '../types'
 
 interface TeacherAssignmentDialogProps {
@@ -54,7 +55,7 @@ export function TeacherAssignmentDialog({
           <DialogHeader>
             <DialogTitle>Assign Teacher</DialogTitle>
             <DialogDescription>
-              {entry.subject_code} — {entry.start_time}–{entry.end_time} · {entry.room_name}
+              {entry.subject_code} — {periodToTimeLabel(entry.start_period, entry.end_period)} · {entry.room_name}
             </DialogDescription>
           </DialogHeader>
 
