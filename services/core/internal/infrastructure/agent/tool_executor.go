@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -25,23 +26,26 @@ type ModuleConnector interface {
 }
 
 // ToolExecutor executes tool calls by forwarding to module services.
-// For MVP: uses HTTP REST calls to module gRPC-gateway endpoints via the gateway proxy.
-// This avoids needing generated gRPC stubs in core for each module.
+// For MVP: uses HTTP REST calls to core's own HTTP API so the correct router
+// and middleware handle the request (gRPC ports do not serve REST).
 type ToolExecutor struct {
 	registry    *ToolRegistry
 	connector   ModuleConnector
-	moduleAddrs map[string]string // module name -> base HTTP URL
+	selfURL     string // core's own HTTP base URL, e.g. "http://localhost:8080"
+	internalJWT string // service-level JWT for internal requests
 	httpClient  *http.Client
 	log         *zap.Logger
 }
 
 // NewToolExecutor creates a ToolExecutor.
-// moduleAddrs maps module name to its REST base URL, e.g. {"hr": "http://localhost:8081"}.
-func NewToolExecutor(registry *ToolRegistry, connector ModuleConnector, moduleAddrs map[string]string, log *zap.Logger) *ToolExecutor {
+// selfURL is core's own HTTP base URL (e.g. "http://localhost:8080").
+// internalJWT is a pre-generated service JWT attached to every internal request.
+func NewToolExecutor(registry *ToolRegistry, connector ModuleConnector, selfURL, internalJWT string, log *zap.Logger) *ToolExecutor {
 	return &ToolExecutor{
 		registry:    registry,
 		connector:   connector,
-		moduleAddrs: moduleAddrs,
+		selfURL:     selfURL,
+		internalJWT: internalJWT,
 		httpClient:  &http.Client{Timeout: 10 * time.Second},
 		log:         log,
 	}
@@ -78,50 +82,36 @@ func (e *ToolExecutor) Execute(ctx context.Context, call llm.ToolCall) (string, 
 }
 
 // dispatchToModule routes the tool call to the appropriate module handler.
-// For MVP: each module handles calls by method name with JSON args.
+// All calls are routed through core's own HTTP API (selfURL) regardless of
+// whether a gRPC connection is available, because gRPC ports do not serve REST.
 func (e *ToolExecutor) dispatchToModule(ctx context.Context, tool RegisteredTool, args map[string]interface{}) (string, error) {
-	// Try to use direct gRPC connection if available via connector
-	conn, hasConn := e.connector.GetConnection(tool.ModuleName)
-	if hasConn {
-		return e.invokeViaGRPC(ctx, conn, tool, args)
-	}
-
-	// Fallback: check static module address map
-	baseURL, ok := e.moduleAddrs[tool.ModuleName]
-	if !ok {
-		return "", fmt.Errorf("module %q has no registered connection or address", tool.ModuleName)
-	}
-	return e.invokeViaHTTP(ctx, baseURL, tool, args)
+	return e.invokeViaHTTP(ctx, e.selfURL, tool, args)
 }
 
-// invokeViaGRPC invokes a tool by making a generic gRPC call.
-// For MVP: uses the connection to make a raw JSON request via grpc.Invoke.
+// invokeViaGRPC is kept for interface compatibility but routes through selfURL.
+// gRPC ports do not serve REST, so we always use core's HTTP API instead.
 func (e *ToolExecutor) invokeViaGRPC(ctx context.Context, conn *grpc.ClientConn, tool RegisteredTool, args map[string]interface{}) (string, error) {
-	// Build a simple HTTP request to the module's REST endpoint through the internal port.
-	// The module gRPC connection target gives us the host:port to call.
-	target := conn.Target()
-
-	// Strip grpc:// prefix if present; use http for grpc-gateway
-	host := strings.TrimPrefix(target, "passthrough:///")
-	baseURL := "http://" + host
-
-	return e.invokeViaHTTP(ctx, baseURL, tool, args)
+	return e.invokeViaHTTP(ctx, e.selfURL, tool, args)
 }
 
 // invokeViaHTTP calls a module's REST endpoint derived from the tool method name.
 func (e *ToolExecutor) invokeViaHTTP(ctx context.Context, baseURL string, tool RegisteredTool, args map[string]interface{}) (string, error) {
-	endpoint := buildEndpoint(baseURL, tool.ModuleName, tool.MethodName, args)
+	endpoint, httpMethod := buildEndpoint(baseURL, tool.ModuleName, tool.MethodName, args)
 
 	e.log.Debug("executing tool via HTTP",
 		zap.String("tool", tool.Definition.Name),
+		zap.String("method", httpMethod),
 		zap.String("endpoint", endpoint),
 	)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, httpMethod, endpoint, nil)
 	if err != nil {
 		return "", fmt.Errorf("build HTTP request: %w", err)
 	}
 	req.Header.Set("Accept", "application/json")
+	if e.internalJWT != "" {
+		req.Header.Set("Authorization", "Bearer "+e.internalJWT)
+	}
 
 	resp, err := e.httpClient.Do(req)
 	if err != nil {
@@ -142,59 +132,61 @@ func (e *ToolExecutor) invokeViaHTTP(ctx context.Context, baseURL string, tool R
 	return string(out), nil
 }
 
-// buildEndpoint constructs the REST URL for a module method call.
-// Maps method names to REST paths following the project's API conventions.
-func buildEndpoint(baseURL, module, method string, args map[string]interface{}) string {
+// buildEndpoint constructs the REST URL and HTTP method for a module method call.
+// Returns (url, httpMethod) — httpMethod is GET for reads, POST for mutations.
+func buildEndpoint(baseURL, module, method string, args map[string]interface{}) (string, string) {
 	base := strings.TrimRight(baseURL, "/")
 
 	switch module + "." + method {
 	case "hr.list_teachers":
 		url := base + "/api/hr/teachers"
-		params := buildQueryParams(args, "search", "department", "specialization")
-		if params != "" {
+		if params := buildQueryParams(args, "search", "department", "specialization"); params != "" {
 			url += "?" + params
 		}
-		return url
+		return url, http.MethodGet
 
 	case "hr.get_teacher":
 		id, _ := args["teacher_id"].(string)
-		return fmt.Sprintf("%s/api/hr/teachers/%s", base, id)
+		return fmt.Sprintf("%s/api/hr/teachers/%s", base, id), http.MethodGet
 
 	case "subjects.list_subjects":
 		url := base + "/api/subjects"
-		params := buildQueryParams(args, "search", "credits")
-		if params != "" {
+		if params := buildQueryParams(args, "search", "credits"); params != "" {
 			url += "?" + params
 		}
-		return url
+		return url, http.MethodGet
 
 	case "subjects.get_prerequisites":
 		id, _ := args["subject_id"].(string)
-		return fmt.Sprintf("%s/api/subjects/%s/prerequisites", base, id)
+		return fmt.Sprintf("%s/api/subjects/%s/prerequisites", base, id), http.MethodGet
 
 	case "timetable.generate":
+		// POST: triggers schedule generation for a semester
 		id, _ := args["semester_id"].(string)
-		return fmt.Sprintf("%s/api/timetable/semesters/%s/generate", base, id)
+		return fmt.Sprintf("%s/api/timetable/semesters/%s/generate", base, id), http.MethodPost
 
 	case "timetable.suggest_teachers":
-		semID, _ := args["semester_id"].(string)
-		subID, _ := args["subject_id"].(string)
-		return fmt.Sprintf("%s/api/timetable/semesters/%s/suggest?subject_id=%s", base, semID, subID)
+		// Route: GET /api/timetable/suggest-teachers?subject_id=...&semester_id=...
+		url := base + "/api/timetable/suggest-teachers"
+		if params := buildQueryParams(args, "subject_id", "semester_id"); params != "" {
+			url += "?" + params
+		}
+		return url, http.MethodGet
 
 	default:
-		return fmt.Sprintf("%s/api/%s/%s", base, module, strings.ReplaceAll(method, "_", "/"))
+		return fmt.Sprintf("%s/api/%s/%s", base, module, strings.ReplaceAll(method, "_", "/")), http.MethodGet
 	}
 }
 
-// buildQueryParams constructs a query string from args for specified keys.
+// buildQueryParams constructs a properly URL-encoded query string from args for specified keys.
 func buildQueryParams(args map[string]interface{}, keys ...string) string {
-	var parts []string
+	q := url.Values{}
 	for _, k := range keys {
 		if v, ok := args[k]; ok && v != nil {
-			parts = append(parts, fmt.Sprintf("%s=%v", k, v))
+			q.Set(k, fmt.Sprintf("%v", v))
 		}
 	}
-	return strings.Join(parts, "&")
+	return q.Encode()
 }
 
 // NewDirectGRPCConnector creates a ModuleConnector that connects directly to module addresses.

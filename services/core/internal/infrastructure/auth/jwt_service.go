@@ -52,6 +52,21 @@ func (s *JWTService) GenerateRefreshToken(userID string) (string, error) {
 	return token.SignedString(s.secret)
 }
 
+// GenerateInternalToken creates a long-lived service JWT for internal inter-component calls.
+// Uses a fixed 24h expiry independent of the configured access token expiry.
+func (s *JWTService) GenerateInternalToken() (string, error) {
+	claims := Claims{
+		UserID: "internal-service",
+		Role:   "service",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(s.secret)
+}
+
 func (s *JWTService) ValidateToken(tokenStr string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {

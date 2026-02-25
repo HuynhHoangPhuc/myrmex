@@ -87,6 +87,13 @@ func main() {
 	jwtSvc := auth.NewJWTService(v.GetString("jwt.secret"), accessExpiry, refreshExpiry)
 	passwordSvc := auth.NewPasswordService()
 
+	// 6a. Generate internal service JWT for tool executor HTTP dispatch
+	internalJWT, err := jwtSvc.GenerateInternalToken()
+	if err != nil {
+		zapLog.Fatal("failed to generate internal service token", zap.Error(err))
+	}
+	selfURL := fmt.Sprintf("http://localhost:%d", v.GetInt("server.http_port"))
+
 	// 7. Repositories (sqlc)
 	queries := sqlc.New(pool)
 	userRepo := persistence.NewUserRepository(queries)
@@ -119,7 +126,7 @@ func main() {
 	llmProvider := buildLLMProvider(v)
 	toolRegistry := agent.NewToolRegistry()
 	toolRegistry.Register(agent.DefaultTools)
-	toolExecutor := agent.NewToolExecutor(toolRegistry, gatewayProxy, nil, zapLog)
+	toolExecutor := agent.NewToolExecutor(toolRegistry, gatewayProxy, selfURL, internalJWT, zapLog)
 	chatMsgHandler := command.NewChatMessageHandler(llmProvider, toolRegistry, toolExecutor, zapLog)
 	chatHandler := httpif.NewChatHandler(chatMsgHandler, jwtSvc, zapLog)
 
@@ -183,10 +190,11 @@ func main() {
 // buildLLMProvider reads config and returns the configured LLM provider.
 // Defaults to OpenAI-compatible if llm.provider is not set.
 // Config keys:
-//   llm.provider  = "openai" | "claude"
-//   llm.api_key   = API key
-//   llm.model     = model name
-//   llm.base_url  = base URL (optional, for OpenAI-compat endpoints like Ollama)
+//
+//	llm.provider  = "openai" | "claude"
+//	llm.api_key   = API key
+//	llm.model     = model name
+//	llm.base_url  = base URL (optional, for OpenAI-compat endpoints like Ollama)
 func buildLLMProvider(v *viper.Viper) llm.LLMProvider {
 	provider := v.GetString("llm.provider")
 	apiKey := v.GetString("llm.api_key")
