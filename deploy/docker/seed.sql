@@ -5,6 +5,21 @@
 BEGIN;
 
 -- =====================================================================
+-- 0. Core: Demo admin user
+--    email: admin@myrmex.dev  password: demo1234
+-- =====================================================================
+INSERT INTO core.users (id, email, password_hash, full_name, role, is_active)
+VALUES (
+  '00000000-0000-0000-0000-000000000001',
+  'admin@myrmex.dev',
+  '$2b$12$SXaQW37wRUZMFheHe/xhPeg0yN/EC0D89uXN1h9G4Ltvv/8rqKyNe',
+  'Demo Admin',
+  'admin',
+  true
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- =====================================================================
 -- 1. HR: Departments
 -- =====================================================================
 INSERT INTO hr.departments (id, name, code)

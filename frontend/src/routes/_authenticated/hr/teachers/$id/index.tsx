@@ -26,7 +26,7 @@ function TeacherDetailPage() {
         actions={
           <div className="flex gap-2">
             <Button variant="outline" asChild>
-              <Link to="/hr/teachers">
+              <Link to="/hr/teachers" search={{ page: 1, pageSize: 25 }}>
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back
               </Link>
             </Button>

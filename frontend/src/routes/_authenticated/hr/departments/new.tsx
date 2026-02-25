@@ -23,7 +23,7 @@ function NewDepartmentPage() {
           createMutation.mutate(data, {
             onSuccess: () => {
               toast({ title: 'Department created' })
-              void navigate({ to: '/hr/departments' })
+              void navigate({ to: '/hr/departments', search: { page: 1, pageSize: 25 } })
             },
             onError: () => {
               toast({ title: 'Failed to create department', variant: 'destructive' })

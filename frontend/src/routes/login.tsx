@@ -1,7 +1,6 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
-import { zodValidator } from '@tanstack/zod-form-adapter'
 import { Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TextInputField } from '@/components/shared/form-field'
@@ -30,7 +29,6 @@ function LoginPage() {
 
   const form = useForm({
     defaultValues: { email: '', password: '' },
-    validatorAdapter: zodValidator(),
     validators: { onSubmit: loginSchema },
     onSubmit: async ({ value }) => {
       try {

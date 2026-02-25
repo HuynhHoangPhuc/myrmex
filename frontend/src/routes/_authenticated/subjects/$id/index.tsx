@@ -45,7 +45,7 @@ function SubjectDetailPage() {
         actions={
           <div className="flex gap-2">
             <Button variant="outline" asChild>
-              <Link to="/subjects"><ArrowLeft className="mr-2 h-4 w-4" />Back</Link>
+              <Link to="/subjects" search={{ page: 1, pageSize: 25 }}><ArrowLeft className="mr-2 h-4 w-4" />Back</Link>
             </Button>
             <Button asChild>
               <Link to="/subjects/$id/edit" params={{ id }}>

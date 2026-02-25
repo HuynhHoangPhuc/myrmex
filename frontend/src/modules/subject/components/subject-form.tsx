@@ -1,5 +1,4 @@
 import { useForm } from '@tanstack/react-form'
-import { zodValidator } from '@tanstack/zod-form-adapter'
 import { z } from 'zod'
 import { TextInputField, FormField } from '@/components/shared/form-field'
 import { Button } from '@/components/ui/button'
@@ -35,7 +34,6 @@ export function SubjectForm({ defaultValues, onSubmit, isLoading, submitLabel = 
       department_id: defaultValues?.department_id ?? '',
       weekly_hours: defaultValues?.weekly_hours ?? 3,
     },
-    validatorAdapter: zodValidator(),
     onSubmit: ({ value }) => onSubmit(value as CreateSubjectInput),
   })
 

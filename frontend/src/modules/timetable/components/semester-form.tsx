@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { useForm } from '@tanstack/react-form'
-import { zodValidator } from '@tanstack/zod-form-adapter'
 import { z } from 'zod'
 import { Plus, Trash2 } from 'lucide-react'
 import { TextInputField } from '@/components/shared/form-field'
@@ -50,7 +49,6 @@ export function SemesterForm({ onSubmit, isLoading }: SemesterFormProps) {
       start_date: '',
       end_date: '',
     },
-    validatorAdapter: zodValidator(),
     onSubmit: ({ value }) => {
       onSubmit({
         ...value,

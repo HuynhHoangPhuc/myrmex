@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { useForm } from '@tanstack/react-form'
-import { zodValidator } from '@tanstack/zod-form-adapter'
 import { z } from 'zod'
 import { X } from 'lucide-react'
 import { TextInputField, FormField } from '@/components/shared/form-field'
@@ -41,7 +40,6 @@ export function TeacherForm({ defaultValues, onSubmit, isLoading, submitLabel = 
       max_hours_per_week: defaultValues?.max_hours_per_week ?? 20,
       specializations: defaultValues?.specializations ?? [],
     },
-    validatorAdapter: zodValidator(),
     onSubmit: ({ value }) => onSubmit(value as CreateTeacherInput),
   })
 

@@ -25,7 +25,7 @@ function SemesterDetailPage() {
         actions={
           <div className="flex gap-2">
             <Button variant="outline" asChild>
-              <Link to="/timetable/semesters">
+              <Link to="/timetable/semesters" search={{ page: 1, pageSize: 25 }}>
                 <ArrowLeft className="mr-2 h-4 w-4" />Back
               </Link>
             </Button>

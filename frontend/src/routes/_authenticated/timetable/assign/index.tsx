@@ -107,7 +107,7 @@ function AssignPage() {
                   <div key={e.id} className="flex items-center gap-3 text-sm">
                     <span className="font-mono text-primary w-20">{e.subject_code}</span>
                     <span className="text-muted-foreground">{e.teacher_name}</span>
-                    <span className="text-xs text-muted-foreground">{e.start_time}–{e.end_time}</span>
+                    <span className="text-xs text-muted-foreground">P{e.start_period}–{e.end_period}</span>
                     <Badge variant="outline" className="ml-auto border-yellow-500 text-yellow-700 text-xs">override</Badge>
                     <Button
                       variant="ghost"
@@ -132,7 +132,7 @@ function AssignPage() {
                   <span className="font-mono text-primary w-20 shrink-0">{entry.subject_code}</span>
                   <span className="flex-1 truncate">{entry.teacher_name}</span>
                   <span className="text-xs text-muted-foreground w-28 shrink-0">
-                    {['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][entry.day_of_week]} {entry.start_time}
+                    {['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][entry.day_of_week]} P{entry.start_period}
                   </span>
                   <span className="text-xs text-muted-foreground w-20 shrink-0">{entry.room_name}</span>
                   {entry.is_manual_override && (

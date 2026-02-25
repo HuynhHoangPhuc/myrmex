@@ -1,5 +1,4 @@
 import { useForm } from '@tanstack/react-form'
-import { zodValidator } from '@tanstack/zod-form-adapter'
 import { z } from 'zod'
 import { TextInputField } from '@/components/shared/form-field'
 import { Button } from '@/components/ui/button'
@@ -26,7 +25,6 @@ export function DepartmentForm({ defaultValues, onSubmit, isLoading, submitLabel
       code: defaultValues?.code ?? '',
       description: defaultValues?.description ?? '',
     },
-    validatorAdapter: zodValidator(),
     onSubmit: ({ value }) => onSubmit(value as CreateDepartmentInput),
   })
 

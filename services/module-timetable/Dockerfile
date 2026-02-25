@@ -7,6 +7,10 @@ COPY go.work go.work.sum ./
 COPY gen/go ./gen/go
 COPY pkg ./pkg
 COPY services/module-timetable ./services/module-timetable
+# go.mod stubs so go.work can resolve all workspace modules
+COPY services/core/go.mod services/core/go.mod
+COPY services/module-hr/go.mod services/module-hr/go.mod
+COPY services/module-subject/go.mod services/module-subject/go.mod
 
 WORKDIR /workspace/services/module-timetable
 RUN go build -o /bin/timetable-server ./cmd/server

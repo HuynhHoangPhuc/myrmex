@@ -7,6 +7,10 @@ COPY go.work go.work.sum* ./
 COPY pkg/ pkg/
 COPY gen/ gen/
 COPY services/module-subject/ services/module-subject/
+# go.mod stubs so go.work can resolve all workspace modules
+COPY services/core/go.mod services/core/go.mod
+COPY services/module-hr/go.mod services/module-hr/go.mod
+COPY services/module-timetable/go.mod services/module-timetable/go.mod
 
 WORKDIR /workspace/services/module-subject
 RUN go build -o /bin/module-subject ./cmd/server/main.go

@@ -53,6 +53,7 @@ reset-db:
 	$(MAKE) seed
 
 demo:
+	docker compose -f deploy/docker/compose.yml down -v --remove-orphans 2>/dev/null || true
 	docker compose -f deploy/docker/compose.yml up --build -d
 	@echo ""
 	@echo "Myrmex is starting up..."
