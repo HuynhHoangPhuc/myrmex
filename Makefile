@@ -1,4 +1,4 @@
-.PHONY: proto build test lint up down migrate
+.PHONY: proto build test lint up down migrate seed reset-db
 
 SERVICES := core module-hr module-subject module-timetable
 export PATH := $(HOME)/go/bin:$(PATH)
@@ -38,3 +38,16 @@ migrate:
 		echo "Migrating $$svc..."; \
 		cd services/$$svc && go tool goose -dir migrations postgres "$$DATABASE_URL" up && cd ../..; \
 	done
+
+seed:
+	@echo "Seeding demo data..."
+	psql "$$DATABASE_URL" -f deploy/docker/seed.sql
+	@echo "Seed complete."
+
+reset-db:
+	@for svc in $(SERVICES); do \
+		echo "Resetting $$svc..."; \
+		cd services/$$svc && go tool goose -dir migrations postgres "$$DATABASE_URL" reset && cd ../..; \
+	done
+	$(MAKE) migrate
+	$(MAKE) seed
