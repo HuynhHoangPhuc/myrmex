@@ -11,15 +11,18 @@ import (
 // AuthMiddleware validates JWT tokens from the Authorization header.
 func AuthMiddleware(jwtSvc *auth.JWTService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		header := c.GetHeader("Authorization")
-		if header == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing authorization header"})
-			return
-		}
-
-		token := strings.TrimPrefix(header, "Bearer ")
-		if token == header {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization format"})
+		// Extract token from Authorization header or ?token= query param (SSE/WebSocket)
+		var token string
+		if header := c.GetHeader("Authorization"); header != "" {
+			token = strings.TrimPrefix(header, "Bearer ")
+			if token == header {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization format"})
+				return
+			}
+		} else if qToken := c.Query("token"); qToken != "" {
+			token = qToken
+		} else {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing authorization"})
 			return
 		}
 

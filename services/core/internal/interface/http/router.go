@@ -10,13 +10,16 @@ import (
 )
 
 type RouterConfig struct {
-	AuthHandler    *AuthHandler
-	UserHandler    *UserHandler
-	ModuleHandler  *ModuleHandler
-	GatewayProxy   *GatewayProxy
-	ChatHandler    *ChatHandler
-	JWTService     *auth.JWTService
-	Logger         *zap.Logger
+	AuthHandler      *AuthHandler
+	UserHandler      *UserHandler
+	ModuleHandler    *ModuleHandler
+	GatewayProxy     *GatewayProxy
+	ChatHandler      *ChatHandler
+	HRHandler        *HRHandler
+	SubjectHandler   *SubjectHandler
+	TimetableHandler *TimetableHandler
+	JWTService       *auth.JWTService
+	Logger           *zap.Logger
 }
 
 func NewRouter(cfg RouterConfig) *gin.Engine {
@@ -71,11 +74,56 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 			}
 		}
 
-		// Gateway proxy for module APIs
-		if cfg.GatewayProxy != nil {
-			protected.Any("/hr/*path", cfg.GatewayProxy.ProxyHandler())
-			protected.Any("/subjects/*path", cfg.GatewayProxy.ProxyHandler())
-			protected.Any("/timetable/*path", cfg.GatewayProxy.ProxyHandler())
+		// HR module routes
+		if cfg.HRHandler != nil {
+			hr := protected.Group("/hr")
+			{
+				hr.GET("/teachers", cfg.HRHandler.ListTeachers)
+				hr.POST("/teachers", cfg.HRHandler.CreateTeacher)
+				hr.GET("/teachers/:id", cfg.HRHandler.GetTeacher)
+				hr.PATCH("/teachers/:id", cfg.HRHandler.UpdateTeacher)
+				hr.DELETE("/teachers/:id", cfg.HRHandler.DeleteTeacher)
+				hr.GET("/teachers/:id/availability", cfg.HRHandler.GetTeacherAvailability)
+				hr.PUT("/teachers/:id/availability", cfg.HRHandler.UpdateTeacherAvailability)
+				hr.GET("/departments", cfg.HRHandler.ListDepartments)
+				hr.POST("/departments", cfg.HRHandler.CreateDepartment)
+			}
+		}
+
+		// Subject module routes
+		if cfg.SubjectHandler != nil {
+			subjects := protected.Group("/subjects")
+			{
+				// Static routes before parameterized to avoid conflicts
+				subjects.GET("/dag/validate", cfg.SubjectHandler.ValidateDAG)
+				subjects.GET("/dag/topological-sort", cfg.SubjectHandler.TopologicalSort)
+				subjects.GET("", cfg.SubjectHandler.ListSubjects)
+				subjects.POST("", cfg.SubjectHandler.CreateSubject)
+				subjects.GET("/:id", cfg.SubjectHandler.GetSubject)
+				subjects.PATCH("/:id", cfg.SubjectHandler.UpdateSubject)
+				subjects.DELETE("/:id", cfg.SubjectHandler.DeleteSubject)
+				subjects.GET("/:id/prerequisites", cfg.SubjectHandler.ListPrerequisites)
+				subjects.POST("/:id/prerequisites", cfg.SubjectHandler.AddPrerequisite)
+				subjects.DELETE("/:id/prerequisites/:prereqId", cfg.SubjectHandler.RemovePrerequisite)
+			}
+		}
+
+		// Timetable module routes
+		if cfg.TimetableHandler != nil {
+			tt := protected.Group("/timetable")
+			{
+				tt.GET("/semesters", cfg.TimetableHandler.ListSemesters)
+				tt.POST("/semesters", cfg.TimetableHandler.CreateSemester)
+				tt.GET("/semesters/:id", cfg.TimetableHandler.GetSemester)
+				tt.POST("/semesters/:id/offered-subjects", cfg.TimetableHandler.AddOfferedSubject)
+				tt.DELETE("/semesters/:id/offered-subjects/:subjectId", cfg.TimetableHandler.RemoveOfferedSubject)
+				tt.POST("/semesters/:id/generate", cfg.TimetableHandler.GenerateSchedule)
+				tt.GET("/schedules", cfg.TimetableHandler.ListSchedules)
+				tt.GET("/schedules/:id", cfg.TimetableHandler.GetSchedule)
+				tt.PUT("/schedules/:id/entries/:entryId", cfg.TimetableHandler.ManualAssign)
+				tt.GET("/suggest-teachers", cfg.TimetableHandler.SuggestTeachers)
+				tt.GET("/schedules/:id/stream", cfg.TimetableHandler.StreamScheduleStatus)
+			}
 		}
 	}
 

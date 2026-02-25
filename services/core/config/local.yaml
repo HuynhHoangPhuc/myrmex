@@ -16,6 +16,13 @@ jwt:
 log:
   level: "development"
 
+hr:
+  grpc_addr: "localhost:50052"
+subject:
+  grpc_addr: "localhost:50053"
+timetable:
+  grpc_addr: "localhost:50054"
+
 llm:
   provider: "openai"          # "openai" or "claude"
   api_key: ""                 # set via LLM_API_KEY env var in production

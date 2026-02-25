@@ -96,6 +96,12 @@ func (h *GenerateScheduleHandler) runSolver(scheduleID uuid.UUID, semester *enti
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSec)*time.Second)
 	defer cancel()
 
+	// Publish "started" SSE event
+	h.publishScheduleEvent(scheduleID, "started", map[string]any{
+		"schedule_id": scheduleID.String(),
+		"total":       len(semester.OfferedSubjectIDs),
+	})
+
 	// --- Pre-fetch all data before solver begins (no IO during search) ---
 
 	// 4a. Fetch offered subjects
@@ -197,28 +203,33 @@ func (h *GenerateScheduleHandler) runSolver(scheduleID uuid.UUID, semester *enti
 	status := valueobject.ScheduleStatusDraft
 	_, _ = h.scheduleRepo.UpdateStatus(context.Background(), scheduleID, status)
 
-	// 11. Append event + publish
-	payload, _ := json.Marshal(map[string]interface{}{
+	// 11. Append event + publish (both legacy flat subject and per-schedule SSE subject)
+	completedData := map[string]any{
 		"schedule_id": scheduleID.String(),
 		"score":       result.Score,
 		"is_partial":  result.IsPartial,
-	})
+	}
+	payload, _ := json.Marshal(completedData)
 	_ = h.scheduleRepo.AppendEvent(context.Background(), scheduleID, "Schedule", "ScheduleGenerated", payload)
-	_ = h.publisher.Publish(context.Background(), "timetable.schedule.generated", map[string]interface{}{
-		"schedule_id": scheduleID.String(),
-		"score":       result.Score,
-		"is_partial":  result.IsPartial,
-	})
+	_ = h.publisher.Publish(context.Background(), "timetable.schedule.generated", completedData)
+	h.publishScheduleEvent(scheduleID, "completed", completedData)
 }
 
 func (h *GenerateScheduleHandler) markFailed(scheduleID uuid.UUID, reason string) {
-	// Mark schedule as failed by setting a negative score sentinel
 	_, _ = h.scheduleRepo.UpdateResult(context.Background(), scheduleID, -1, 0, 0)
-	payload, _ := json.Marshal(map[string]string{
+	failedData := map[string]any{
 		"schedule_id": scheduleID.String(),
 		"error":       reason,
-	})
+	}
+	payload, _ := json.Marshal(failedData)
 	_ = h.scheduleRepo.AppendEvent(context.Background(), scheduleID, "Schedule", "ScheduleGenerationFailed", payload)
+	h.publishScheduleEvent(scheduleID, "failed", failedData)
+}
+
+// publishScheduleEvent publishes to per-schedule NATS subject for SSE streaming.
+func (h *GenerateScheduleHandler) publishScheduleEvent(scheduleID uuid.UUID, eventType string, data map[string]any) {
+	subject := fmt.Sprintf("timetable.schedule.%s.%s", scheduleID.String(), eventType)
+	_ = h.publisher.Publish(context.Background(), subject, data)
 }
 
 // buildDomains creates the initial domain (all valid assignments) for each subject variable.

@@ -24,6 +24,12 @@ export const ENDPOINTS = {
     slots: (semesterId: string) => `/timetable/semesters/${semesterId}/slots`,
     schedules: '/timetable/schedules',
     schedule: (id: string) => `/timetable/schedules/${id}`,
+    scheduleStream: (id: string) => `/timetable/schedules/${id}/stream`,
+    suggestTeachers: '/timetable/suggest-teachers',
+    manualAssign: (scheduleId: string, entryId: string) =>
+      `/timetable/schedules/${scheduleId}/entries/${entryId}`,
+    offeredSubjects: (semesterId: string) =>
+      `/timetable/semesters/${semesterId}/offered-subjects`,
   },
   dashboard: {
     stats: '/dashboard/stats',

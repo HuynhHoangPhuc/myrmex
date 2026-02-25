@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/HuynhHoangPhuc/myrmex/pkg/eventstore"
 	pkgnats "github.com/HuynhHoangPhuc/myrmex/pkg/nats"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/command"
@@ -70,6 +71,13 @@ func main() {
 	} else {
 		defer nc.Close()
 		publisher = pkgnats.NewPublisher(js)
+		// Ensure TIMETABLE stream exists for SSE subscriptions
+		if _, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
+			Name:     "TIMETABLE",
+			Subjects: []string{"timetable.schedule.>"},
+		}); err != nil {
+			zapLog.Warn("create TIMETABLE stream failed", zap.Error(err))
+		}
 		zapLog.Info("connected to NATS")
 	}
 
@@ -103,7 +111,11 @@ func main() {
 	defer gatewayProxy.Close()
 	moduleHandler := httpif.NewModuleHandler(registerModuleHandler, listModulesHandler, gatewayProxy)
 
-	// 10a. AI Chat: LLM provider + tool registry + executor + handler
+	// 10a. Module gRPC client connections (graceful — nil if unavailable)
+	modHandlers := buildModuleHandlers(v, js, zapLog)
+	defer modHandlers.Close()
+
+	// 10b. AI Chat: LLM provider + tool registry + executor + handler
 	llmProvider := buildLLMProvider(v)
 	toolRegistry := agent.NewToolRegistry()
 	toolRegistry.Register(agent.DefaultTools)
@@ -113,13 +125,16 @@ func main() {
 
 	// 11. Router
 	router := httpif.NewRouter(httpif.RouterConfig{
-		AuthHandler:   authHandler,
-		UserHandler:   userHandler,
-		ModuleHandler: moduleHandler,
-		GatewayProxy:  gatewayProxy,
-		ChatHandler:   chatHandler,
-		JWTService:    jwtSvc,
-		Logger:        zapLog,
+		AuthHandler:      authHandler,
+		UserHandler:      userHandler,
+		ModuleHandler:    moduleHandler,
+		GatewayProxy:     gatewayProxy,
+		ChatHandler:      chatHandler,
+		HRHandler:        modHandlers.HR,
+		SubjectHandler:   modHandlers.Subject,
+		TimetableHandler: modHandlers.Timetable,
+		JWTService:       jwtSvc,
+		Logger:           zapLog,
 	})
 
 	// 12. gRPC server (placeholder for module registry)
