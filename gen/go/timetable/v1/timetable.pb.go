@@ -23,16 +23,23 @@ const (
 )
 
 type ScheduleEntry struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	SubjectId     string                 `protobuf:"bytes,2,opt,name=subject_id,json=subjectId,proto3" json:"subject_id,omitempty"`
-	TeacherId     string                 `protobuf:"bytes,3,opt,name=teacher_id,json=teacherId,proto3" json:"teacher_id,omitempty"`
-	DayOfWeek     int32                  `protobuf:"varint,4,opt,name=day_of_week,json=dayOfWeek,proto3" json:"day_of_week,omitempty"`
-	StartPeriod   int32                  `protobuf:"varint,5,opt,name=start_period,json=startPeriod,proto3" json:"start_period,omitempty"`
-	EndPeriod     int32                  `protobuf:"varint,6,opt,name=end_period,json=endPeriod,proto3" json:"end_period,omitempty"`
-	Room          string                 `protobuf:"bytes,7,opt,name=room,proto3" json:"room,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Id          string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	SubjectId   string                 `protobuf:"bytes,2,opt,name=subject_id,json=subjectId,proto3" json:"subject_id,omitempty"`
+	TeacherId   string                 `protobuf:"bytes,3,opt,name=teacher_id,json=teacherId,proto3" json:"teacher_id,omitempty"`
+	DayOfWeek   int32                  `protobuf:"varint,4,opt,name=day_of_week,json=dayOfWeek,proto3" json:"day_of_week,omitempty"`
+	StartPeriod int32                  `protobuf:"varint,5,opt,name=start_period,json=startPeriod,proto3" json:"start_period,omitempty"`
+	EndPeriod   int32                  `protobuf:"varint,6,opt,name=end_period,json=endPeriod,proto3" json:"end_period,omitempty"`
+	Room        string                 `protobuf:"bytes,7,opt,name=room,proto3" json:"room,omitempty"`
+	// Enriched fields populated at write time (migration 007).
+	SubjectName      string `protobuf:"bytes,8,opt,name=subject_name,json=subjectName,proto3" json:"subject_name,omitempty"`
+	SubjectCode      string `protobuf:"bytes,9,opt,name=subject_code,json=subjectCode,proto3" json:"subject_code,omitempty"`
+	TeacherName      string `protobuf:"bytes,10,opt,name=teacher_name,json=teacherName,proto3" json:"teacher_name,omitempty"`
+	RoomName         string `protobuf:"bytes,11,opt,name=room_name,json=roomName,proto3" json:"room_name,omitempty"`
+	IsManualOverride bool   `protobuf:"varint,12,opt,name=is_manual_override,json=isManualOverride,proto3" json:"is_manual_override,omitempty"`
+	DepartmentId     string `protobuf:"bytes,13,opt,name=department_id,json=departmentId,proto3" json:"department_id,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *ScheduleEntry) Reset() {
@@ -114,15 +121,60 @@ func (x *ScheduleEntry) GetRoom() string {
 	return ""
 }
 
+func (x *ScheduleEntry) GetSubjectName() string {
+	if x != nil {
+		return x.SubjectName
+	}
+	return ""
+}
+
+func (x *ScheduleEntry) GetSubjectCode() string {
+	if x != nil {
+		return x.SubjectCode
+	}
+	return ""
+}
+
+func (x *ScheduleEntry) GetTeacherName() string {
+	if x != nil {
+		return x.TeacherName
+	}
+	return ""
+}
+
+func (x *ScheduleEntry) GetRoomName() string {
+	if x != nil {
+		return x.RoomName
+	}
+	return ""
+}
+
+func (x *ScheduleEntry) GetIsManualOverride() bool {
+	if x != nil {
+		return x.IsManualOverride
+	}
+	return false
+}
+
+func (x *ScheduleEntry) GetDepartmentId() string {
+	if x != nil {
+		return x.DepartmentId
+	}
+	return ""
+}
+
 type Schedule struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	SemesterId    string                 `protobuf:"bytes,2,opt,name=semester_id,json=semesterId,proto3" json:"semester_id,omitempty"`
-	Entries       []*ScheduleEntry       `protobuf:"bytes,3,rep,name=entries,proto3" json:"entries,omitempty"`
-	Status        string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	SemesterId     string                 `protobuf:"bytes,2,opt,name=semester_id,json=semesterId,proto3" json:"semester_id,omitempty"`
+	Entries        []*ScheduleEntry       `protobuf:"bytes,3,rep,name=entries,proto3" json:"entries,omitempty"`
+	Status         string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Score          float64                `protobuf:"fixed64,6,opt,name=score,proto3" json:"score,omitempty"`
+	HardViolations int32                  `protobuf:"varint,7,opt,name=hard_violations,json=hardViolations,proto3" json:"hard_violations,omitempty"`
+	SoftViolations float64                `protobuf:"fixed64,8,opt,name=soft_violations,json=softViolations,proto3" json:"soft_violations,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Schedule) Reset() {
@@ -190,6 +242,155 @@ func (x *Schedule) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Schedule) GetScore() float64 {
+	if x != nil {
+		return x.Score
+	}
+	return 0
+}
+
+func (x *Schedule) GetHardViolations() int32 {
+	if x != nil {
+		return x.HardViolations
+	}
+	return 0
+}
+
+func (x *Schedule) GetSoftViolations() float64 {
+	if x != nil {
+		return x.SoftViolations
+	}
+	return 0
+}
+
+type ListSchedulesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SemesterId    string                 `protobuf:"bytes,1,opt,name=semester_id,json=semesterId,proto3" json:"semester_id,omitempty"` // optional; empty = list all
+	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListSchedulesRequest) Reset() {
+	*x = ListSchedulesRequest{}
+	mi := &file_timetable_v1_timetable_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListSchedulesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSchedulesRequest) ProtoMessage() {}
+
+func (x *ListSchedulesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_timetable_v1_timetable_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSchedulesRequest.ProtoReflect.Descriptor instead.
+func (*ListSchedulesRequest) Descriptor() ([]byte, []int) {
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ListSchedulesRequest) GetSemesterId() string {
+	if x != nil {
+		return x.SemesterId
+	}
+	return ""
+}
+
+func (x *ListSchedulesRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListSchedulesRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type ListSchedulesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Schedules     []*Schedule            `protobuf:"bytes,1,rep,name=schedules,proto3" json:"schedules,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	Page          int32                  `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListSchedulesResponse) Reset() {
+	*x = ListSchedulesResponse{}
+	mi := &file_timetable_v1_timetable_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListSchedulesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSchedulesResponse) ProtoMessage() {}
+
+func (x *ListSchedulesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_timetable_v1_timetable_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSchedulesResponse.ProtoReflect.Descriptor instead.
+func (*ListSchedulesResponse) Descriptor() ([]byte, []int) {
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ListSchedulesResponse) GetSchedules() []*Schedule {
+	if x != nil {
+		return x.Schedules
+	}
+	return nil
+}
+
+func (x *ListSchedulesResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *ListSchedulesResponse) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListSchedulesResponse) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
 type GenerateScheduleRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	SemesterId     string                 `protobuf:"bytes,1,opt,name=semester_id,json=semesterId,proto3" json:"semester_id,omitempty"`
@@ -200,7 +401,7 @@ type GenerateScheduleRequest struct {
 
 func (x *GenerateScheduleRequest) Reset() {
 	*x = GenerateScheduleRequest{}
-	mi := &file_timetable_v1_timetable_proto_msgTypes[2]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -212,7 +413,7 @@ func (x *GenerateScheduleRequest) String() string {
 func (*GenerateScheduleRequest) ProtoMessage() {}
 
 func (x *GenerateScheduleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_timetable_v1_timetable_proto_msgTypes[2]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -225,7 +426,7 @@ func (x *GenerateScheduleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateScheduleRequest.ProtoReflect.Descriptor instead.
 func (*GenerateScheduleRequest) Descriptor() ([]byte, []int) {
-	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{2}
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GenerateScheduleRequest) GetSemesterId() string {
@@ -253,7 +454,7 @@ type GenerateScheduleResponse struct {
 
 func (x *GenerateScheduleResponse) Reset() {
 	*x = GenerateScheduleResponse{}
-	mi := &file_timetable_v1_timetable_proto_msgTypes[3]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -265,7 +466,7 @@ func (x *GenerateScheduleResponse) String() string {
 func (*GenerateScheduleResponse) ProtoMessage() {}
 
 func (x *GenerateScheduleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_timetable_v1_timetable_proto_msgTypes[3]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -278,7 +479,7 @@ func (x *GenerateScheduleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateScheduleResponse.ProtoReflect.Descriptor instead.
 func (*GenerateScheduleResponse) Descriptor() ([]byte, []int) {
-	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{3}
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GenerateScheduleResponse) GetSchedule() *Schedule {
@@ -311,7 +512,7 @@ type GetScheduleRequest struct {
 
 func (x *GetScheduleRequest) Reset() {
 	*x = GetScheduleRequest{}
-	mi := &file_timetable_v1_timetable_proto_msgTypes[4]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -323,7 +524,7 @@ func (x *GetScheduleRequest) String() string {
 func (*GetScheduleRequest) ProtoMessage() {}
 
 func (x *GetScheduleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_timetable_v1_timetable_proto_msgTypes[4]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -336,7 +537,7 @@ func (x *GetScheduleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetScheduleRequest.ProtoReflect.Descriptor instead.
 func (*GetScheduleRequest) Descriptor() ([]byte, []int) {
-	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{4}
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetScheduleRequest) GetId() string {
@@ -355,7 +556,7 @@ type GetScheduleResponse struct {
 
 func (x *GetScheduleResponse) Reset() {
 	*x = GetScheduleResponse{}
-	mi := &file_timetable_v1_timetable_proto_msgTypes[5]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -367,7 +568,7 @@ func (x *GetScheduleResponse) String() string {
 func (*GetScheduleResponse) ProtoMessage() {}
 
 func (x *GetScheduleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_timetable_v1_timetable_proto_msgTypes[5]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -380,7 +581,7 @@ func (x *GetScheduleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetScheduleResponse.ProtoReflect.Descriptor instead.
 func (*GetScheduleResponse) Descriptor() ([]byte, []int) {
-	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{5}
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetScheduleResponse) GetSchedule() *Schedule {
@@ -405,7 +606,7 @@ type UpdateScheduleEntryRequest struct {
 
 func (x *UpdateScheduleEntryRequest) Reset() {
 	*x = UpdateScheduleEntryRequest{}
-	mi := &file_timetable_v1_timetable_proto_msgTypes[6]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -417,7 +618,7 @@ func (x *UpdateScheduleEntryRequest) String() string {
 func (*UpdateScheduleEntryRequest) ProtoMessage() {}
 
 func (x *UpdateScheduleEntryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_timetable_v1_timetable_proto_msgTypes[6]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -430,7 +631,7 @@ func (x *UpdateScheduleEntryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateScheduleEntryRequest.ProtoReflect.Descriptor instead.
 func (*UpdateScheduleEntryRequest) Descriptor() ([]byte, []int) {
-	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{6}
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *UpdateScheduleEntryRequest) GetScheduleId() string {
@@ -491,7 +692,7 @@ type UpdateScheduleEntryResponse struct {
 
 func (x *UpdateScheduleEntryResponse) Reset() {
 	*x = UpdateScheduleEntryResponse{}
-	mi := &file_timetable_v1_timetable_proto_msgTypes[7]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -503,7 +704,7 @@ func (x *UpdateScheduleEntryResponse) String() string {
 func (*UpdateScheduleEntryResponse) ProtoMessage() {}
 
 func (x *UpdateScheduleEntryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_timetable_v1_timetable_proto_msgTypes[7]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -516,7 +717,7 @@ func (x *UpdateScheduleEntryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateScheduleEntryResponse.ProtoReflect.Descriptor instead.
 func (*UpdateScheduleEntryResponse) Descriptor() ([]byte, []int) {
-	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{7}
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *UpdateScheduleEntryResponse) GetEntry() *ScheduleEntry {
@@ -538,7 +739,7 @@ type SuggestTeachersRequest struct {
 
 func (x *SuggestTeachersRequest) Reset() {
 	*x = SuggestTeachersRequest{}
-	mi := &file_timetable_v1_timetable_proto_msgTypes[8]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -550,7 +751,7 @@ func (x *SuggestTeachersRequest) String() string {
 func (*SuggestTeachersRequest) ProtoMessage() {}
 
 func (x *SuggestTeachersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_timetable_v1_timetable_proto_msgTypes[8]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -563,7 +764,7 @@ func (x *SuggestTeachersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SuggestTeachersRequest.ProtoReflect.Descriptor instead.
 func (*SuggestTeachersRequest) Descriptor() ([]byte, []int) {
-	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{8}
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SuggestTeachersRequest) GetSubjectId() string {
@@ -603,7 +804,7 @@ type SuggestTeachersResponse struct {
 
 func (x *SuggestTeachersResponse) Reset() {
 	*x = SuggestTeachersResponse{}
-	mi := &file_timetable_v1_timetable_proto_msgTypes[9]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -615,7 +816,7 @@ func (x *SuggestTeachersResponse) String() string {
 func (*SuggestTeachersResponse) ProtoMessage() {}
 
 func (x *SuggestTeachersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_timetable_v1_timetable_proto_msgTypes[9]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -628,7 +829,7 @@ func (x *SuggestTeachersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SuggestTeachersResponse.ProtoReflect.Descriptor instead.
 func (*SuggestTeachersResponse) Descriptor() ([]byte, []int) {
-	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{9}
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *SuggestTeachersResponse) GetSuggestions() []*TeacherSuggestion {
@@ -649,7 +850,7 @@ type TeacherSuggestion struct {
 
 func (x *TeacherSuggestion) Reset() {
 	*x = TeacherSuggestion{}
-	mi := &file_timetable_v1_timetable_proto_msgTypes[10]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -661,7 +862,7 @@ func (x *TeacherSuggestion) String() string {
 func (*TeacherSuggestion) ProtoMessage() {}
 
 func (x *TeacherSuggestion) ProtoReflect() protoreflect.Message {
-	mi := &file_timetable_v1_timetable_proto_msgTypes[10]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -674,7 +875,7 @@ func (x *TeacherSuggestion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TeacherSuggestion.ProtoReflect.Descriptor instead.
 func (*TeacherSuggestion) Descriptor() ([]byte, []int) {
-	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{10}
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *TeacherSuggestion) GetTeacherId() string {
@@ -709,7 +910,7 @@ type ManualAssignRequest struct {
 
 func (x *ManualAssignRequest) Reset() {
 	*x = ManualAssignRequest{}
-	mi := &file_timetable_v1_timetable_proto_msgTypes[11]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -721,7 +922,7 @@ func (x *ManualAssignRequest) String() string {
 func (*ManualAssignRequest) ProtoMessage() {}
 
 func (x *ManualAssignRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_timetable_v1_timetable_proto_msgTypes[11]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -734,7 +935,7 @@ func (x *ManualAssignRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManualAssignRequest.ProtoReflect.Descriptor instead.
 func (*ManualAssignRequest) Descriptor() ([]byte, []int) {
-	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{11}
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ManualAssignRequest) GetScheduleId() string {
@@ -767,7 +968,7 @@ type ManualAssignResponse struct {
 
 func (x *ManualAssignResponse) Reset() {
 	*x = ManualAssignResponse{}
-	mi := &file_timetable_v1_timetable_proto_msgTypes[12]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -779,7 +980,7 @@ func (x *ManualAssignResponse) String() string {
 func (*ManualAssignResponse) ProtoMessage() {}
 
 func (x *ManualAssignResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_timetable_v1_timetable_proto_msgTypes[12]
+	mi := &file_timetable_v1_timetable_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -792,7 +993,7 @@ func (x *ManualAssignResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManualAssignResponse.ProtoReflect.Descriptor instead.
 func (*ManualAssignResponse) Descriptor() ([]byte, []int) {
-	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{12}
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ManualAssignResponse) GetEntry() *ScheduleEntry {
@@ -806,7 +1007,7 @@ var File_timetable_v1_timetable_proto protoreflect.FileDescriptor
 
 const file_timetable_v1_timetable_proto_rawDesc = "" +
 	"\n" +
-	"\x1ctimetable/v1/timetable.proto\x12\ftimetable.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd3\x01\n" +
+	"\x1ctimetable/v1/timetable.proto\x12\ftimetable.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xac\x03\n" +
 	"\rScheduleEntry\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -817,7 +1018,14 @@ const file_timetable_v1_timetable_proto_rawDesc = "" +
 	"\fstart_period\x18\x05 \x01(\x05R\vstartPeriod\x12\x1d\n" +
 	"\n" +
 	"end_period\x18\x06 \x01(\x05R\tendPeriod\x12\x12\n" +
-	"\x04room\x18\a \x01(\tR\x04room\"\xc5\x01\n" +
+	"\x04room\x18\a \x01(\tR\x04room\x12!\n" +
+	"\fsubject_name\x18\b \x01(\tR\vsubjectName\x12!\n" +
+	"\fsubject_code\x18\t \x01(\tR\vsubjectCode\x12!\n" +
+	"\fteacher_name\x18\n" +
+	" \x01(\tR\vteacherName\x12\x1b\n" +
+	"\troom_name\x18\v \x01(\tR\broomName\x12,\n" +
+	"\x12is_manual_override\x18\f \x01(\bR\x10isManualOverride\x12#\n" +
+	"\rdepartment_id\x18\r \x01(\tR\fdepartmentId\"\xad\x02\n" +
 	"\bSchedule\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vsemester_id\x18\x02 \x01(\tR\n" +
@@ -825,7 +1033,20 @@ const file_timetable_v1_timetable_proto_rawDesc = "" +
 	"\aentries\x18\x03 \x03(\v2\x1b.timetable.v1.ScheduleEntryR\aentries\x12\x16\n" +
 	"\x06status\x18\x04 \x01(\tR\x06status\x129\n" +
 	"\n" +
-	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"c\n" +
+	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x14\n" +
+	"\x05score\x18\x06 \x01(\x01R\x05score\x12'\n" +
+	"\x0fhard_violations\x18\a \x01(\x05R\x0ehardViolations\x12'\n" +
+	"\x0fsoft_violations\x18\b \x01(\x01R\x0esoftViolations\"h\n" +
+	"\x14ListSchedulesRequest\x12\x1f\n" +
+	"\vsemester_id\x18\x01 \x01(\tR\n" +
+	"semesterId\x12\x12\n" +
+	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"\x94\x01\n" +
+	"\x15ListSchedulesResponse\x124\n" +
+	"\tschedules\x18\x01 \x03(\v2\x16.timetable.v1.ScheduleR\tschedules\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\x12\x12\n" +
+	"\x04page\x18\x03 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\"c\n" +
 	"\x17GenerateScheduleRequest\x12\x1f\n" +
 	"\vsemester_id\x18\x01 \x01(\tR\n" +
 	"semesterId\x12'\n" +
@@ -878,10 +1099,11 @@ const file_timetable_v1_timetable_proto_rawDesc = "" +
 	"\n" +
 	"teacher_id\x18\x03 \x01(\tR\tteacherId\"I\n" +
 	"\x14ManualAssignResponse\x121\n" +
-	"\x05entry\x18\x01 \x01(\v2\x1b.timetable.v1.ScheduleEntryR\x05entry2\xec\x03\n" +
+	"\x05entry\x18\x01 \x01(\v2\x1b.timetable.v1.ScheduleEntryR\x05entry2\xc6\x04\n" +
 	"\x10TimetableService\x12a\n" +
 	"\x10GenerateSchedule\x12%.timetable.v1.GenerateScheduleRequest\x1a&.timetable.v1.GenerateScheduleResponse\x12R\n" +
-	"\vGetSchedule\x12 .timetable.v1.GetScheduleRequest\x1a!.timetable.v1.GetScheduleResponse\x12j\n" +
+	"\vGetSchedule\x12 .timetable.v1.GetScheduleRequest\x1a!.timetable.v1.GetScheduleResponse\x12X\n" +
+	"\rListSchedules\x12\".timetable.v1.ListSchedulesRequest\x1a#.timetable.v1.ListSchedulesResponse\x12j\n" +
 	"\x13UpdateScheduleEntry\x12(.timetable.v1.UpdateScheduleEntryRequest\x1a).timetable.v1.UpdateScheduleEntryResponse\x12^\n" +
 	"\x0fSuggestTeachers\x12$.timetable.v1.SuggestTeachersRequest\x1a%.timetable.v1.SuggestTeachersResponse\x12U\n" +
 	"\fManualAssign\x12!.timetable.v1.ManualAssignRequest\x1a\".timetable.v1.ManualAssignResponseBBZ@github.com/HuynhHoangPhuc/myrmex/gen/go/timetable/v1;timetablev1b\x06proto3"
@@ -898,46 +1120,51 @@ func file_timetable_v1_timetable_proto_rawDescGZIP() []byte {
 	return file_timetable_v1_timetable_proto_rawDescData
 }
 
-var file_timetable_v1_timetable_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_timetable_v1_timetable_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_timetable_v1_timetable_proto_goTypes = []any{
 	(*ScheduleEntry)(nil),               // 0: timetable.v1.ScheduleEntry
 	(*Schedule)(nil),                    // 1: timetable.v1.Schedule
-	(*GenerateScheduleRequest)(nil),     // 2: timetable.v1.GenerateScheduleRequest
-	(*GenerateScheduleResponse)(nil),    // 3: timetable.v1.GenerateScheduleResponse
-	(*GetScheduleRequest)(nil),          // 4: timetable.v1.GetScheduleRequest
-	(*GetScheduleResponse)(nil),         // 5: timetable.v1.GetScheduleResponse
-	(*UpdateScheduleEntryRequest)(nil),  // 6: timetable.v1.UpdateScheduleEntryRequest
-	(*UpdateScheduleEntryResponse)(nil), // 7: timetable.v1.UpdateScheduleEntryResponse
-	(*SuggestTeachersRequest)(nil),      // 8: timetable.v1.SuggestTeachersRequest
-	(*SuggestTeachersResponse)(nil),     // 9: timetable.v1.SuggestTeachersResponse
-	(*TeacherSuggestion)(nil),           // 10: timetable.v1.TeacherSuggestion
-	(*ManualAssignRequest)(nil),         // 11: timetable.v1.ManualAssignRequest
-	(*ManualAssignResponse)(nil),        // 12: timetable.v1.ManualAssignResponse
-	(*timestamppb.Timestamp)(nil),       // 13: google.protobuf.Timestamp
+	(*ListSchedulesRequest)(nil),        // 2: timetable.v1.ListSchedulesRequest
+	(*ListSchedulesResponse)(nil),       // 3: timetable.v1.ListSchedulesResponse
+	(*GenerateScheduleRequest)(nil),     // 4: timetable.v1.GenerateScheduleRequest
+	(*GenerateScheduleResponse)(nil),    // 5: timetable.v1.GenerateScheduleResponse
+	(*GetScheduleRequest)(nil),          // 6: timetable.v1.GetScheduleRequest
+	(*GetScheduleResponse)(nil),         // 7: timetable.v1.GetScheduleResponse
+	(*UpdateScheduleEntryRequest)(nil),  // 8: timetable.v1.UpdateScheduleEntryRequest
+	(*UpdateScheduleEntryResponse)(nil), // 9: timetable.v1.UpdateScheduleEntryResponse
+	(*SuggestTeachersRequest)(nil),      // 10: timetable.v1.SuggestTeachersRequest
+	(*SuggestTeachersResponse)(nil),     // 11: timetable.v1.SuggestTeachersResponse
+	(*TeacherSuggestion)(nil),           // 12: timetable.v1.TeacherSuggestion
+	(*ManualAssignRequest)(nil),         // 13: timetable.v1.ManualAssignRequest
+	(*ManualAssignResponse)(nil),        // 14: timetable.v1.ManualAssignResponse
+	(*timestamppb.Timestamp)(nil),       // 15: google.protobuf.Timestamp
 }
 var file_timetable_v1_timetable_proto_depIdxs = []int32{
 	0,  // 0: timetable.v1.Schedule.entries:type_name -> timetable.v1.ScheduleEntry
-	13, // 1: timetable.v1.Schedule.created_at:type_name -> google.protobuf.Timestamp
-	1,  // 2: timetable.v1.GenerateScheduleResponse.schedule:type_name -> timetable.v1.Schedule
-	1,  // 3: timetable.v1.GetScheduleResponse.schedule:type_name -> timetable.v1.Schedule
-	0,  // 4: timetable.v1.UpdateScheduleEntryResponse.entry:type_name -> timetable.v1.ScheduleEntry
-	10, // 5: timetable.v1.SuggestTeachersResponse.suggestions:type_name -> timetable.v1.TeacherSuggestion
-	0,  // 6: timetable.v1.ManualAssignResponse.entry:type_name -> timetable.v1.ScheduleEntry
-	2,  // 7: timetable.v1.TimetableService.GenerateSchedule:input_type -> timetable.v1.GenerateScheduleRequest
-	4,  // 8: timetable.v1.TimetableService.GetSchedule:input_type -> timetable.v1.GetScheduleRequest
-	6,  // 9: timetable.v1.TimetableService.UpdateScheduleEntry:input_type -> timetable.v1.UpdateScheduleEntryRequest
-	8,  // 10: timetable.v1.TimetableService.SuggestTeachers:input_type -> timetable.v1.SuggestTeachersRequest
-	11, // 11: timetable.v1.TimetableService.ManualAssign:input_type -> timetable.v1.ManualAssignRequest
-	3,  // 12: timetable.v1.TimetableService.GenerateSchedule:output_type -> timetable.v1.GenerateScheduleResponse
-	5,  // 13: timetable.v1.TimetableService.GetSchedule:output_type -> timetable.v1.GetScheduleResponse
-	7,  // 14: timetable.v1.TimetableService.UpdateScheduleEntry:output_type -> timetable.v1.UpdateScheduleEntryResponse
-	9,  // 15: timetable.v1.TimetableService.SuggestTeachers:output_type -> timetable.v1.SuggestTeachersResponse
-	12, // 16: timetable.v1.TimetableService.ManualAssign:output_type -> timetable.v1.ManualAssignResponse
-	12, // [12:17] is the sub-list for method output_type
-	7,  // [7:12] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	15, // 1: timetable.v1.Schedule.created_at:type_name -> google.protobuf.Timestamp
+	1,  // 2: timetable.v1.ListSchedulesResponse.schedules:type_name -> timetable.v1.Schedule
+	1,  // 3: timetable.v1.GenerateScheduleResponse.schedule:type_name -> timetable.v1.Schedule
+	1,  // 4: timetable.v1.GetScheduleResponse.schedule:type_name -> timetable.v1.Schedule
+	0,  // 5: timetable.v1.UpdateScheduleEntryResponse.entry:type_name -> timetable.v1.ScheduleEntry
+	12, // 6: timetable.v1.SuggestTeachersResponse.suggestions:type_name -> timetable.v1.TeacherSuggestion
+	0,  // 7: timetable.v1.ManualAssignResponse.entry:type_name -> timetable.v1.ScheduleEntry
+	4,  // 8: timetable.v1.TimetableService.GenerateSchedule:input_type -> timetable.v1.GenerateScheduleRequest
+	6,  // 9: timetable.v1.TimetableService.GetSchedule:input_type -> timetable.v1.GetScheduleRequest
+	2,  // 10: timetable.v1.TimetableService.ListSchedules:input_type -> timetable.v1.ListSchedulesRequest
+	8,  // 11: timetable.v1.TimetableService.UpdateScheduleEntry:input_type -> timetable.v1.UpdateScheduleEntryRequest
+	10, // 12: timetable.v1.TimetableService.SuggestTeachers:input_type -> timetable.v1.SuggestTeachersRequest
+	13, // 13: timetable.v1.TimetableService.ManualAssign:input_type -> timetable.v1.ManualAssignRequest
+	5,  // 14: timetable.v1.TimetableService.GenerateSchedule:output_type -> timetable.v1.GenerateScheduleResponse
+	7,  // 15: timetable.v1.TimetableService.GetSchedule:output_type -> timetable.v1.GetScheduleResponse
+	3,  // 16: timetable.v1.TimetableService.ListSchedules:output_type -> timetable.v1.ListSchedulesResponse
+	9,  // 17: timetable.v1.TimetableService.UpdateScheduleEntry:output_type -> timetable.v1.UpdateScheduleEntryResponse
+	11, // 18: timetable.v1.TimetableService.SuggestTeachers:output_type -> timetable.v1.SuggestTeachersResponse
+	14, // 19: timetable.v1.TimetableService.ManualAssign:output_type -> timetable.v1.ManualAssignResponse
+	14, // [14:20] is the sub-list for method output_type
+	8,  // [8:14] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_timetable_v1_timetable_proto_init() }
@@ -945,14 +1172,14 @@ func file_timetable_v1_timetable_proto_init() {
 	if File_timetable_v1_timetable_proto != nil {
 		return
 	}
-	file_timetable_v1_timetable_proto_msgTypes[6].OneofWrappers = []any{}
+	file_timetable_v1_timetable_proto_msgTypes[8].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_timetable_v1_timetable_proto_rawDesc), len(file_timetable_v1_timetable_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

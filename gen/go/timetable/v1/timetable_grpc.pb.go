@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	TimetableService_GenerateSchedule_FullMethodName    = "/timetable.v1.TimetableService/GenerateSchedule"
 	TimetableService_GetSchedule_FullMethodName         = "/timetable.v1.TimetableService/GetSchedule"
+	TimetableService_ListSchedules_FullMethodName       = "/timetable.v1.TimetableService/ListSchedules"
 	TimetableService_UpdateScheduleEntry_FullMethodName = "/timetable.v1.TimetableService/UpdateScheduleEntry"
 	TimetableService_SuggestTeachers_FullMethodName     = "/timetable.v1.TimetableService/SuggestTeachers"
 	TimetableService_ManualAssign_FullMethodName        = "/timetable.v1.TimetableService/ManualAssign"
@@ -32,6 +33,7 @@ const (
 type TimetableServiceClient interface {
 	GenerateSchedule(ctx context.Context, in *GenerateScheduleRequest, opts ...grpc.CallOption) (*GenerateScheduleResponse, error)
 	GetSchedule(ctx context.Context, in *GetScheduleRequest, opts ...grpc.CallOption) (*GetScheduleResponse, error)
+	ListSchedules(ctx context.Context, in *ListSchedulesRequest, opts ...grpc.CallOption) (*ListSchedulesResponse, error)
 	UpdateScheduleEntry(ctx context.Context, in *UpdateScheduleEntryRequest, opts ...grpc.CallOption) (*UpdateScheduleEntryResponse, error)
 	SuggestTeachers(ctx context.Context, in *SuggestTeachersRequest, opts ...grpc.CallOption) (*SuggestTeachersResponse, error)
 	ManualAssign(ctx context.Context, in *ManualAssignRequest, opts ...grpc.CallOption) (*ManualAssignResponse, error)
@@ -59,6 +61,16 @@ func (c *timetableServiceClient) GetSchedule(ctx context.Context, in *GetSchedul
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetScheduleResponse)
 	err := c.cc.Invoke(ctx, TimetableService_GetSchedule_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *timetableServiceClient) ListSchedules(ctx context.Context, in *ListSchedulesRequest, opts ...grpc.CallOption) (*ListSchedulesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSchedulesResponse)
+	err := c.cc.Invoke(ctx, TimetableService_ListSchedules_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -101,6 +113,7 @@ func (c *timetableServiceClient) ManualAssign(ctx context.Context, in *ManualAss
 type TimetableServiceServer interface {
 	GenerateSchedule(context.Context, *GenerateScheduleRequest) (*GenerateScheduleResponse, error)
 	GetSchedule(context.Context, *GetScheduleRequest) (*GetScheduleResponse, error)
+	ListSchedules(context.Context, *ListSchedulesRequest) (*ListSchedulesResponse, error)
 	UpdateScheduleEntry(context.Context, *UpdateScheduleEntryRequest) (*UpdateScheduleEntryResponse, error)
 	SuggestTeachers(context.Context, *SuggestTeachersRequest) (*SuggestTeachersResponse, error)
 	ManualAssign(context.Context, *ManualAssignRequest) (*ManualAssignResponse, error)
@@ -119,6 +132,9 @@ func (UnimplementedTimetableServiceServer) GenerateSchedule(context.Context, *Ge
 }
 func (UnimplementedTimetableServiceServer) GetSchedule(context.Context, *GetScheduleRequest) (*GetScheduleResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSchedule not implemented")
+}
+func (UnimplementedTimetableServiceServer) ListSchedules(context.Context, *ListSchedulesRequest) (*ListSchedulesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListSchedules not implemented")
 }
 func (UnimplementedTimetableServiceServer) UpdateScheduleEntry(context.Context, *UpdateScheduleEntryRequest) (*UpdateScheduleEntryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateScheduleEntry not implemented")
@@ -182,6 +198,24 @@ func _TimetableService_GetSchedule_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TimetableServiceServer).GetSchedule(ctx, req.(*GetScheduleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TimetableService_ListSchedules_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSchedulesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TimetableServiceServer).ListSchedules(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TimetableService_ListSchedules_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TimetableServiceServer).ListSchedules(ctx, req.(*ListSchedulesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -254,6 +288,10 @@ var TimetableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSchedule",
 			Handler:    _TimetableService_GetSchedule_Handler,
+		},
+		{
+			MethodName: "ListSchedules",
+			Handler:    _TimetableService_ListSchedules_Handler,
 		},
 		{
 			MethodName: "UpdateScheduleEntry",

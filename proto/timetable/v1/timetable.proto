@@ -7,6 +7,7 @@ import "google/protobuf/timestamp.proto";
 service TimetableService {
   rpc GenerateSchedule(GenerateScheduleRequest) returns (GenerateScheduleResponse);
   rpc GetSchedule(GetScheduleRequest) returns (GetScheduleResponse);
+  rpc ListSchedules(ListSchedulesRequest) returns (ListSchedulesResponse);
   rpc UpdateScheduleEntry(UpdateScheduleEntryRequest) returns (UpdateScheduleEntryResponse);
   rpc SuggestTeachers(SuggestTeachersRequest) returns (SuggestTeachersResponse);
   rpc ManualAssign(ManualAssignRequest) returns (ManualAssignResponse);
@@ -20,6 +21,13 @@ message ScheduleEntry {
   int32 start_period = 5;
   int32 end_period = 6;
   string room = 7;
+  // Enriched fields populated at write time (migration 007).
+  string subject_name = 8;
+  string subject_code = 9;
+  string teacher_name = 10;
+  string room_name = 11;
+  bool is_manual_override = 12;
+  string department_id = 13;
 }
 
 message Schedule {
@@ -28,6 +36,22 @@ message Schedule {
   repeated ScheduleEntry entries = 3;
   string status = 4;
   google.protobuf.Timestamp created_at = 5;
+  double score = 6;
+  int32 hard_violations = 7;
+  double soft_violations = 8;
+}
+
+message ListSchedulesRequest {
+  string semester_id = 1; // optional; empty = list all
+  int32  page        = 2;
+  int32  page_size   = 3;
+}
+
+message ListSchedulesResponse {
+  repeated Schedule schedules = 1;
+  int32             total     = 2;
+  int32             page      = 3;
+  int32             page_size = 4;
 }
 
 message GenerateScheduleRequest {
