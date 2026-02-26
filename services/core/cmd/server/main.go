@@ -197,7 +197,7 @@ func main() {
 // Defaults to OpenAI-compatible if llm.provider is not set.
 // Config keys:
 //
-//	llm.provider  = "openai" | "claude"
+//	llm.provider  = "openai" | "claude" | "gemini"
 //	llm.api_key   = API key
 //	llm.model     = model name
 //	llm.base_url  = base URL (optional, for OpenAI-compat endpoints like Ollama)
@@ -213,6 +213,11 @@ func buildLLMProvider(v *viper.Viper) llm.LLMProvider {
 			model = "claude-haiku-4-5"
 		}
 		return llm.NewClaudeProvider(apiKey, model)
+	case "gemini":
+		if model == "" {
+			model = "gemini-2.0-flash"
+		}
+		return llm.NewGeminiProvider(apiKey, model)
 	default: // "openai" or any OpenAI-compatible
 		if model == "" {
 			model = "gpt-4o-mini"

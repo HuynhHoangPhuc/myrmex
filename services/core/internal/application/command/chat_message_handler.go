@@ -89,8 +89,9 @@ func (h *ChatMessageHandler) Handle(ctx context.Context, userMsg string, history
 				return
 			}
 
-			// Append assistant turn with tool calls to history
-			msgs = append(msgs, llm.Message{Role: "assistant", Content: resp.Content})
+			// Append assistant turn with tool calls to history.
+			// ToolCalls is stored so providers like Gemini can reconstruct functionCall parts.
+			msgs = append(msgs, llm.Message{Role: "assistant", Content: resp.Content, ToolCalls: resp.ToolCalls})
 
 			// Execute each tool call, emit progress events, append results
 			for _, tc := range resp.ToolCalls {

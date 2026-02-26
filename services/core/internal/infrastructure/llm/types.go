@@ -15,6 +15,9 @@ type Message struct {
 	Content string
 	// ToolCallID is set for tool_result messages linking back to the tool call.
 	ToolCallID string
+	// ToolCalls is set on assistant messages that triggered tool calls.
+	// Used by providers (e.g. Gemini) that need explicit functionCall parts in history.
+	ToolCalls []ToolCall
 }
 
 // Tool represents a tool definition available to the LLM.
@@ -29,6 +32,9 @@ type ToolCall struct {
 	ID        string
 	ToolName  string
 	Arguments json.RawMessage
+	// ProviderMeta carries provider-specific metadata that must be preserved
+	// for correct history replay (e.g. Gemini's thoughtSignature).
+	ProviderMeta map[string]string
 }
 
 // ToolCallResponse is returned when the LLM responds with tool calls or text.

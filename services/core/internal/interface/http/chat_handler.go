@@ -1,14 +1,13 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
-	"github.com/coder/websocket"
-	"github.com/coder/websocket/wsjson"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/command"
@@ -20,6 +19,16 @@ const (
 	wsWriteTimeout  = 10 * time.Second
 	maxConvMessages = 40 // keep last 40 messages per session (in-memory)
 )
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		// Allow localhost origins for development
+		origin := r.Header.Get("Origin")
+		return origin == "" ||
+			strings.HasPrefix(origin, "http://localhost") ||
+			strings.HasPrefix(origin, "http://127.0.0.")
+	},
+}
 
 // wsClientMessage is received from the browser over WebSocket.
 type wsClientMessage struct {
@@ -71,14 +80,13 @@ func (h *ChatHandler) HandleWebSocket(c *gin.Context) {
 		return
 	}
 
-	conn, err := websocket.Accept(c.Writer, c.Request, &websocket.AcceptOptions{
-		OriginPatterns: []string{"localhost:*", "127.0.0.1:*"},
-	})
+	// gorilla/websocket hijacks before writing headers — compatible with Gin
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		h.log.Warn("websocket upgrade failed", zap.Error(err))
 		return
 	}
-	defer conn.CloseNow()
+	defer conn.Close()
 
 	h.log.Info("chat session started",
 		zap.String("user_id", claims.UserID),
@@ -91,8 +99,8 @@ func (h *ChatHandler) HandleWebSocket(c *gin.Context) {
 
 	for {
 		var clientMsg wsClientMessage
-		if err := wsjson.Read(baseCtx, conn, &clientMsg); err != nil {
-			if websocket.CloseStatus(err) != -1 {
+		if err := conn.ReadJSON(&clientMsg); err != nil {
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
 				h.log.Debug("client disconnected", zap.String("user_id", claims.UserID))
 			} else {
 				h.log.Warn("ws read error", zap.String("user_id", claims.UserID), zap.Error(err))
@@ -111,14 +119,14 @@ func (h *ChatHandler) HandleWebSocket(c *gin.Context) {
 
 		events, err := h.chatHandler.Handle(baseCtx, clientMsg.Content, history)
 		if err != nil {
-			_ = h.writeEvent(baseCtx, conn, wsServerEvent{Type: "error", Content: err.Error()})
+			_ = h.writeEvent(conn, wsServerEvent{Type: "error", Content: err.Error()})
 			continue
 		}
 
 		var assistantReply string
 		for event := range events {
 			ev := mapToWireEvent(event)
-			if writeErr := h.writeEvent(baseCtx, conn, ev); writeErr != nil {
+			if writeErr := h.writeEvent(conn, ev); writeErr != nil {
 				h.log.Warn("ws write error", zap.Error(writeErr))
 				return
 			}
@@ -133,10 +141,9 @@ func (h *ChatHandler) HandleWebSocket(c *gin.Context) {
 }
 
 // writeEvent sends a single JSON event to the WebSocket client with a write deadline.
-func (h *ChatHandler) writeEvent(parent context.Context, conn *websocket.Conn, ev wsServerEvent) error {
-	ctx, cancel := context.WithTimeout(parent, wsWriteTimeout)
-	defer cancel()
-	return wsjson.Write(ctx, conn, ev)
+func (h *ChatHandler) writeEvent(conn *websocket.Conn, ev wsServerEvent) error {
+	conn.SetWriteDeadline(time.Now().Add(wsWriteTimeout))
+	return conn.WriteJSON(ev)
 }
 
 // mapToWireEvent converts an internal LLM stream event to the WebSocket wire format.
@@ -180,3 +187,4 @@ func truncate(s string, n int) string {
 	}
 	return string(runes[:n]) + "…"
 }
+
