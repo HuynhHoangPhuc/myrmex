@@ -1,52 +1,57 @@
 import * as React from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api/client'
+import { ENDPOINTS } from '@/lib/api/endpoints'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { useAllSubjects } from '../hooks/use-subjects'
-import { useAllSemesters } from '@/modules/timetable/hooks/use-semesters'
-import type { SemesterOffering } from '../types'
+import { useAllSemesters, useSemester } from '@/modules/timetable/hooks/use-semesters'
 
-// Fetch current offerings for a semester
-function useOfferings(semesterId: string) {
-  return useQuery({
-    queryKey: ['offerings', semesterId] as const,
-    queryFn: async () => {
-      const { data } = await apiClient.get<SemesterOffering[]>(
-        `/timetable/semesters/${semesterId}/offerings`,
-      )
-      return data
-    },
-    enabled: Boolean(semesterId),
-  })
-}
-
-function useSaveOfferings(semesterId: string) {
+// Add a single subject offering to a semester
+function useAddOffering(semesterId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (subjectIds: string[]) => {
-      await apiClient.put(`/timetable/semesters/${semesterId}/offerings`, { subject_ids: subjectIds })
+    mutationFn: async (subjectId: string) => {
+      await apiClient.post(ENDPOINTS.timetable.offeredSubjects(semesterId), { subject_id: subjectId })
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['offerings', semesterId] })
+      void qc.invalidateQueries({ queryKey: ['semesters', semesterId] })
     },
   })
 }
 
-// Checkbox grid to toggle which subjects are offered in a semester
+// Remove a single subject offering from a semester
+function useRemoveOffering(semesterId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (subjectId: string) => {
+      await apiClient.delete(`${ENDPOINTS.timetable.offeredSubjects(semesterId)}/${subjectId}`)
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['semesters', semesterId] })
+    },
+  })
+}
+
+// Checkbox grid to toggle which subjects are offered in a semester.
+// Uses per-item add/remove since backend has no bulk update endpoint.
 export function OfferingManager() {
   const { data: semesters = [] } = useAllSemesters()
   const { data: subjects = [] } = useAllSubjects()
   const [selectedSemesterId, setSelectedSemesterId] = React.useState('')
-  const { data: offerings = [], isLoading: loadingOfferings } = useOfferings(selectedSemesterId)
-  const saveOfferings = useSaveOfferings(selectedSemesterId)
 
+  const { data: semester, isLoading: loadingSemester } = useSemester(selectedSemesterId)
+  const currentOfferings = semester?.offered_subject_ids ?? []
+
+  // Local checkbox state — initialized from server data
   const [checkedIds, setCheckedIds] = React.useState<Set<string>>(new Set())
-
-  // Sync checkbox state when offerings load
   React.useEffect(() => {
-    setCheckedIds(new Set(offerings.map((o) => o.subject_id)))
-  }, [offerings])
+    setCheckedIds(new Set(currentOfferings))
+  }, [currentOfferings.join(',')])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  const addOffering = useAddOffering(selectedSemesterId)
+  const removeOffering = useRemoveOffering(selectedSemesterId)
+  const isSaving = addOffering.isPending || removeOffering.isPending
 
   function toggle(subjectId: string) {
     setCheckedIds((prev) => {
@@ -56,8 +61,14 @@ export function OfferingManager() {
     })
   }
 
-  function handleSave() {
-    saveOfferings.mutate(Array.from(checkedIds))
+  async function handleSave() {
+    const current = new Set(currentOfferings)
+    const desired = checkedIds
+    const toAdd = [...desired].filter((id) => !current.has(id))
+    const toRemove = [...current].filter((id) => !desired.has(id))
+    // Sequential to avoid race conditions on the server
+    for (const id of toAdd) await addOffering.mutateAsync(id)
+    for (const id of toRemove) await removeOffering.mutateAsync(id)
   }
 
   return (
@@ -80,9 +91,9 @@ export function OfferingManager() {
         <p className="text-sm text-muted-foreground">Select a semester to manage subject offerings.</p>
       )}
 
-      {selectedSemesterId && loadingOfferings && <LoadingSpinner />}
+      {selectedSemesterId && loadingSemester && <LoadingSpinner />}
 
-      {selectedSemesterId && !loadingOfferings && (
+      {selectedSemesterId && !loadingSemester && (
         <>
           <div className="rounded-md border divide-y max-h-[480px] overflow-y-auto">
             {subjects.map((s) => (
@@ -102,8 +113,8 @@ export function OfferingManager() {
 
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">{checkedIds.size} subject(s) offered</p>
-            <Button size="sm" onClick={handleSave} disabled={saveOfferings.isPending}>
-              {saveOfferings.isPending && <LoadingSpinner size="sm" className="mr-2" />}
+            <Button size="sm" onClick={handleSave} disabled={isSaving}>
+              {isSaving && <LoadingSpinner size="sm" className="mr-2" />}
               Save Offerings
             </Button>
           </div>
