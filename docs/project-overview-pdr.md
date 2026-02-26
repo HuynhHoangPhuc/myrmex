@@ -157,13 +157,15 @@ Create an extensible, AI-native ERP that lets institutions operate via conversat
 ## Acceptance Criteria
 
 ### Phase 1 (MVP) - University Faculty Management
-- [ ] All FR-1 through FR-10 implemented and tested
-- [ ] Frontend UI complete for all modules (departments, teachers, subjects, semesters, schedules)
-- [ ] Docker Compose local dev environment fully functional
-- [ ] CI/CD pipeline: proto lint, build, test on PR
-- [ ] Documentation: code standards, system architecture, deployment guide, API docs
-- [ ] Seed data: sample departments, subjects, prerequisites, teachers
-- [ ] E2E test: register → login → create subject → assign teacher → generate schedule
+- [x] All FR-1 through FR-10 implemented and tested
+- [x] Frontend UI complete for all modules (departments, teachers, subjects, semesters, schedules)
+- [x] Docker Compose local dev environment fully functional
+- [x] CI/CD pipeline: proto lint, build, test on PR
+- [x] Documentation: code standards, system architecture, deployment guide, API docs
+- [x] Seed data: sample departments, subjects, prerequisites, teachers
+- [x] E2E test: register → login → create subject → assign teacher → generate schedule
+- [x] API response format standardization (Feb 26)
+- [x] Proto field additions for enriched entity models (Feb 26)
 
 ### Phase 2 (Post-MVP) - Analytics & Reporting
 - [ ] Workload analytics: hours per teacher, utilization metrics

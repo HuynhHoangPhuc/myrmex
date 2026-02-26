@@ -23,7 +23,8 @@ Myrmex is a microservice architecture with modular services communicating via gR
 │  │  ├─ POST /api/auth/register        → AuthService gRPC         │   │
 │  │  ├─ POST /api/auth/login           → AuthService gRPC         │   │
 │  │  ├─ POST /api/auth/refresh         → AuthService gRPC         │   │
-│  │  ├─ GET  /api/users/me             → UserService gRPC         │   │
+│  │  ├─ GET  /api/auth/me              → UserService gRPC         │   │
+│  │  ├─ GET  /api/dashboard/stats      → Dashboard (aggregate)    │   │
 │  │  ├─ ANY  /api/hr/*                 → Module-HR gRPC (proxy)   │   │
 │  │  ├─ ANY  /api/subjects/*           → Module-Subject gRPC      │   │
 │  │  ├─ ANY  /api/timetable/*          → Module-Timetable gRPC    │   │
@@ -124,7 +125,7 @@ Myrmex is a microservice architecture with modular services communicating via gR
 **Purpose**: Entry point for all HTTP requests; manages authentication and delegates to gRPC services.
 
 **Ports**:
-- HTTP: `:8000`
+- HTTP: `:8080`
 - gRPC: `:50051`
 - Metrics: `:9090` (future)
 
@@ -213,11 +214,11 @@ Myrmex is a microservice architecture with modular services communicating via gR
 **Port**: gRPC `:50054`
 
 **Key Entities**:
-- **Semester**: id, name, year, term, start_date, end_date, offered_subjects[]
+- **Semester**: id, name, year, term, start_date, end_date, offered_subject_ids[], academic_year (computed), is_active (computed)
 - **Room**: id, code, capacity
 - **TimeSlot**: day_of_week, period_of_day (reference data)
 - **Schedule**: id, semester_id, status (pending/generating/completed/failed), entries[]
-- **ScheduleEntry**: schedule_id, subject_id, teacher_id, room_id, day, period, week
+- **ScheduleEntry**: schedule_id, subject_id, teacher_id, room_id, day, period, week, subject_name, teacher_name, room_name (denormalized)
 
 **Key Operations**:
 - CRUD: Semester + offerings
@@ -363,6 +364,49 @@ Myrmex is a microservice architecture with modular services communicating via gR
    - Refreshes subject list
 ```
 
+## API Endpoints (Complete Reference)
+
+| Method | Endpoint | Service | Notes |
+|--------|----------|---------|-------|
+| POST | `/api/auth/login` | Core | Returns access_token + refresh_token |
+| POST | `/api/auth/register` | Core | Creates user with email/password |
+| POST | `/api/auth/refresh` | Core | Refresh access token |
+| GET | `/api/auth/me` | Core | Current user profile |
+| GET | `/api/dashboard/stats` | Core | Aggregate counts (teachers, departments, subjects) |
+| **HR Module** | | | |
+| GET | `/api/hr/teachers` | Module-HR | Paginated list: `{ data, total, page, page_size }` |
+| POST | `/api/hr/teachers` | Module-HR | Create teacher |
+| GET | `/api/hr/teachers/:id` | Module-HR | Single teacher |
+| PATCH | `/api/hr/teachers/:id` | Module-HR | Update teacher |
+| DELETE | `/api/hr/teachers/:id` | Module-HR | Soft delete |
+| GET | `/api/hr/teachers/:id/availability` | Module-HR | Availability schedule |
+| PUT | `/api/hr/teachers/:id/availability` | Module-HR | Update availability |
+| GET | `/api/hr/departments` | Module-HR | Paginated list |
+| POST | `/api/hr/departments` | Module-HR | Create department |
+| **Subject Module** | | | |
+| GET | `/api/subjects` | Module-Subject | Paginated list |
+| POST | `/api/subjects` | Module-Subject | Create subject |
+| GET | `/api/subjects/:id` | Module-Subject | Single subject |
+| PATCH | `/api/subjects/:id` | Module-Subject | Update subject |
+| DELETE | `/api/subjects/:id` | Module-Subject | Soft delete |
+| GET | `/api/subjects/:id/prerequisites` | Module-Subject | Array of prerequisites |
+| POST | `/api/subjects/:id/prerequisites` | Module-Subject | Add prerequisite |
+| DELETE | `/api/subjects/:id/prerequisites/:prereqId` | Module-Subject | Remove prerequisite |
+| **Timetable Module** | | | |
+| GET | `/api/timetable/semesters` | Module-Timetable | Paginated list |
+| POST | `/api/timetable/semesters` | Module-Timetable | Create semester (body: name, year, term, start_date, end_date) |
+| GET | `/api/timetable/semesters/:id` | Module-Timetable | Single semester (includes offered_subject_ids, year, term, academic_year, is_active) |
+| POST | `/api/timetable/semesters/:id/offered-subjects` | Module-Timetable | Add subject offering (body: subject_id) |
+| DELETE | `/api/timetable/semesters/:id/offered-subjects/:subjectId` | Module-Timetable | Remove subject offering |
+| POST | `/api/timetable/semesters/:id/generate` | Module-Timetable | Trigger CSP schedule generation |
+| GET | `/api/timetable/schedules` | Module-Timetable | Paginated list |
+| GET | `/api/timetable/schedules/:id` | Module-Timetable | Single schedule with entries |
+| PUT | `/api/timetable/schedules/:id/entries/:entryId` | Module-Timetable | Manual teacher assignment (body: teacher_id) |
+| GET | `/api/timetable/suggest-teachers` | Module-Timetable | Query: subject_id, day_of_week, start_period, end_period; returns array |
+| GET | `/api/timetable/schedules/:id/stream` | Module-Timetable | SSE stream of schedule generation progress |
+| **Chat** | | | |
+| WebSocket | `/ws/chat?token=ACCESS_TOKEN` | Core | Streaming chat interface |
+
 ## Database Schema (Logical)
 
 ### Core Schema
@@ -471,7 +515,7 @@ semesters (
   id: uuid primary key,
   name: string,
   year: int,
-  term: enum(fall, spring, summer),
+  term: int [1..3],  -- 1=fall, 2=spring, 3=summer (internal enum)
   start_date: date,
   end_date: date,
   created_at: timestamp,
@@ -515,7 +559,13 @@ schedule_entries (
   room_id: uuid fk rooms,
   day_of_week: enum(monday...sunday),
   period_of_day: int [1..5],
-  week_of_semester: int
+  week_of_semester: int,
+  -- Denormalized fields for efficient API responses
+  subject_name: string,
+  subject_code: string,
+  teacher_name: string,
+  room_name: string,
+  department_id: uuid
 )
 
 event_store (same pattern)

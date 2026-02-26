@@ -337,3 +337,15 @@ cd frontend && npm install && npm run dev
 4. **Monitoring**: Prometheus metrics not yet integrated
 5. **Scale**: NATS single-instance (needs clustering for HA)
 6. **Tenancy**: Single-tenant MVP; multi-tenant planned for Phase 4
+
+## Proto & API Updates (Feb 26)
+
+### Teacher Proto Enhancements
+- `employee_code: string` — Institutional employee identifier
+- `max_hours_per_week: int32` — Workload constraint
+- `specializations: []string` — Subject specializations (from many-to-many join)
+- `phone: string` — Contact information
+
+### Subject Proto Enhancements
+- `weekly_hours: int32` — Contact hours per week (constraint for CSP)
+- `is_active: bool` — Offering status (defaults true)

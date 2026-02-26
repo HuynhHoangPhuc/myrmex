@@ -334,6 +334,18 @@ Phase 4: Enterprise
 
 ## Change Log
 
+### 2026-02-26 (API Response Standardization & Frontend Fixes)
+- Standardized all list endpoints to return `{ data, total, page, page_size }` format
+- Fixed HR, Subject, and Timetable response formats for consistency
+- Added new dashboard stats endpoint (`GET /api/dashboard/stats`)
+- Added `Me()` endpoint for current user profile (`GET /api/auth/me`)
+- Added proto fields: teacher (`employee_code`, `max_hours_per_week`, `specializations`, `phone`), subject (`weekly_hours`, `is_active`)
+- Rewrote semester form to separate year/term input + RFC3339 date handling
+- Fixed schedule endpoints: suggest-teachers query params, manual-assign URL
+- Rewrote offering-manager component for per-item add/remove with server sync
+- Semester response now includes: `year, term, academic_year, is_active, offered_subject_ids`
+- Phase 1 status: 100% → API contract aligned and production-ready
+
 ### 2026-02-25 (Demo-in-a-Box: Docker One-Liner Deployment)
 - Added `v.SetEnvKeyReplacer` to all 4 services (core, HR, subject, timetable) for env var override support
 - Fixed DB credentials in module-hr, module-subject, module-timetable config/local.yaml (myrmex:myrmex_dev + search_path)

@@ -117,29 +117,84 @@ Completed Phase 1 MVP: Fixed critical tool executor dispatch bug, implemented in
 
 ---
 
-## [Unreleased]
+## [2026-02-26] — API Response Standardization & Frontend Fixes
 
-### Added
-- **Backend: Schedule enrichment** — Added denormalized fields to `ScheduleEntry` (subject_name, subject_code, teacher_name, room_name) via migration `007_enrich_schedule_entries.sql` for efficient API responses
-- **Backend: ListSchedules RPC** — Implemented complete `ListSchedules` gRPC service with optional semester filtering and pagination support
-- **Backend: HTTP handlers** — Fixed `ListSchedules` and `GetSchedule` HTTP endpoints in core gateway to properly return enriched schedule data
-- **Frontend: Schedule Calendar** — Built interactive weekly timetable grid view with day columns (Mon–Sat) and period rows, color-coded by department
-- **Frontend: Period utilities** — Created `period-to-time.ts` mapping periods to human-readable time strings (08:00–21:45)
-- **Frontend: Manual override modal** — Integrated teacher suggestion system with assign modal for schedule adjustments
-- **Database: Demo seed data** — Created `deploy/docker/seed.sql` with deterministic demo data (3 departments, 8 teachers, 10 subjects, 5 rooms, 30 time slots)
-- **Build: Seed target** — Added `make seed` and `make reset-db` Makefile targets for database population
+**Status**: Complete
 
-### Fixed
-- **Proto: ScheduleEntry** — Extended message with enriched display fields (subject_name, subject_code, teacher_name, room_name)
-- **Frontend: ScheduleEntry type** — Replaced aspirational start_time/end_time strings with actual start_period/end_period integers from API
-- **SQL queries** — Updated `ListEntriesBySchedule` with JOIN to fetch time_slot and room details in single query
-- **SubjectInfo model** — Added Name field to enable subject name lookups in timetable service
+### Summary
+Standardized API response formats across all endpoints (list endpoints now return `{ data, total, page, page_size }`), fixed proto field definitions (teacher & subject enrichments), rewrote semester form to separate year/term input, and fixed schedule endpoint URLs for suggest-teachers and manual-assign operations.
 
-### Technical Details
-- All 3 services compile cleanly (module-timetable, core, module-hr)
-- TypeScript type check passes across frontend
-- Enriched API responses support full schedule visualization without additional API calls per entry
-- Seed data covers Mon–Fri, periods 1–6; easily extensible for additional time slots
+### Backend Changes
+- **HR Service (`hr_handler.go`)**:
+  - List endpoints (`ListDepartments`, `ListTeachers`) now return paginated response: `{ data: [], total, page, page_size }`
+  - Single-item endpoints return object directly (no wrapper)
+  - Timestamps serialized as RFC3339 strings
+- **Subject Service (`subject_handler.go`)**:
+  - Same response format: paginated lists return `{ data, total, page, page_size }`
+  - Prerequisites endpoint now returns array directly (not wrapped)
+- **Timetable Service (`timetable_handler.go`, `semester_to_json()`)**:
+  - Semester response includes: `offered_subject_ids: []string`, `year: int`, `term: int`, `academic_year: "YYYY Term N"` (computed), `is_active: bool` (computed from date range)
+- **New Dashboard Service (`dashboard_handler.go`)**:
+  - `GET /api/dashboard/stats` — Aggregates counts from gRPC services (teachers, departments, subjects, semesters)
+- **Auth Service (`user_handler.go`)**:
+  - Added `Me()` handler for `GET /api/auth/me` endpoint
+- **Schedule Service (`schedule_handler.go`)**:
+  - `SuggestTeachers` now returns array directly (not wrapped)
+  - `ManualAssign` endpoint fixed to `PUT /schedules/:id/entries/:entryId` (removed spurious `/assign` suffix)
+
+### Proto Field Additions
+- **teacher.proto**:
+  - Added `employee_code: string` to Teacher and CreateTeacherRequest
+  - Added `max_hours_per_week: int32` for workload constraints
+  - Added `specializations: []string` for course matching
+  - Added `phone: string` for contact info
+- **subject.proto**:
+  - Added `weekly_hours: int32` to Subject entity and Create/UpdateSubjectRequest
+  - Added `is_active: bool` (defaults true for new subjects)
+
+### Frontend Fixes
+- **`use-schedules.ts`**:
+  - Fixed `useTeacherSuggestions` hook to call correct endpoint: `GET /timetable/suggest-teachers?subject_id=&day_of_week=&start_period=&end_period=`
+  - Fixed `useAssignTeacher` hook: removed spurious `/assign` suffix, uses `PUT /timetable/schedules/:id/entries/:entryId`
+- **`teacher-suggestion-list.tsx`**:
+  - Changed prop from `entryId: string` → `entry: ScheduleEntry` for full context
+- **`semester-form.tsx`** (Rewritten):
+  - Collects `year: number` (input) + `term: number` (select 1–3) instead of single academic_year string
+  - Date inputs (`start_date`, `end_date`) convert to RFC3339 before POST
+  - Form state simplified: `{ name, year, term, start_date, end_date }`
+- **`timetable/types.ts`**:
+  - Updated `CreateSemesterInput` type: `{ name, year, term, start_date, end_date }`
+  - Updated `Semester` type: added `offered_subject_ids, year, term` fields
+- **`offering-manager.tsx`** (Rewritten):
+  - Uses `useSemester` hook to fetch current `offered_subject_ids`
+  - Per-item add: `POST /timetable/semesters/:id/offered-subjects` (body: `{ subject_id }`)
+  - Per-item remove: `DELETE /timetable/semesters/:id/offered-subjects/:subjectId`
+  - Sync UI state with server response
+
+### API Endpoint Contract Changes
+- `GET /api/timetable/semesters` returns `{ data, total, page, page_size }`
+- `GET /api/timetable/suggest-teachers` query params: `subject_id`, `day_of_week`, `start_period`, `end_period`
+- `PUT /api/timetable/schedules/:id/entries/:entryId` (was `POST .../assign`)
+- Semester response now includes: `year, term, academic_year, is_active, offered_subject_ids`
+
+### Quality Metrics
+- All services compile: `go build ./...` ✓
+- TypeScript check: `npx tsc --noEmit` ✓
+- No breaking changes to auth, core, or existing read-only endpoints
+- API response contracts now consistent across services
+
+---
+
+## [Unreleased (Feb 25-26)]
+
+### Added (Previous Session)
+- **Backend: Schedule enrichment** — Denormalized fields in `ScheduleEntry` (subject_name, subject_code, teacher_name, room_name) for efficient API responses
+- **Backend: ListSchedules RPC** — Complete implementation with semester filtering and pagination
+- **Frontend: Schedule Calendar** — Interactive weekly timetable grid (Mon–Sat, periods, color-coded)
+- **Frontend: Period utilities** — `period-to-time.ts` mapping (08:00–21:45)
+- **Frontend: Manual override modal** — Teacher suggestion + assignment workflow
+- **Database: Demo seed data** — `deploy/docker/seed.sql` (3 depts, 8 teachers, 10 subjects, 5 rooms)
+- **Build: Seed target** — `make seed` and `make reset-db` Makefile targets
 
 ---
 
