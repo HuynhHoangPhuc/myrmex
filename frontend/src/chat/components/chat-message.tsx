@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronRight, Wrench, Zap } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 import { cn } from '@/lib/utils/cn'
 import type { ChatMessage as ChatMessageType } from '@/chat/types'
 
@@ -55,7 +56,33 @@ function AssistantBubble({ content }: { content: string }) {
   return (
     <div className="flex justify-start">
       <div className="max-w-[80%] rounded-2xl rounded-bl-sm bg-muted px-4 py-2.5 text-sm text-foreground">
-        <p className="whitespace-pre-wrap break-words">{content}</p>
+        <ReactMarkdown
+          components={{
+            p: ({ children }) => <p className="mb-2 last:mb-0 break-words">{children}</p>,
+            ul: ({ children }) => <ul className="mb-2 ml-4 list-disc space-y-1 last:mb-0">{children}</ul>,
+            ol: ({ children }) => <ol className="mb-2 ml-4 list-decimal space-y-1 last:mb-0">{children}</ol>,
+            li: ({ children }) => <li className="break-words">{children}</li>,
+            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+            em: ({ children }) => <em className="italic">{children}</em>,
+            h1: ({ children }) => <h1 className="mb-1 text-base font-bold">{children}</h1>,
+            h2: ({ children }) => <h2 className="mb-1 text-sm font-bold">{children}</h2>,
+            h3: ({ children }) => <h3 className="mb-1 text-sm font-semibold">{children}</h3>,
+            code: ({ children, className }) => {
+              const isBlock = className?.includes('language-')
+              return isBlock ? (
+                <code className="block overflow-x-auto rounded bg-background/60 px-3 py-2 font-mono text-xs">
+                  {children}
+                </code>
+              ) : (
+                <code className="rounded bg-background/60 px-1 py-0.5 font-mono text-xs">{children}</code>
+              )
+            },
+            pre: ({ children }) => <pre className="mb-2 last:mb-0">{children}</pre>,
+            hr: () => <hr className="my-2 border-border" />,
+          }}
+        >
+          {content}
+        </ReactMarkdown>
       </div>
     </div>
   )
