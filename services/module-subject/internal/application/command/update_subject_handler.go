@@ -24,11 +24,12 @@ type UpdateSubjectCommand struct {
 // UpdateSubjectHandler handles UpdateSubjectCommand.
 type UpdateSubjectHandler struct {
 	subjectRepo repository.SubjectRepository
+	publisher   EventPublisher
 }
 
 // NewUpdateSubjectHandler constructs an UpdateSubjectHandler.
-func NewUpdateSubjectHandler(subjectRepo repository.SubjectRepository) *UpdateSubjectHandler {
-	return &UpdateSubjectHandler{subjectRepo: subjectRepo}
+func NewUpdateSubjectHandler(subjectRepo repository.SubjectRepository, publisher EventPublisher) *UpdateSubjectHandler {
+	return &UpdateSubjectHandler{subjectRepo: subjectRepo, publisher: publisher}
 }
 
 // Handle executes the update subject use case.
@@ -70,5 +71,6 @@ func (h *UpdateSubjectHandler) Handle(ctx context.Context, cmd UpdateSubjectComm
 	if err != nil {
 		return nil, fmt.Errorf("update subject: %w", err)
 	}
+	_ = h.publisher.Publish(ctx, "subject.updated", updated)
 	return updated, nil
 }

@@ -1,6 +1,9 @@
 package http
 
 import (
+	"fmt"
+	"net/http/httputil"
+	"net/url"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -10,17 +13,18 @@ import (
 )
 
 type RouterConfig struct {
-	AuthHandler      *AuthHandler
-	UserHandler      *UserHandler
-	ModuleHandler    *ModuleHandler
-	GatewayProxy     *GatewayProxy
-	ChatHandler      *ChatHandler
-	HRHandler        *HRHandler
-	SubjectHandler   *SubjectHandler
-	TimetableHandler *TimetableHandler
-	DashboardHandler *DashboardHandler
-	JWTService       *auth.JWTService
-	Logger           *zap.Logger
+	AuthHandler        *AuthHandler
+	UserHandler        *UserHandler
+	ModuleHandler      *ModuleHandler
+	GatewayProxy       *GatewayProxy
+	ChatHandler        *ChatHandler
+	HRHandler          *HRHandler
+	SubjectHandler     *SubjectHandler
+	TimetableHandler   *TimetableHandler
+	DashboardHandler   *DashboardHandler
+	AnalyticsHTTPAddr  string // e.g. "http://module-analytics:8055"
+	JWTService         *auth.JWTService
+	Logger             *zap.Logger
 }
 
 func NewRouter(cfg RouterConfig) *gin.Engine {
@@ -134,7 +138,40 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 				tt.GET("/schedules/:id/stream", cfg.TimetableHandler.StreamScheduleStatus)
 			}
 		}
+
+		// Analytics module routes (reverse proxy to module-analytics HTTP)
+		if cfg.AnalyticsHTTPAddr != "" {
+			analytics := protected.Group("/analytics")
+			analyticsProxy := newAnalyticsProxy(cfg.AnalyticsHTTPAddr)
+			{
+				analytics.GET("/workload", analyticsProxy)
+				analytics.GET("/utilization", analyticsProxy)
+				analytics.GET("/dashboard", analyticsProxy)
+				analytics.GET("/department-metrics", analyticsProxy)
+				analytics.GET("/schedule-metrics", analyticsProxy)
+				analytics.GET("/schedule-heatmap", analyticsProxy)
+				analytics.GET("/export", analyticsProxy)
+			}
+		}
 	}
 
 	return r
+}
+
+// newAnalyticsProxy creates a gin handler that reverse-proxies to the analytics HTTP service.
+func newAnalyticsProxy(targetAddr string) gin.HandlerFunc {
+	target, err := url.Parse(targetAddr)
+	if err != nil {
+		panic(fmt.Sprintf("invalid analytics target URL %q: %v", targetAddr, err))
+	}
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	return func(c *gin.Context) {
+		// Rewrite path: /api/analytics/workload → /workload
+		c.Request.URL.Path = c.Request.URL.Path[len("/api/analytics"):]
+		if c.Request.URL.Path == "" {
+			c.Request.URL.Path = "/"
+		}
+		c.Request.Host = target.Host
+		proxy.ServeHTTP(c.Writer, c.Request)
+	}
 }

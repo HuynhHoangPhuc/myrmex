@@ -23,11 +23,12 @@ type UpdateTeacherCommand struct {
 
 // UpdateTeacherHandler handles teacher updates.
 type UpdateTeacherHandler struct {
-	repo repository.TeacherRepository
+	repo      repository.TeacherRepository
+	publisher EventPublisher
 }
 
-func NewUpdateTeacherHandler(repo repository.TeacherRepository) *UpdateTeacherHandler {
-	return &UpdateTeacherHandler{repo: repo}
+func NewUpdateTeacherHandler(repo repository.TeacherRepository, publisher EventPublisher) *UpdateTeacherHandler {
+	return &UpdateTeacherHandler{repo: repo, publisher: publisher}
 }
 
 func (h *UpdateTeacherHandler) Handle(ctx context.Context, cmd UpdateTeacherCommand) (*entity.Teacher, error) {
@@ -45,5 +46,6 @@ func (h *UpdateTeacherHandler) Handle(ctx context.Context, cmd UpdateTeacherComm
 	if err != nil {
 		return nil, fmt.Errorf("update teacher: %w", err)
 	}
+	_ = h.publisher.Publish(ctx, "hr.teacher.updated", updated)
 	return updated, nil
 }

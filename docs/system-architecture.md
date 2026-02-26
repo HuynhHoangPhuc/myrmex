@@ -28,6 +28,7 @@ Myrmex is a microservice architecture with modular services communicating via gR
 │  │  ├─ ANY  /api/hr/*                 → Module-HR gRPC (proxy)   │   │
 │  │  ├─ ANY  /api/subjects/*           → Module-Subject gRPC      │   │
 │  │  ├─ ANY  /api/timetable/*          → Module-Timetable gRPC    │   │
+│  │  ├─ ANY  /api/analytics/*          → Module-Analytics HTTP    │   │
 │  │  └─ WebSocket /ws/chat?token=X    → ChatGateway (Streaming)   │   │
 │  │                                                                │   │
 │  │  Middleware:                                                   │   │
@@ -48,24 +49,29 @@ Myrmex is a microservice architecture with modular services communicating via gR
 │  ├─ Tool registry (dynamic registration)                               │
 │  └─ Event streaming to frontend                                        │
 └─────────────────────────────────────────────────────────────────────────┘
-              │          │           │              │
-              │ gRPC     │ gRPC      │ gRPC         │ gRPC
-              │          │           │              │
-┌─────────────▼──┐  ┌────▼──────┐  ┌─▼──────────┐  ┌┴──────────────┐
-│  Module-HR     │  │  Module-  │  │ Module-    │  │ User/Auth     │
-│  Service       │  │ Subject   │  │ Timetable  │  │ (in Core)     │
-│  (port 50052)  │  │ (50053)   │  │ (50054)    │  │ (50051)       │
-│                │  │           │  │            │  │               │
-│ Department     │  │ Subject   │  │ Semester   │  │ User Mgmt     │
-│ Teacher CRUD   │  │ DAG       │  │ Room       │  │ JWT Auth      │
-│ Availability   │  │ Prereq    │  │ Schedule   │  │ Refresh Token │
-│                │  │ Service   │  │ CSP Solver │  │               │
-│ Domain:        │  │ Service   │  │ Service    │  │               │
-│ ├─ Department  │  │           │  │            │  │ Domain:       │
-│ ├─ Teacher     │  │ Domain:   │  │ Domain:    │  │ ├─ User       │
-│ ├─ Availability│  │ ├─ Subject│  │ ├─ Semester│  │ └─ Session    │
-│ └─ Specialization│ │ ├─ Prereq│  │ ├─ Schedule│  │               │
-└────────┬───────┘  │ └─ DAG    │  │ ├─ Room    │  └───────────────┘
+              │          │           │              │              │
+              │ gRPC     │ gRPC      │ gRPC         │ gRPC         │ HTTP
+              │          │           │              │              │
+┌─────────────▼──┐  ┌────▼──────┐  ┌─▼──────────┐  ┌┴──────────────┐  ┌──────────────┐
+│  Module-HR     │  │  Module-  │  │ Module-    │  │ User/Auth     │  │ Module-      │
+│  Service       │  │ Subject   │  │ Timetable  │  │ (in Core)     │  │ Analytics    │
+│  (port 50052)  │  │ (50053)   │  │ (50054)    │  │ (50051)       │  │ (8080 HTTP)  │
+│                │  │           │  │            │  │               │  │              │
+│ Department     │  │ Subject   │  │ Semester   │  │ User Mgmt     │  │ Star Schema  │
+│ Teacher CRUD   │  │ DAG       │  │ Room       │  │ JWT Auth      │  │ Dashboard KPIs
+│ Availability   │  │ Prereq    │  │ Schedule   │  │ Refresh Token │  │ Workload     │
+│                │  │ Service   │  │ CSP Solver │  │               │  │ Utilization  │
+│ Domain:        │  │ Service   │  │ Service    │  │ Domain:       │  │ Export PDF/XL│
+│ ├─ Department  │  │           │  │            │  │ ├─ User       │  │              │
+│ ├─ Teacher     │  │ Domain:   │  │ Domain:    │  │ └─ Session    │  │ Dimensions:  │
+│ ├─ Availability│  │ ├─ Subject│  │ ├─ Semester│  │               │  │ ├─ Teacher   │
+│ └─ Specialization│ │ ├─ Prereq│  │ ├─ Schedule│  │               │  │ ├─ Subject   │
+└────────┬───────┘  │ └─ DAG    │  │ ├─ Room    │  └───────────────┘  │ ├─ Department│
+         │          │           │  │ └─ TimeSlot│                     │ ├─ Semester  │
+         │          └─────┬──────┘  │            │                     │ └─ Facts     │
+         │                │         └─────┬──────┘                     │ (schedules)  │
+         │                │               │                           │              │
+         └────────────────┼───────────────┼───────────────────────────┘
          │          │           │  │ └─ TimeSlot│
          │          └─────┬──────┘  │            │
          │                │         └─────┬──────┘
@@ -74,43 +80,33 @@ Myrmex is a microservice architecture with modular services communicating via gR
                           │
          NATS JetStream (Event Bus, port 4222)
                           │
-         ┌────────────────┴────────────────┐
-         │                                 │
-    ┌────▼─────┐  ┌──────────┐  ┌────────▼──┐
-    │ Event    │  │ Async    │  │ Frontend  │
-    │ Store    │  │ Consumers│  │ WebSocket │
-    │ (Append) │  │ (Listen) │  │ (Stream)  │
-    └──────────┘  └──────────┘  └───────────┘
-         │
-┌────────▼──────────────────────────────────┐
-│     PostgreSQL (Shared Database)           │
-│     localhost:5432 (myrmex / myrmex_dev)   │
-│                                            │
-│ Schemas (per service):                    │
-│ ├─ core                                    │
-│ │  ├─ users                                │
-│ │  ├─ module_registry                      │
-│ │  ├─ conversations                        │
-│ │  └─ event_store                          │
-│ ├─ hr                                      │
-│ │  ├─ departments                          │
-│ │  ├─ teachers                             │
-│ │  ├─ teacher_availability                 │
-│ │  ├─ teacher_specializations              │
-│ │  └─ event_store                          │
-│ ├─ subject                                 │
-│ │  ├─ subjects                             │
-│ │  ├─ prerequisites                        │
-│ │  └─ event_store                          │
-│ └─ timetable                               │
-│    ├─ semesters                            │
-│    ├─ semester_offerings                   │
-│    ├─ rooms                                │
-│    ├─ schedules                            │
-│    ├─ schedule_entries                     │
-│    ├─ time_slots                           │
-│    └─ event_store                          │
-└────────────────────────────────────────────┘
+         ┌────────────────┴────────────────────────────────────┐
+         │                                                     │
+    ┌────▼─────┐  ┌──────────┐  ┌────────────┐  ┌──────────┐
+    │ Event    │  │ Async    │  │ Frontend   │  │ Analytics│
+    │ Store    │  │ Consumers│  │ WebSocket  │  │ Consumer │
+    │ (Append) │  │ (Listen) │  │ (Stream)   │  │ (ETL)    │
+    └──────────┘  └──────────┘  └────────────┘  └──────────┘
+         │                                            │
+┌────────▼─────────────────────────────────────────────────────────┐
+│     PostgreSQL (Shared Database)                                  │
+│     localhost:5432 (myrmex / myrmex_dev)                          │
+│                                                                   │
+│ Operational Schemas:                                             │
+│ ├─ core                                                          │
+│ │  ├─ users, module_registry, conversations, event_store        │
+│ ├─ hr (departments, teachers, availability, specializations)    │
+│ ├─ subject (subjects, prerequisites, event_store)               │
+│ └─ timetable (semesters, offerings, rooms, schedules, events)   │
+│                                                                   │
+│ Analytics Schema:                                                │
+│ └─ analytics                                                     │
+│    ├─ dim_teacher (teacher dimension, denormalized)             │
+│    ├─ dim_subject (subject dimension)                           │
+│    ├─ dim_department (department dimension)                     │
+│    ├─ dim_semester (semester dimension)                         │
+│    └─ fact_schedule_entry (schedule fact table)                 │
+└────────────────────────────────────────────────────────────────┘
          │
     ┌────▼───┐  ┌─────────┐
     │ Redis  │  │ Backup  │
@@ -206,6 +202,35 @@ Myrmex is a microservice architecture with modular services communicating via gR
 **Outbound**:
 - PostgreSQL (subject schema)
 - NATS JetStream (publish events)
+
+### Module-Analytics (Analytics & Reporting)
+
+**Purpose**: Business intelligence and reporting on resource utilization.
+
+**Port**: HTTP `:8080` (reverse-proxied via Core gateway at `/api/analytics/`)
+
+**Key Entities**:
+- **Dimensions**: Teacher, Subject, Department, Semester (denormalized)
+- **Facts**: ScheduleEntry (star-schema fact table with measures: hours, utilization)
+
+**Key Operations**:
+- GetDashboardSummary: KPI aggregates (teachers count, avg workload, schedule completion %)
+- GetWorkloadAnalytics: Per-teacher workload summary with weekly breakdown
+- GetUtilizationAnalytics: Resource utilization metrics (rooms, teachers, semesters)
+- ExportSchedulePDF: PDF export of semester schedule
+- ExportScheduleExcel: Excel export with multi-sheet layout
+
+**Domain Services**:
+- **AnalyticsRepository**: Query dimension & fact tables
+- **ExportService**: PDF/Excel report generation (iText-based)
+
+**Event Types**:
+- Consumes: `teacher.created`, `teacher.updated`, `department.created`, `subject.created`, `schedule.generation_completed`
+- Triggers ETL via NATS consumer (nightly or on-demand)
+
+**Outbound**:
+- PostgreSQL (analytics schema)
+- NATS JetStream (consumes events)
 
 ### Module-Timetable (Schedule Generation & Management)
 
@@ -407,6 +432,12 @@ Myrmex is a microservice architecture with modular services communicating via gR
 | PUT | `/api/timetable/schedules/:id/entries/:entryId` | Module-Timetable | Manual teacher assignment (body: teacher_id) |
 | GET | `/api/timetable/suggest-teachers` | Module-Timetable | Query: subject_id, day_of_week, start_period, end_period; returns array |
 | GET | `/api/timetable/schedules/:id/stream` | Module-Timetable | SSE stream of schedule generation progress |
+| **Analytics** | | | |
+| GET | `/api/analytics/dashboard-summary` | Module-Analytics | KPI cards: teacher count, avg workload, schedule completion % |
+| GET | `/api/analytics/workload` | Module-Analytics | Workload analytics per teacher with period breakdown |
+| GET | `/api/analytics/utilization` | Module-Analytics | Resource utilization metrics (rooms, teachers, semesters) |
+| GET | `/api/analytics/export/pdf?semester_id=:id` | Module-Analytics | PDF schedule export |
+| GET | `/api/analytics/export/excel?semester_id=:id` | Module-Analytics | Excel schedule export |
 | **Chat** | | | |
 | WebSocket | `/ws/chat?token=ACCESS_TOKEN` | Core | Streaming chat interface |
 

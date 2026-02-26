@@ -142,7 +142,7 @@ func TestTeacherServer_CreateTeacher_Success(t *testing.T) {
 		CreatedAt: now,
 		UpdatedAt: now,
 	}}
-	createHandler := command.NewCreateTeacherHandler(repo)
+	createHandler := command.NewCreateTeacherHandler(repo, command.NewNoopPublisher())
 	conn := startHRTestServer(t, func(server *grpc.Server) {
 		hrv1.RegisterTeacherServiceServer(server, NewTeacherServer(createHandler, nil, nil, nil, nil, nil, nil))
 	})

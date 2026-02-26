@@ -26,6 +26,7 @@ type AddPrerequisiteHandler struct {
 	prereqRepo  repository.PrerequisiteRepository
 	subjectRepo repository.SubjectRepository
 	dagService  *service.DAGService
+	publisher   EventPublisher
 }
 
 // NewAddPrerequisiteHandler constructs an AddPrerequisiteHandler.
@@ -33,11 +34,13 @@ func NewAddPrerequisiteHandler(
 	prereqRepo repository.PrerequisiteRepository,
 	subjectRepo repository.SubjectRepository,
 	dagService *service.DAGService,
+	publisher EventPublisher,
 ) *AddPrerequisiteHandler {
 	return &AddPrerequisiteHandler{
 		prereqRepo:  prereqRepo,
 		subjectRepo: subjectRepo,
 		dagService:  dagService,
+		publisher:   publisher,
 	}
 }
 
@@ -88,5 +91,6 @@ func (h *AddPrerequisiteHandler) Handle(ctx context.Context, cmd AddPrerequisite
 	if err != nil {
 		return nil, fmt.Errorf("add prerequisite: %w", err)
 	}
+	_ = h.publisher.Publish(ctx, "subject.prerequisite.added", added)
 	return added, nil
 }

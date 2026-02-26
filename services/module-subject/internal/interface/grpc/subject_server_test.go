@@ -156,7 +156,7 @@ func TestSubjectServer_CreateSubject_Success(t *testing.T) {
 		CreatedAt: now,
 		UpdatedAt: now,
 	}}
-	createHandler := command.NewCreateSubjectHandler(repo)
+	createHandler := command.NewCreateSubjectHandler(repo, command.NewNoopPublisher())
 	conn := startSubjectTestServer(t, func(server *grpc.Server) {
 		subjectv1.RegisterSubjectServiceServer(server, NewSubjectServer(createHandler, nil, nil, nil, nil))
 	})
@@ -183,7 +183,7 @@ func TestPrerequisiteServer_AddPrerequisite_Success(t *testing.T) {
 		prereqID:  {ID: prereqID, Code: "CS101", Name: "Intro to CS"},
 	}}
 	prereqRepo := &mockPrerequisiteRepository{}
-	addHandler := command.NewAddPrerequisiteHandler(prereqRepo, subjectRepo, service.NewDAGService(prereqRepo))
+	addHandler := command.NewAddPrerequisiteHandler(prereqRepo, subjectRepo, service.NewDAGService(prereqRepo), command.NewNoopPublisher())
 
 	conn := startSubjectTestServer(t, func(server *grpc.Server) {
 		subjectv1.RegisterPrerequisiteServiceServer(server, NewPrerequisiteServer(addHandler, nil, nil, nil, nil))
@@ -213,7 +213,7 @@ func TestPrerequisiteServer_AddPrerequisite_Cycle(t *testing.T) {
 		SubjectID:      first,
 		PrerequisiteID: second,
 	}}}
-	addHandler := command.NewAddPrerequisiteHandler(prereqRepo, subjectRepo, service.NewDAGService(prereqRepo))
+	addHandler := command.NewAddPrerequisiteHandler(prereqRepo, subjectRepo, service.NewDAGService(prereqRepo), command.NewNoopPublisher())
 
 	conn := startSubjectTestServer(t, func(server *grpc.Server) {
 		subjectv1.RegisterPrerequisiteServiceServer(server, NewPrerequisiteServer(addHandler, nil, nil, nil, nil))

@@ -137,17 +137,18 @@ func main() {
 
 	// 11. Router
 	router := httpif.NewRouter(httpif.RouterConfig{
-		AuthHandler:      authHandler,
-		UserHandler:      userHandler,
-		ModuleHandler:    moduleHandler,
-		GatewayProxy:     gatewayProxy,
-		ChatHandler:      chatHandler,
-		HRHandler:        modHandlers.HR,
-		SubjectHandler:   modHandlers.Subject,
-		TimetableHandler: modHandlers.Timetable,
-		DashboardHandler: modHandlers.Dashboard,
-		JWTService:       jwtSvc,
-		Logger:           zapLog,
+		AuthHandler:       authHandler,
+		UserHandler:       userHandler,
+		ModuleHandler:     moduleHandler,
+		GatewayProxy:      gatewayProxy,
+		ChatHandler:       chatHandler,
+		HRHandler:         modHandlers.HR,
+		SubjectHandler:    modHandlers.Subject,
+		TimetableHandler:  modHandlers.Timetable,
+		DashboardHandler:  modHandlers.Dashboard,
+		AnalyticsHTTPAddr: v.GetString("analytics.http_addr"),
+		JWTService:        jwtSvc,
+		Logger:            zapLog,
 	})
 
 	// 12. gRPC server (placeholder for module registry)
@@ -208,6 +209,8 @@ func buildLLMProvider(v *viper.Viper) llm.LLMProvider {
 	baseURL := v.GetString("llm.base_url")
 
 	switch provider {
+	case "mock":
+		return llm.NewMockProvider()
 	case "claude":
 		if model == "" {
 			model = "claude-haiku-4-5"

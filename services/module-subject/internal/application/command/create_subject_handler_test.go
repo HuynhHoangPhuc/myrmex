@@ -8,7 +8,7 @@ import (
 
 func TestCreateSubjectHandler_Success(t *testing.T) {
 	repo := &mockSubjectRepo{}
-	h := NewCreateSubjectHandler(repo)
+	h := NewCreateSubjectHandler(repo, NewNoopPublisher())
 
 	subject, err := h.Handle(context.Background(), CreateSubjectCommand{
 		Code:        "CS101",
@@ -34,7 +34,7 @@ func TestCreateSubjectHandler_Success(t *testing.T) {
 }
 
 func TestCreateSubjectHandler_MissingCode(t *testing.T) {
-	h := NewCreateSubjectHandler(&mockSubjectRepo{})
+	h := NewCreateSubjectHandler(&mockSubjectRepo{}, NewNoopPublisher())
 	_, err := h.Handle(context.Background(), CreateSubjectCommand{
 		Code: "", Name: "Intro", Credits: 3,
 	})
@@ -44,7 +44,7 @@ func TestCreateSubjectHandler_MissingCode(t *testing.T) {
 }
 
 func TestCreateSubjectHandler_MissingName(t *testing.T) {
-	h := NewCreateSubjectHandler(&mockSubjectRepo{})
+	h := NewCreateSubjectHandler(&mockSubjectRepo{}, NewNoopPublisher())
 	_, err := h.Handle(context.Background(), CreateSubjectCommand{
 		Code: "CS101", Name: "", Credits: 3,
 	})
@@ -54,7 +54,7 @@ func TestCreateSubjectHandler_MissingName(t *testing.T) {
 }
 
 func TestCreateSubjectHandler_NegativeCredits(t *testing.T) {
-	h := NewCreateSubjectHandler(&mockSubjectRepo{})
+	h := NewCreateSubjectHandler(&mockSubjectRepo{}, NewNoopPublisher())
 	_, err := h.Handle(context.Background(), CreateSubjectCommand{
 		Code: "CS101", Name: "Intro", Credits: -1,
 	})
@@ -65,7 +65,7 @@ func TestCreateSubjectHandler_NegativeCredits(t *testing.T) {
 
 func TestCreateSubjectHandler_RepoError(t *testing.T) {
 	repo := &mockSubjectRepo{createErr: errors.New("db down")}
-	h := NewCreateSubjectHandler(repo)
+	h := NewCreateSubjectHandler(repo, NewNoopPublisher())
 	_, err := h.Handle(context.Background(), CreateSubjectCommand{
 		Code: "CS101", Name: "Intro", Credits: 3,
 	})
@@ -77,7 +77,7 @@ func TestCreateSubjectHandler_RepoError(t *testing.T) {
 func TestUpdateSubjectHandler_Success(t *testing.T) {
 	existing := newTestSubject("CS101", "Intro", 3)
 	repo := &mockSubjectRepo{getByID: existing}
-	h := NewUpdateSubjectHandler(repo)
+	h := NewUpdateSubjectHandler(repo, NewNoopPublisher())
 
 	newName := "Updated Name"
 	result, err := h.Handle(context.Background(), UpdateSubjectCommand{
@@ -94,7 +94,7 @@ func TestUpdateSubjectHandler_Success(t *testing.T) {
 
 func TestUpdateSubjectHandler_NotFound(t *testing.T) {
 	repo := &mockSubjectRepo{getByIDErr: errors.New("not found")}
-	h := NewUpdateSubjectHandler(repo)
+	h := NewUpdateSubjectHandler(repo, NewNoopPublisher())
 	_, err := h.Handle(context.Background(), UpdateSubjectCommand{})
 	if err == nil {
 		t.Fatal("expected not-found error")
@@ -104,7 +104,7 @@ func TestUpdateSubjectHandler_NotFound(t *testing.T) {
 func TestUpdateSubjectHandler_ValidationError(t *testing.T) {
 	existing := newTestSubject("CS101", "Intro", 3)
 	repo := &mockSubjectRepo{getByID: existing}
-	h := NewUpdateSubjectHandler(repo)
+	h := NewUpdateSubjectHandler(repo, NewNoopPublisher())
 
 	emptyCode := ""
 	_, err := h.Handle(context.Background(), UpdateSubjectCommand{
@@ -119,7 +119,7 @@ func TestUpdateSubjectHandler_ValidationError(t *testing.T) {
 func TestUpdateSubjectHandler_RepoUpdateError(t *testing.T) {
 	existing := newTestSubject("CS101", "Intro", 3)
 	repo := &mockSubjectRepo{getByID: existing, updateErr: errors.New("db error")}
-	h := NewUpdateSubjectHandler(repo)
+	h := NewUpdateSubjectHandler(repo, NewNoopPublisher())
 
 	newName := "New Name"
 	_, err := h.Handle(context.Background(), UpdateSubjectCommand{
@@ -133,7 +133,7 @@ func TestUpdateSubjectHandler_RepoUpdateError(t *testing.T) {
 
 func TestDeleteSubjectHandler_Success(t *testing.T) {
 	repo := &mockSubjectRepo{}
-	h := NewDeleteSubjectHandler(repo)
+	h := NewDeleteSubjectHandler(repo, NewNoopPublisher())
 	err := h.Handle(context.Background(), DeleteSubjectCommand{ID: newTestSubject("CS101", "Intro", 3).ID})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -142,7 +142,7 @@ func TestDeleteSubjectHandler_Success(t *testing.T) {
 
 func TestDeleteSubjectHandler_RepoError(t *testing.T) {
 	repo := &mockSubjectRepo{deleteErr: errors.New("db error")}
-	h := NewDeleteSubjectHandler(repo)
+	h := NewDeleteSubjectHandler(repo, NewNoopPublisher())
 	err := h.Handle(context.Background(), DeleteSubjectCommand{ID: newTestSubject("CS101", "Intro", 3).ID})
 	if err == nil {
 		t.Fatal("expected delete error")

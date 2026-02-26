@@ -23,11 +23,12 @@ type CreateTeacherCommand struct {
 
 // CreateTeacherHandler handles teacher creation.
 type CreateTeacherHandler struct {
-	repo repository.TeacherRepository
+	repo      repository.TeacherRepository
+	publisher EventPublisher
 }
 
-func NewCreateTeacherHandler(repo repository.TeacherRepository) *CreateTeacherHandler {
-	return &CreateTeacherHandler{repo: repo}
+func NewCreateTeacherHandler(repo repository.TeacherRepository, publisher EventPublisher) *CreateTeacherHandler {
+	return &CreateTeacherHandler{repo: repo, publisher: publisher}
 }
 
 func (h *CreateTeacherHandler) Handle(ctx context.Context, cmd CreateTeacherCommand) (*entity.Teacher, error) {
@@ -54,5 +55,9 @@ func (h *CreateTeacherHandler) Handle(ctx context.Context, cmd CreateTeacherComm
 		}
 	}
 	created.Specializations = cmd.Specializations
+
+	// Fire-and-forget event publish
+	_ = h.publisher.Publish(ctx, "hr.teacher.created", created)
+
 	return created, nil
 }

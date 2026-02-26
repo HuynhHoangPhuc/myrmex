@@ -1,6 +1,6 @@
 .PHONY: proto build test lint up down migrate seed reset-db demo demo-down demo-logs demo-reset
 
-SERVICES := core module-hr module-subject module-timetable
+SERVICES := core module-hr module-subject module-timetable module-analytics
 export PATH := $(HOME)/go/bin:$(PATH)
 
 # Pass root .env to docker compose (compose file lives in a subdirectory)
@@ -22,6 +22,13 @@ test:
 	@for svc in $(SERVICES); do \
 		echo "Testing $$svc..."; \
 		cd services/$$svc && go test ./... && cd ../..; \
+	done
+
+test-cover:
+	@for svc in $(SERVICES); do \
+		echo "Testing $$svc with coverage..."; \
+		cd services/$$svc && go test -coverprofile=coverage.out -covermode=atomic ./... && \
+		go tool cover -func=coverage.out | tail -1 && cd ../..; \
 	done
 
 lint:

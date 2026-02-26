@@ -57,6 +57,7 @@ services:
       HR_GRPC_ADDR: "module-hr:50052"
       SUBJECT_GRPC_ADDR: "module-subject:50053"
       TIMETABLE_GRPC_ADDR: "module-timetable:50054"
+      ANALYTICS_HTTP_ADDR: "http://module-analytics:8055"
       LLM_API_KEY: "${LLM_API_KEY:-}"
       LLM_PROVIDER: "${LLM_PROVIDER:-}"
       LLM_MODEL: "${LLM_MODEL:-}"
@@ -103,6 +104,19 @@ services:
       NATS_URL: "nats://nats:4222"
       HR_GRPC_ADDR: "module-hr:50052"
       SUBJECT_GRPC_ADDR: "module-subject:50053"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  module-analytics:
+    build:
+      context: ../..
+      dockerfile: services/module-analytics/Dockerfile
+    ports:
+      - "8055:8055"
+    environment:
+      DATABASE_URL: "postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable&search_path=analytics"
+      NATS_URL: "nats://nats:4222"
     depends_on:
       migrate:
         condition: service_completed_successfully

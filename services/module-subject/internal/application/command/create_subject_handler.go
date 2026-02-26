@@ -21,11 +21,12 @@ type CreateSubjectCommand struct {
 // CreateSubjectHandler handles CreateSubjectCommand and returns the created Subject.
 type CreateSubjectHandler struct {
 	subjectRepo repository.SubjectRepository
+	publisher   EventPublisher
 }
 
 // NewCreateSubjectHandler constructs a CreateSubjectHandler.
-func NewCreateSubjectHandler(subjectRepo repository.SubjectRepository) *CreateSubjectHandler {
-	return &CreateSubjectHandler{subjectRepo: subjectRepo}
+func NewCreateSubjectHandler(subjectRepo repository.SubjectRepository, publisher EventPublisher) *CreateSubjectHandler {
+	return &CreateSubjectHandler{subjectRepo: subjectRepo, publisher: publisher}
 }
 
 // Handle executes the create subject use case.
@@ -48,5 +49,6 @@ func (h *CreateSubjectHandler) Handle(ctx context.Context, cmd CreateSubjectComm
 	if err != nil {
 		return nil, fmt.Errorf("create subject: %w", err)
 	}
+	_ = h.publisher.Publish(ctx, "subject.created", created)
 	return created, nil
 }

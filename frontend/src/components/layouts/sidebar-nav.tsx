@@ -5,6 +5,7 @@ import {
   BookOpen,
   Calendar,
   Building2,
+  BarChart3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
@@ -47,6 +48,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'Assign Teachers', to: '/timetable/assign' },
     ],
   },
+  { label: 'Analytics', to: '/analytics', icon: BarChart3 },
 ]
 
 // Sidebar navigation with active-state highlighting and nested items

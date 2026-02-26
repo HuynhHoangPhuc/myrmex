@@ -65,9 +65,10 @@ The `make demo` command starts:
 - **Module-HR**: Department & teacher management (port 50052)
 - **Module-Subject**: Subject & prerequisite management (port 50053)
 - **Module-Timetable**: Schedule generation & management (port 50054)
+- **Module-Analytics**: Analytics dashboard + exports (consumes events)
 - **Frontend**: React UI served via nginx (port 3000)
 
-All services communicate via Docker network. Migrations and seed data run automatically.
+All services communicate via Docker network. Migrations and seed data run automatically. Analytics module subscribes to NATS events for real-time ETL.
 
 ### Troubleshooting Docker Demo
 
@@ -332,6 +333,28 @@ logging:
   level: "info"            # "debug", "info", "warn", "error"
   format: "json"           # "json" or "console"
 ```
+
+### Module-Analytics Service
+
+```yaml
+server:
+  http_port: 8080         # HTTP server port
+
+database:
+  url: "postgres://myrmex:myrmex_dev@localhost:5432/myrmex?sslmode=disable"
+  max_connections: 20
+
+nats:
+  url: "nats://localhost:4222"
+
+logging:
+  level: "info"
+```
+
+**Event Consumption**:
+- Subscribes to: `hr.teacher.>`, `subject.>`, `schedule.generation_completed`
+- Processes events → Updates analytics schema (dim_teacher, fact_schedule_entry, etc.)
+- Real-time ETL: Events processed immediately upon receipt
 
 ### Module Services (HR, Subject, Timetable)
 

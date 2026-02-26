@@ -24,11 +24,12 @@ type UpdateAvailabilityCommand struct {
 
 // UpdateAvailabilityHandler replaces teacher availability slots atomically.
 type UpdateAvailabilityHandler struct {
-	repo repository.TeacherRepository
+	repo      repository.TeacherRepository
+	publisher EventPublisher
 }
 
-func NewUpdateAvailabilityHandler(repo repository.TeacherRepository) *UpdateAvailabilityHandler {
-	return &UpdateAvailabilityHandler{repo: repo}
+func NewUpdateAvailabilityHandler(repo repository.TeacherRepository, publisher EventPublisher) *UpdateAvailabilityHandler {
+	return &UpdateAvailabilityHandler{repo: repo, publisher: publisher}
 }
 
 func (h *UpdateAvailabilityHandler) Handle(ctx context.Context, cmd UpdateAvailabilityCommand) ([]*entity.Availability, error) {
@@ -64,5 +65,8 @@ func (h *UpdateAvailabilityHandler) Handle(ctx context.Context, cmd UpdateAvaila
 		}
 		result = append(result, created)
 	}
+	_ = h.publisher.Publish(ctx, "hr.availability.updated", map[string]any{
+		"teacher_id": cmd.TeacherID, "slots": result,
+	})
 	return result, nil
 }

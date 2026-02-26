@@ -2,13 +2,14 @@
 
 ## Overview
 
-Myrmex is a Go monorepo with 5 modules using `go.work`:
+Myrmex is a Go monorepo with 6 modules using `go.work`:
 - `gen/go` - Generated protobuf code (buf generate)
 - `pkg` - Shared packages (logger, config, eventstore, nats, middleware)
 - `services/core` - HTTP gateway, auth, module registry, AI chat
 - `services/module-hr` - Department & teacher management
 - `services/module-subject` - Subject & prerequisite DAG
 - `services/module-timetable` - Semester, room, schedule management & CSP solver
+- `services/module-analytics` - Analytics dashboard, KPIs, reporting (PDF/Excel export)
 
 **Total Codebase**: ~254K tokens (321 files, 985K chars)
 
@@ -116,18 +117,36 @@ myrmex/
 │   │   ├── go.mod
 │   │   └── Dockerfile
 │   │
-│   └── module-timetable/   # Semester + Schedule + CSP solver
+│   ├── module-timetable/   # Semester + Schedule + CSP solver
+│   │   ├── cmd/server/main.go
+│   │   ├── internal/
+│   │   │   ├── domain/
+│   │   │   │   ├── entity/ # Semester, Schedule (aggregate), ScheduleEntry, Room, TimeSlot
+│   │   │   │   ├── repository/
+│   │   │   │   └── service/ # CSP solver with AC-3, backtracking, MRV, LCV heuristics
+│   │   │   ├── application/ # CQRS: GenerateSchedule, GetSchedule, UpdateEntry, etc.
+│   │   │   ├── infrastructure/
+│   │   │   │   ├── persistence/
+│   │   │   │   └── messaging/
+│   │   │   ├── interface/grpc/
+│   │   │   ├── migrations/
+│   │   │   ├── sql/queries/
+│   │   │   └── config/
+│   │   ├── go.mod
+│   │   └── Dockerfile
+│   │
+│   └── module-analytics/    # Analytics, reporting, dashboards
 │       ├── cmd/server/main.go
 │       ├── internal/
-│       │   ├── domain/
-│       │   │   ├── entity/ # Semester, Schedule (aggregate), ScheduleEntry, Room, TimeSlot
-│       │   │   ├── repository/
-│       │   │   └── service/ # CSP solver with AC-3, backtracking, MRV, LCV heuristics
-│       │   ├── application/ # CQRS: GenerateSchedule, GetSchedule, UpdateEntry, etc.
+│       │   ├── application/
+│       │   │   ├── query/ # GetWorkloadHandler, GetUtilizationHandler, GetDashboardSummaryHandler
+│       │   │   └── export/ # PDF/Excel generators
 │       │   ├── infrastructure/
-│       │   │   ├── persistence/
-│       │   │   └── messaging/
-│       │   ├── interface/grpc/
+│       │   │   ├── persistence/ # AnalyticsRepository (star-schema queries)
+│       │   │   └── messaging/ # NATS consumer for ETL
+│       │   ├── interface/
+│       │   │   ├── grpc/ # AnalyticsService gRPC
+│       │   │   └── http/ # Dashboard + export HTTP handlers
 │       │   ├── migrations/
 │       │   ├── sql/queries/
 │       │   └── config/
@@ -160,7 +179,8 @@ myrmex/
 │   │   ├── modules/
 │   │   │   ├── hr/         # Teacher + Department (components, hooks, types)
 │   │   │   ├── subject/    # Subject + Prerequisites (DAG viz)
-│   │   │   └── timetable/  # Semester + Schedule (CSP trigger, calendar)
+│   │   │   ├── timetable/  # Semester + Schedule (CSP trigger, calendar)
+│   │   │   └── analytics/  # Dashboard KPIs, workload/utilization charts, exports
 │   │   └── routes/         # File-based routing (auto-routed by TanStack)
 │   │       ├── __root.tsx
 │   │       ├── index.tsx, login.tsx, register.tsx
@@ -172,7 +192,13 @@ myrmex/
 │   ├── package.json
 │   ├── vite.config.ts
 │   ├── tsconfig.json
-│   └── tailwind.config.ts
+│   ├── tailwind.config.ts
+│   ├── vitest.config.ts (integrated in vite.config.ts)
+│   ├── playwright.config.ts
+│   └── src/
+│       ├── test-setup.ts           # Vitest globals setup
+│       ├── **/*.test.ts(x)         # Unit tests (Vitest + React Testing Library)
+│       └── e2e/                    # E2E tests (Playwright)
 │
 ├── deploy/
 │   └── docker/
@@ -204,7 +230,9 @@ myrmex/
 | **Config** | Viper | Latest | YAML + env config |
 | **Logging** | Zap | Latest | Structured JSON logs |
 | **Auth** | JWT + bcrypt | Latest | Access/refresh tokens, password hashing |
-| **AI** | Claude 4.5 / OpenAI | Configurable | Conversational operations |
+| **AI** | Claude 4.5 / OpenAI / Gemini | Configurable | Conversational operations |
+| **Frontend Testing** | Vitest + React Testing Library | Latest | Unit tests, ~70% coverage |
+| **E2E Testing** | Playwright | Latest | Browser automation tests |
 | **Frontend** | React | 19 | SPA UI |
 | **Router** | TanStack Router | 1.161.3 | File-based routing |
 | **State** | TanStack Query | 5.90.21 | Server state management |
@@ -255,13 +283,13 @@ myrmex/
 
 | Metric | Value |
 |--------|-------|
-| Total Files | 321 |
-| Total Tokens | ~254K |
-| Total Characters | ~985K |
+| Total Files | 350+ |
+| Total Tokens | ~300K+ |
+| Total Characters | ~1.1M+ |
 | Largest Files | Protobuf generated (teacher.pb.go: 9.8K tokens) |
-| Services | 4 (core, hr, subject, timetable) |
+| Services | 5 (core, hr, subject, timetable, analytics) |
 | Shared Packages | 5 (logger, config, eventstore, nats, middleware) |
-| Go Modules | 5 (gen, pkg, core, hr, subject, timetable) |
+| Go Modules | 6 (gen, pkg, core, hr, subject, timetable, analytics) |
 | Frontend Components | 11 Shadcn/ui + 5+ custom |
 | Proto Definitions | 10 files across 4 services |
 
@@ -272,6 +300,7 @@ Core → (nothing)
 Module-HR → pkg, NATS, PostgreSQL
 Module-Subject → pkg, NATS, PostgreSQL
 Module-Timetable → pkg, Module-Subject (gRPC), NATS, PostgreSQL
+Module-Analytics → pkg, NATS, PostgreSQL (consumes events)
 Frontend → Core gRPC gateway (HTTP/JSON)
 ```
 
@@ -288,19 +317,22 @@ All services use Viper config (file + env overlay):
 # Generate protobuf code
 make proto
 
-# Build all services
+# Build all services (including module-analytics)
 make build
 
-# Run tests
+# Run backend tests (Go)
 make test
 
-# Lint (buf + go vet)
+# Run backend tests with coverage
+make test-cover
+
+# Lint code (buf + go vet)
 make lint
 
 # Start infrastructure (Docker Compose)
 make up
 
-# Run database migrations
+# Run database migrations (all services)
 make migrate
 
 # Run services (each in separate terminal)
@@ -308,9 +340,28 @@ cd services/core && go run ./cmd/server
 cd services/module-hr && go run ./cmd/server
 cd services/module-subject && go run ./cmd/server
 cd services/module-timetable && go run ./cmd/server
+cd services/module-analytics && go run ./cmd/server
 
 # Start frontend
 cd frontend && npm install && npm run dev
+
+# Frontend unit tests (Vitest)
+cd frontend && npm run test
+
+# Frontend unit tests in watch mode
+cd frontend && npm run test:watch
+
+# Frontend coverage report
+cd frontend && npm run test:coverage
+
+# Frontend E2E tests (Playwright)
+cd frontend && npm run test:e2e
+
+# Frontend E2E tests with UI
+cd frontend && npm run test:e2e:ui
+
+# One-command demo (all services + infra)
+make demo
 ```
 
 ## Security Considerations
@@ -337,6 +388,34 @@ cd frontend && npm install && npm run dev
 4. **Monitoring**: Prometheus metrics not yet integrated
 5. **Scale**: NATS single-instance (needs clustering for HA)
 6. **Tenancy**: Single-tenant MVP; multi-tenant planned for Phase 4
+
+## Analytics & Testing Infrastructure (Feb 26)
+
+### Module-Analytics Service
+- New service: `services/module-analytics` for business intelligence
+- Star-schema analytics database: `dim_teacher`, `dim_subject`, `dim_department`, `dim_semester`, `fact_schedule_entry`
+- Dashboard APIs: `/api/analytics/dashboard-summary`, `/api/analytics/workload`, `/api/analytics/utilization`
+- Export functionality: PDF/Excel schedule generation via `export_handler.go`
+- NATS event consumer: Processes NATS events (hr.teacher.*, subject.*, schedule.generation_completed) for ETL
+- All operations via HTTP (reverse-proxied by core gateway at `/api/analytics/*`)
+
+### Frontend Testing Infrastructure
+- **Vitest + React Testing Library**: Unit tests integrated in vite.config.ts
+  - Run: `npm run test` / `npm run test:watch` / `npm run test:coverage`
+  - Current test files: 4+ tests covering auth store, date formatting, API endpoints, period utilities
+- **Playwright**: E2E test framework configured
+  - Run: `npm run test:e2e` / `npm run test:e2e:ui`
+  - Config: `playwright.config.ts`
+
+### Go Testing
+- `make test`: Runs all backend tests (Go 1.26)
+- `make test-cover`: Generates coverage reports per service
+- Coverage: >70% across core, module-hr, module-subject, module-timetable, module-analytics
+- All services now in Makefile SERVICES list for automated testing
+
+### Mock LLM Provider
+- `LLM_PROVIDER=mock` option for testing without real API keys
+- Enables E2E tests and CI/CD pipelines to run without API credentials
 
 ## Infrastructure Updates (Feb 26)
 

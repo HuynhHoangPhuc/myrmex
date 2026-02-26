@@ -32,7 +32,7 @@ func (m *availabilityMockRepo) UpsertAvailability(_ context.Context, a *entity.A
 func TestUpdateAvailabilityHandler_Success(t *testing.T) {
 	teacherID := uuid.New()
 	repo := &availabilityMockRepo{}
-	h := NewUpdateAvailabilityHandler(repo)
+	h := NewUpdateAvailabilityHandler(repo, NewNoopPublisher())
 
 	slots, err := h.Handle(context.Background(), UpdateAvailabilityCommand{
 		TeacherID: teacherID,
@@ -52,7 +52,7 @@ func TestUpdateAvailabilityHandler_Success(t *testing.T) {
 func TestUpdateAvailabilityHandler_EmptySlots(t *testing.T) {
 	teacherID := uuid.New()
 	repo := &availabilityMockRepo{}
-	h := NewUpdateAvailabilityHandler(repo)
+	h := NewUpdateAvailabilityHandler(repo, NewNoopPublisher())
 
 	slots, err := h.Handle(context.Background(), UpdateAvailabilityCommand{
 		TeacherID: teacherID,
@@ -68,7 +68,7 @@ func TestUpdateAvailabilityHandler_EmptySlots(t *testing.T) {
 
 func TestUpdateAvailabilityHandler_InvalidSlot_DayOutOfRange(t *testing.T) {
 	repo := &availabilityMockRepo{}
-	h := NewUpdateAvailabilityHandler(repo)
+	h := NewUpdateAvailabilityHandler(repo, NewNoopPublisher())
 
 	_, err := h.Handle(context.Background(), UpdateAvailabilityCommand{
 		TeacherID: uuid.New(),
@@ -81,7 +81,7 @@ func TestUpdateAvailabilityHandler_InvalidSlot_DayOutOfRange(t *testing.T) {
 
 func TestUpdateAvailabilityHandler_InvalidSlot_StartAfterEnd(t *testing.T) {
 	repo := &availabilityMockRepo{}
-	h := NewUpdateAvailabilityHandler(repo)
+	h := NewUpdateAvailabilityHandler(repo, NewNoopPublisher())
 
 	_, err := h.Handle(context.Background(), UpdateAvailabilityCommand{
 		TeacherID: uuid.New(),
@@ -94,7 +94,7 @@ func TestUpdateAvailabilityHandler_InvalidSlot_StartAfterEnd(t *testing.T) {
 
 func TestUpdateAvailabilityHandler_DeleteError(t *testing.T) {
 	repo := &availabilityMockRepo{deleteAvailErr: errors.New("delete failed")}
-	h := NewUpdateAvailabilityHandler(repo)
+	h := NewUpdateAvailabilityHandler(repo, NewNoopPublisher())
 
 	_, err := h.Handle(context.Background(), UpdateAvailabilityCommand{
 		TeacherID: uuid.New(),
@@ -107,7 +107,7 @@ func TestUpdateAvailabilityHandler_DeleteError(t *testing.T) {
 
 func TestUpdateAvailabilityHandler_UpsertError(t *testing.T) {
 	repo := &availabilityMockRepo{upsertAvailErr: errors.New("upsert failed")}
-	h := NewUpdateAvailabilityHandler(repo)
+	h := NewUpdateAvailabilityHandler(repo, NewNoopPublisher())
 
 	_, err := h.Handle(context.Background(), UpdateAvailabilityCommand{
 		TeacherID: uuid.New(),

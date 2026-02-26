@@ -14,9 +14,11 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedAnalyticsRouteRouteImport } from './routes/_authenticated/analytics/route'
 import { Route as AuthenticatedTimetableIndexRouteImport } from './routes/_authenticated/timetable/index'
 import { Route as AuthenticatedSubjectsIndexRouteImport } from './routes/_authenticated/subjects/index'
 import { Route as AuthenticatedHrIndexRouteImport } from './routes/_authenticated/hr/index'
+import { Route as AuthenticatedAnalyticsIndexRouteImport } from './routes/_authenticated/analytics/index'
 import { Route as AuthenticatedSubjectsPrerequisitesRouteImport } from './routes/_authenticated/subjects/prerequisites'
 import { Route as AuthenticatedSubjectsNewRouteImport } from './routes/_authenticated/subjects/new'
 import { Route as AuthenticatedTimetableSemestersIndexRouteImport } from './routes/_authenticated/timetable/semesters/index'
@@ -60,6 +62,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAnalyticsRouteRoute =
+  AuthenticatedAnalyticsRouteRouteImport.update({
+    id: '/analytics',
+    path: '/analytics',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTimetableIndexRoute =
   AuthenticatedTimetableIndexRouteImport.update({
     id: '/timetable/',
@@ -77,6 +85,12 @@ const AuthenticatedHrIndexRoute = AuthenticatedHrIndexRouteImport.update({
   path: '/hr/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAnalyticsIndexRoute =
+  AuthenticatedAnalyticsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAnalyticsRouteRoute,
+  } as any)
 const AuthenticatedSubjectsPrerequisitesRoute =
   AuthenticatedSubjectsPrerequisitesRouteImport.update({
     id: '/subjects/prerequisites',
@@ -190,9 +204,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/analytics': typeof AuthenticatedAnalyticsRouteRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/subjects/new': typeof AuthenticatedSubjectsNewRoute
   '/subjects/prerequisites': typeof AuthenticatedSubjectsPrerequisitesRoute
+  '/analytics/': typeof AuthenticatedAnalyticsIndexRoute
   '/hr/': typeof AuthenticatedHrIndexRoute
   '/subjects/': typeof AuthenticatedSubjectsIndexRoute
   '/timetable/': typeof AuthenticatedTimetableIndexRoute
@@ -220,6 +236,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/subjects/new': typeof AuthenticatedSubjectsNewRoute
   '/subjects/prerequisites': typeof AuthenticatedSubjectsPrerequisitesRoute
+  '/analytics': typeof AuthenticatedAnalyticsIndexRoute
   '/hr': typeof AuthenticatedHrIndexRoute
   '/subjects': typeof AuthenticatedSubjectsIndexRoute
   '/timetable': typeof AuthenticatedTimetableIndexRoute
@@ -246,9 +263,11 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRouteRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/subjects/new': typeof AuthenticatedSubjectsNewRoute
   '/_authenticated/subjects/prerequisites': typeof AuthenticatedSubjectsPrerequisitesRoute
+  '/_authenticated/analytics/': typeof AuthenticatedAnalyticsIndexRoute
   '/_authenticated/hr/': typeof AuthenticatedHrIndexRoute
   '/_authenticated/subjects/': typeof AuthenticatedSubjectsIndexRoute
   '/_authenticated/timetable/': typeof AuthenticatedTimetableIndexRoute
@@ -275,9 +294,11 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/register'
+    | '/analytics'
     | '/dashboard'
     | '/subjects/new'
     | '/subjects/prerequisites'
+    | '/analytics/'
     | '/hr/'
     | '/subjects/'
     | '/timetable/'
@@ -305,6 +326,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/subjects/new'
     | '/subjects/prerequisites'
+    | '/analytics'
     | '/hr'
     | '/subjects'
     | '/timetable'
@@ -330,9 +352,11 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/register'
+    | '/_authenticated/analytics'
     | '/_authenticated/dashboard'
     | '/_authenticated/subjects/new'
     | '/_authenticated/subjects/prerequisites'
+    | '/_authenticated/analytics/'
     | '/_authenticated/hr/'
     | '/_authenticated/subjects/'
     | '/_authenticated/timetable/'
@@ -398,6 +422,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/analytics': {
+      id: '/_authenticated/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AuthenticatedAnalyticsRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/timetable/': {
       id: '/_authenticated/timetable/'
       path: '/timetable'
@@ -418,6 +449,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/hr/'
       preLoaderRoute: typeof AuthenticatedHrIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/analytics/': {
+      id: '/_authenticated/analytics/'
+      path: '/'
+      fullPath: '/analytics/'
+      preLoaderRoute: typeof AuthenticatedAnalyticsIndexRouteImport
+      parentRoute: typeof AuthenticatedAnalyticsRouteRoute
     }
     '/_authenticated/subjects/prerequisites': {
       id: '/_authenticated/subjects/prerequisites'
@@ -548,7 +586,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAnalyticsRouteRouteChildren {
+  AuthenticatedAnalyticsIndexRoute: typeof AuthenticatedAnalyticsIndexRoute
+}
+
+const AuthenticatedAnalyticsRouteRouteChildren: AuthenticatedAnalyticsRouteRouteChildren =
+  {
+    AuthenticatedAnalyticsIndexRoute: AuthenticatedAnalyticsIndexRoute,
+  }
+
+const AuthenticatedAnalyticsRouteRouteWithChildren =
+  AuthenticatedAnalyticsRouteRoute._addFileChildren(
+    AuthenticatedAnalyticsRouteRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAnalyticsRouteRoute: typeof AuthenticatedAnalyticsRouteRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedSubjectsNewRoute: typeof AuthenticatedSubjectsNewRoute
   AuthenticatedSubjectsPrerequisitesRoute: typeof AuthenticatedSubjectsPrerequisitesRoute
@@ -574,6 +627,8 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAnalyticsRouteRoute:
+    AuthenticatedAnalyticsRouteRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedSubjectsNewRoute: AuthenticatedSubjectsNewRoute,
   AuthenticatedSubjectsPrerequisitesRoute:

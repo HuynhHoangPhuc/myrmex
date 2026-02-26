@@ -34,4 +34,13 @@ export const ENDPOINTS = {
   dashboard: {
     stats: '/dashboard/stats',
   },
+  analytics: {
+    workload: '/analytics/workload',
+    utilization: '/analytics/utilization',
+    dashboard: '/analytics/dashboard',
+    departmentMetrics: '/analytics/department-metrics',
+    scheduleMetrics: '/analytics/schedule-metrics',
+    scheduleHeatmap: '/analytics/schedule-heatmap',
+    export: '/analytics/export',
+  },
 } as const

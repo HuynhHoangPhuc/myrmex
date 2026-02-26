@@ -18,6 +18,7 @@ import (
 	hrv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/hr/v1"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/application/command"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/application/query"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/infrastructure/messaging"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/infrastructure/persistence"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/infrastructure/persistence/sqlc"
 	grpcif "github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/interface/grpc"
@@ -60,12 +61,28 @@ func main() {
 	teacherRepo := persistence.NewTeacherRepository(queries)
 	deptRepo := persistence.NewDepartmentRepository(queries)
 
-	// 5. Command handlers
-	createTeacherHandler := command.NewCreateTeacherHandler(teacherRepo)
-	updateTeacherHandler := command.NewUpdateTeacherHandler(teacherRepo)
-	deleteTeacherHandler := command.NewDeleteTeacherHandler(teacherRepo)
-	updateAvailabilityHandler := command.NewUpdateAvailabilityHandler(teacherRepo)
-	createDepartmentHandler := command.NewCreateDepartmentHandler(deptRepo)
+	// 5. NATS publisher (optional — continue without if unavailable)
+	var publisher command.EventPublisher
+	natsURL := v.GetString("nats.url")
+	if natsURL != "" {
+		np, err := messaging.NewNATSPublisher(natsURL)
+		if err != nil {
+			zapLog.Warn("NATS unavailable, events will not be published", zap.Error(err))
+			publisher = command.NewNoopPublisher()
+		} else {
+			publisher = np
+			zapLog.Info("connected to NATS for event publishing")
+		}
+	} else {
+		publisher = command.NewNoopPublisher()
+	}
+
+	// 6. Command handlers
+	createTeacherHandler := command.NewCreateTeacherHandler(teacherRepo, publisher)
+	updateTeacherHandler := command.NewUpdateTeacherHandler(teacherRepo, publisher)
+	deleteTeacherHandler := command.NewDeleteTeacherHandler(teacherRepo, publisher)
+	updateAvailabilityHandler := command.NewUpdateAvailabilityHandler(teacherRepo, publisher)
+	createDepartmentHandler := command.NewCreateDepartmentHandler(deptRepo, publisher)
 
 	// 6. Query handlers
 	getTeacherHandler := query.NewGetTeacherHandler(teacherRepo)

@@ -58,7 +58,7 @@ func TestAddPrerequisiteHandler_Success(t *testing.T) {
 	}
 	prereqRepo := &mockPrereqRepo{listAll: nil}
 	dagSvc := service.NewDAGService(prereqRepo)
-	h := NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagSvc)
+	h := NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagSvc, NewNoopPublisher())
 
 	result, err := h.Handle(context.Background(), AddPrerequisiteCommand{
 		SubjectID:      subjectID,
@@ -81,7 +81,7 @@ func TestAddPrerequisiteHandler_DefaultType(t *testing.T) {
 	subjectRepo := &mockSubjectRepo{getByID: newTestSubject("CS101", "Intro", 3)}
 	prereqRepo := &mockPrereqRepo{}
 	dagSvc := service.NewDAGService(prereqRepo)
-	h := NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagSvc)
+	h := NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagSvc, NewNoopPublisher())
 
 	result, err := h.Handle(context.Background(), AddPrerequisiteCommand{
 		SubjectID:      subjectID,
@@ -104,7 +104,7 @@ func TestAddPrerequisiteHandler_InvalidType(t *testing.T) {
 	subjectRepo := &mockSubjectRepo{getByID: newTestSubject("CS101", "Intro", 3)}
 	prereqRepo := &mockPrereqRepo{}
 	dagSvc := service.NewDAGService(prereqRepo)
-	h := NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagSvc)
+	h := NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagSvc, NewNoopPublisher())
 
 	_, err := h.Handle(context.Background(), AddPrerequisiteCommand{
 		SubjectID:      uuid.New(),
@@ -122,7 +122,7 @@ func TestAddPrerequisiteHandler_SelfReference(t *testing.T) {
 	subjectRepo := &mockSubjectRepo{getByID: newTestSubject("CS101", "Intro", 3)}
 	prereqRepo := &mockPrereqRepo{}
 	dagSvc := service.NewDAGService(prereqRepo)
-	h := NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagSvc)
+	h := NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagSvc, NewNoopPublisher())
 
 	_, err := h.Handle(context.Background(), AddPrerequisiteCommand{
 		SubjectID:      id,
@@ -139,7 +139,7 @@ func TestAddPrerequisiteHandler_SubjectNotFound(t *testing.T) {
 	subjectRepo := &mockSubjectRepo{getByIDErr: errors.New("not found")}
 	prereqRepo := &mockPrereqRepo{}
 	dagSvc := service.NewDAGService(prereqRepo)
-	h := NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagSvc)
+	h := NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagSvc, NewNoopPublisher())
 
 	_, err := h.Handle(context.Background(), AddPrerequisiteCommand{
 		SubjectID:      uuid.New(),
@@ -156,7 +156,7 @@ func TestAddPrerequisiteHandler_RepoError(t *testing.T) {
 	subjectRepo := &mockSubjectRepo{getByID: newTestSubject("CS101", "Intro", 3)}
 	prereqRepo := &mockPrereqRepo{addErr: errors.New("db error")}
 	dagSvc := service.NewDAGService(prereqRepo)
-	h := NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagSvc)
+	h := NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagSvc, NewNoopPublisher())
 
 	_, err := h.Handle(context.Background(), AddPrerequisiteCommand{
 		SubjectID:      uuid.New(),
@@ -173,7 +173,7 @@ func TestAddPrerequisiteHandler_RepoError(t *testing.T) {
 
 func TestRemovePrerequisiteHandler_Success(t *testing.T) {
 	repo := &mockPrereqRepo{}
-	h := NewRemovePrerequisiteHandler(repo)
+	h := NewRemovePrerequisiteHandler(repo, NewNoopPublisher())
 
 	err := h.Handle(context.Background(), RemovePrerequisiteCommand{
 		SubjectID:      uuid.New(),
@@ -186,7 +186,7 @@ func TestRemovePrerequisiteHandler_Success(t *testing.T) {
 
 func TestRemovePrerequisiteHandler_RepoError(t *testing.T) {
 	repo := &mockPrereqRepo{removeErr: errors.New("db error")}
-	h := NewRemovePrerequisiteHandler(repo)
+	h := NewRemovePrerequisiteHandler(repo, NewNoopPublisher())
 
 	err := h.Handle(context.Background(), RemovePrerequisiteCommand{
 		SubjectID:      uuid.New(),

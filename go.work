@@ -4,6 +4,7 @@ use (
 	./gen/go
 	./pkg
 	./services/core
+	./services/module-analytics
 	./services/module-hr
 	./services/module-subject
 	./services/module-timetable

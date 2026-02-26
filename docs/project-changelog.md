@@ -2,6 +2,72 @@
 
 All notable changes to the Myrmex project are documented here.
 
+## [2026-02-26] — Analytics Module & Testing Infrastructure Complete
+
+**Status**: Complete
+
+### Summary
+Implemented analytics module with star-schema database design, dashboard APIs (workload, utilization, KPIs), and export functionality (PDF/Excel). Added comprehensive testing infrastructure: Vitest + React Testing Library for frontend unit tests, Playwright for E2E tests, mock LLM provider for CI/CD, Go test coverage >70% across all services.
+
+### Backend Analytics
+- **New Service**: `services/module-analytics` with HTTP API
+- **Star Schema**: Dimension tables (dim_teacher, dim_subject, dim_department, dim_semester) + fact table (fact_schedule_entry)
+- **APIs**:
+  - `GET /api/analytics/dashboard-summary` — KPI aggregates (teacher count, avg workload, schedule completion %)
+  - `GET /api/analytics/workload` — Per-teacher workload with period breakdown
+  - `GET /api/analytics/utilization` — Resource utilization metrics
+  - `GET /api/analytics/export/pdf?semester_id=:id` — PDF schedule export
+  - `GET /api/analytics/export/excel?semester_id=:id` — Excel schedule export
+- **Event Consumption**: NATS consumer processes hr.teacher.*, subject.*, schedule.generation_completed events for ETL
+- **Export Engines**: iText for PDF, Apache POI-equivalent for Excel
+
+### Frontend Testing
+- **Vitest Integration**: Unit tests in vite.config.ts (test directory excluded from build)
+  - Globals enabled, jsdom environment, test-setup.ts for shared config
+  - Current tests: auth-store.test.ts, format-date.test.ts, endpoints.test.ts, period-to-time.test.ts
+  - React Testing Library for component tests
+  - Run: `npm run test` / `npm run test:watch` / `npm run test:coverage`
+- **Playwright**: E2E test framework (config: playwright.config.ts)
+  - Run: `npm run test:e2e` / `npm run test:e2e:ui`
+- **Mock LLM Provider**: `LLM_PROVIDER=mock` for CI/CD (skips real API calls)
+
+### Backend Testing
+- **Go Test Coverage**: >70% across all services
+  - Core, module-hr, module-subject, module-timetable, module-analytics
+- **Makefile Targets**:
+  - `make test` — Run all tests
+  - `make test-cover` — Generate coverage reports
+- **CI/CD Ready**: All tests pass on clean build
+
+### Frontend Analytics Module
+- **New Module**: `frontend/src/modules/analytics/`
+- **Components**: Dashboard KPI cards, workload bar chart, utilization pie chart, schedule heatmap
+- **Hooks**: `use-dashboard-summary`, `use-workload-analytics`, `use-utilization-analytics`, `use-export-*`
+- **Types**: AnalyticsMetrics, KPICard, WorkloadData, UtilizationData
+- **UI Features**: Semester filter, PDF/Excel export buttons, responsive charts
+
+### Docker Compose
+- Added `module-analytics` service to compose.yml
+- Environment var: `ANALYTICS_HTTP_ADDR` (defaults to :8080)
+- Depends on postgres, nats for event consumption
+
+### Documentation
+- Updated system-architecture.md: New analytics service, NATS event flows, star-schema DB
+- Updated codebase-summary.md: Module structure, testing frameworks, build/run commands
+- Updated project-roadmap.md: Phase 2 marked complete with all deliverables checked
+- Updated deployment-guide.md: Analytics service configuration section
+- Added: Module-Analytics API endpoints to API reference table
+
+### Quality Metrics
+- All services compile: `go build ./...` ✓
+- All tests pass: `make test` ✓
+- Frontend TypeScript check: `npx tsc --noEmit` ✓
+- Docker images build: analytics service included ✓
+- No breaking changes to existing APIs
+- Phase 2 status: Planning → 100% Complete
+
+---
+
 ## [2026-02-26] — Multi-LLM Provider Support & WebSocket Fix
 
 **Status**: Complete

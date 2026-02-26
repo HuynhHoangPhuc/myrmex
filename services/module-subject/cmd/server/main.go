@@ -19,6 +19,7 @@ import (
 	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/application/command"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/application/query"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/service"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/infrastructure/messaging"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/infrastructure/persistence"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/infrastructure/persistence/sqlc"
 	grpcif "github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/interface/grpc"
@@ -64,12 +65,28 @@ func main() {
 	// 5. Domain services
 	dagService := service.NewDAGService(prereqRepo)
 
+	// 5a. NATS publisher (optional — continue without if unavailable)
+	var publisher command.EventPublisher
+	natsURL := v.GetString("nats.url")
+	if natsURL != "" {
+		np, err := messaging.NewNATSPublisher(natsURL)
+		if err != nil {
+			zapLog.Warn("NATS unavailable, events will not be published", zap.Error(err))
+			publisher = command.NewNoopPublisher()
+		} else {
+			publisher = np
+			zapLog.Info("connected to NATS for event publishing")
+		}
+	} else {
+		publisher = command.NewNoopPublisher()
+	}
+
 	// 6. Command handlers
-	createSubjectHandler := command.NewCreateSubjectHandler(subjectRepo)
-	updateSubjectHandler := command.NewUpdateSubjectHandler(subjectRepo)
-	deleteSubjectHandler := command.NewDeleteSubjectHandler(subjectRepo)
-	addPrereqHandler := command.NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagService)
-	removePrereqHandler := command.NewRemovePrerequisiteHandler(prereqRepo)
+	createSubjectHandler := command.NewCreateSubjectHandler(subjectRepo, publisher)
+	updateSubjectHandler := command.NewUpdateSubjectHandler(subjectRepo, publisher)
+	deleteSubjectHandler := command.NewDeleteSubjectHandler(subjectRepo, publisher)
+	addPrereqHandler := command.NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagService, publisher)
+	removePrereqHandler := command.NewRemovePrerequisiteHandler(prereqRepo, publisher)
 
 	// 7. Query handlers
 	getSubjectHandler := query.NewGetSubjectHandler(subjectRepo)

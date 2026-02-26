@@ -33,7 +33,7 @@ func TestUpdateTeacherHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := NewUpdateTeacherHandler(&mockTeacherRepo{updateErr: tt.repoErr})
+			handler := NewUpdateTeacherHandler(&mockTeacherRepo{updateErr: tt.repoErr}, NewNoopPublisher())
 			_, err := handler.Handle(context.Background(), tt.cmd)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("Handle() error = %v, wantErr %v", err, tt.wantErr)

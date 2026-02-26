@@ -17,11 +17,12 @@ type RemovePrerequisiteCommand struct {
 // RemovePrerequisiteHandler handles RemovePrerequisiteCommand.
 type RemovePrerequisiteHandler struct {
 	prereqRepo repository.PrerequisiteRepository
+	publisher  EventPublisher
 }
 
 // NewRemovePrerequisiteHandler constructs a RemovePrerequisiteHandler.
-func NewRemovePrerequisiteHandler(prereqRepo repository.PrerequisiteRepository) *RemovePrerequisiteHandler {
-	return &RemovePrerequisiteHandler{prereqRepo: prereqRepo}
+func NewRemovePrerequisiteHandler(prereqRepo repository.PrerequisiteRepository, publisher EventPublisher) *RemovePrerequisiteHandler {
+	return &RemovePrerequisiteHandler{prereqRepo: prereqRepo, publisher: publisher}
 }
 
 // Handle executes the remove prerequisite use case.
@@ -29,5 +30,8 @@ func (h *RemovePrerequisiteHandler) Handle(ctx context.Context, cmd RemovePrereq
 	if err := h.prereqRepo.Remove(ctx, cmd.SubjectID, cmd.PrerequisiteID); err != nil {
 		return fmt.Errorf("remove prerequisite: %w", err)
 	}
+	_ = h.publisher.Publish(ctx, "subject.prerequisite.removed", map[string]string{
+		"subject_id": cmd.SubjectID.String(), "prerequisite_id": cmd.PrerequisiteID.String(),
+	})
 	return nil
 }
