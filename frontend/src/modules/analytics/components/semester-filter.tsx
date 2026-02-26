@@ -1,4 +1,3 @@
-import * as React from 'react'
 import { useAllSemesters } from '@/modules/timetable/hooks/use-semesters'
 
 interface SemesterFilterProps {

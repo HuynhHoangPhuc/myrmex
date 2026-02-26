@@ -58,7 +58,7 @@ export function WorkloadBarChart({ data, isLoading }: WorkloadBarChartProps) {
                 tickLine={false}
               />
               <Tooltip
-                formatter={(v: number) => [`${v}h`, 'Total Hours']}
+                formatter={(v: number | undefined) => [`${v ?? 0}h`, 'Total Hours']}
               />
               <Bar dataKey="total_hours" radius={[0, 4, 4, 0]}>
                 {chartData.map((entry) => (

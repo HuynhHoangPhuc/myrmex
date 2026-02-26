@@ -55,7 +55,7 @@ export function UtilizationPieChart({ data, isLoading }: UtilizationPieChartProp
                   <Cell key={index} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, 'Utilization']} />
+              <Tooltip formatter={(v: number | undefined) => [`${(v ?? 0).toFixed(1)}%`, 'Utilization']} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
