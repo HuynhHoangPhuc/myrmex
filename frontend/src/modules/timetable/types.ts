@@ -19,10 +19,13 @@ export interface Room {
 export interface Semester {
   id: string
   name: string
+  year: number
+  term: number
   academic_year: string
   start_date: string
   end_date: string
   is_active: boolean
+  offered_subject_ids: string[]
   time_slots: TimeSlot[]
   rooms: Room[]
   created_at: string
@@ -31,11 +34,10 @@ export interface Semester {
 
 export interface CreateSemesterInput {
   name: string
-  academic_year: string
-  start_date: string
-  end_date: string
-  time_slots: Omit<TimeSlot, 'id' | 'semester_id'>[]
-  rooms: Omit<Room, 'id'>[]
+  year: number
+  term: number
+  start_date: string  // RFC3339 format
+  end_date: string    // RFC3339 format
 }
 
 export type ScheduleStatus = 'pending' | 'generating' | 'completed' | 'failed'

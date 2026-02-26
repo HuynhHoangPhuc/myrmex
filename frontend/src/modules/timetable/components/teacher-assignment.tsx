@@ -61,7 +61,7 @@ export function TeacherAssignmentDialog({
 
           <TeacherSuggestionList
             scheduleId={scheduleId}
-            entryId={entry.id}
+            entry={entry}
             currentTeacherId={entry.teacher_id}
             onSelect={handleSelect}
           />

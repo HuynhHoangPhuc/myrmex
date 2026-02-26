@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api/client'
 import { ENDPOINTS } from '@/lib/api/endpoints'
 import type { ListResponse } from '@/lib/api/types'
-import type { Schedule, GenerateScheduleInput, TeacherSuggestion, AssignTeacherInput } from '../types'
+import type { Schedule, ScheduleEntry, GenerateScheduleInput, TeacherSuggestion, AssignTeacherInput } from '../types'
 
 interface ScheduleListParams {
   semesterId?: string
@@ -76,17 +76,22 @@ export function useGenerateSchedule() {
   })
 }
 
-// Fetch AI-ranked teacher suggestions for a schedule entry
-export function useTeacherSuggestions(scheduleId: string, entryId: string | null) {
+// Fetch AI-ranked teacher suggestions for a schedule entry using the suggest-teachers endpoint
+export function useTeacherSuggestions(scheduleId: string, entry: ScheduleEntry | null) {
   return useQuery({
-    queryKey: ['schedules', scheduleId, 'suggestions', entryId] as const,
+    queryKey: ['schedules', scheduleId, 'suggestions', entry?.id] as const,
     queryFn: async () => {
-      const { data } = await apiClient.get<TeacherSuggestion[]>(
-        `/timetable/schedules/${scheduleId}/entries/${entryId}/suggestions`,
-      )
+      const { data } = await apiClient.get<TeacherSuggestion[]>(ENDPOINTS.timetable.suggestTeachers, {
+        params: {
+          subject_id: entry!.subject_id,
+          day_of_week: entry!.day_of_week,
+          start_period: entry!.start_period,
+          end_period: entry!.end_period,
+        },
+      })
       return data
     },
-    enabled: Boolean(scheduleId) && Boolean(entryId),
+    enabled: Boolean(scheduleId) && Boolean(entry),
   })
 }
 
@@ -96,7 +101,7 @@ export function useAssignTeacher(scheduleId: string) {
   return useMutation({
     mutationFn: async (input: AssignTeacherInput) => {
       const { data } = await apiClient.put(
-        `/timetable/schedules/${scheduleId}/entries/${input.entry_id}/assign`,
+        ENDPOINTS.timetable.manualAssign(scheduleId, input.entry_id),
         { teacher_id: input.teacher_id },
       )
       return data

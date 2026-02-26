@@ -3,11 +3,11 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { useTeacherSuggestions } from '../hooks/use-schedules'
-import type { TeacherSuggestion } from '../types'
+import type { ScheduleEntry, TeacherSuggestion } from '../types'
 
 interface TeacherSuggestionListProps {
   scheduleId: string
-  entryId: string
+  entry: ScheduleEntry
   currentTeacherId?: string
   onSelect: (suggestion: TeacherSuggestion) => void
 }
@@ -15,11 +15,11 @@ interface TeacherSuggestionListProps {
 // Ranked list of AI-scored teacher suggestions for a schedule entry
 export function TeacherSuggestionList({
   scheduleId,
-  entryId,
+  entry,
   currentTeacherId,
   onSelect,
 }: TeacherSuggestionListProps) {
-  const { data: suggestions = [], isLoading } = useTeacherSuggestions(scheduleId, entryId)
+  const { data: suggestions = [], isLoading } = useTeacherSuggestions(scheduleId, entry)
 
   if (isLoading) return <LoadingSpinner />
 
