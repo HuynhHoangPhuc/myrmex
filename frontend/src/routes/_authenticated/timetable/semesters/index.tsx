@@ -10,6 +10,7 @@ import { DataTable } from '@/components/shared/data-table'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { useSemesters, useDeleteSemester } from '@/modules/timetable/hooks/use-semesters'
 import type { Semester } from '@/modules/timetable/types'
+import { formatDate } from '@/lib/utils/format-date'
 
 const searchSchema = z.object({
   page: z.number().catch(1),
@@ -45,8 +46,8 @@ function SemesterListPage() {
         ),
       },
       { accessorKey: 'academic_year', header: 'Academic Year' },
-      { accessorKey: 'start_date', header: 'Start' },
-      { accessorKey: 'end_date', header: 'End' },
+      { accessorKey: 'start_date', header: 'Start', cell: ({ row }) => formatDate(row.getValue('start_date')) },
+      { accessorKey: 'end_date', header: 'End', cell: ({ row }) => formatDate(row.getValue('end_date')) },
       {
         accessorKey: 'is_active',
         header: 'Status',

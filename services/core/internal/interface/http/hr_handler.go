@@ -46,24 +46,30 @@ func protoTime(ts interface{ AsTime() time.Time }) string {
 }
 
 // teacherToJSON converts a proto Teacher to a frontend-compatible JSON map.
-func teacherToJSON(t *hrv1.Teacher) gin.H {
+// dept may be nil — in that case the department field is omitted from the response.
+func teacherToJSON(t *hrv1.Teacher, dept *hrv1.Department) gin.H {
 	specs := t.Specializations
 	if specs == nil {
 		specs = []string{}
 	}
+	var deptJSON interface{}
+	if dept != nil {
+		deptJSON = gin.H{"id": dept.Id, "name": dept.Name, "code": dept.Code}
+	}
 	return gin.H{
-		"id":                t.Id,
-		"employee_code":     t.EmployeeCode,
-		"full_name":         t.FullName,
-		"email":             t.Email,
-		"phone":             t.Phone,
-		"title":             t.Title,
-		"department_id":     t.DepartmentId,
+		"id":                 t.Id,
+		"employee_code":      t.EmployeeCode,
+		"full_name":          t.FullName,
+		"email":              t.Email,
+		"phone":              t.Phone,
+		"title":              t.Title,
+		"department_id":      t.DepartmentId,
+		"department":         deptJSON,
 		"max_hours_per_week": t.MaxHoursPerWeek,
-		"is_active":         t.IsActive,
-		"specializations":   specs,
-		"created_at":        protoTime(t.CreatedAt),
-		"updated_at":        protoTime(t.UpdatedAt),
+		"is_active":          t.IsActive,
+		"specializations":    specs,
+		"created_at":         protoTime(t.CreatedAt),
+		"updated_at":         protoTime(t.UpdatedAt),
 	}
 }
 
@@ -95,9 +101,12 @@ func (h *HRHandler) ListTeachers(c *gin.Context) {
 		return
 	}
 
+	// Fetch all departments once and build a lookup map to enrich teacher responses.
+	deptMap := h.fetchDepartmentMap(c)
+
 	data := make([]gin.H, len(resp.Teachers))
 	for i, t := range resp.Teachers {
-		data[i] = teacherToJSON(t)
+		data[i] = teacherToJSON(t, deptMap[t.DepartmentId])
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"data":      data,
@@ -105,6 +114,22 @@ func (h *HRHandler) ListTeachers(c *gin.Context) {
 		"page":      page,
 		"page_size": pageSize,
 	})
+}
+
+// fetchDepartmentMap returns a map of department ID → Department proto for inline enrichment.
+// Errors are silently swallowed so teacher listing still succeeds without department names.
+func (h *HRHandler) fetchDepartmentMap(c *gin.Context) map[string]*hrv1.Department {
+	deptResp, err := h.departments.ListDepartments(c.Request.Context(), &hrv1.ListDepartmentsRequest{
+		Pagination: &corev1.PaginationRequest{Page: 1, PageSize: 200},
+	})
+	if err != nil {
+		return nil
+	}
+	m := make(map[string]*hrv1.Department, len(deptResp.Departments))
+	for _, d := range deptResp.Departments {
+		m[d.Id] = d
+	}
+	return m
 }
 
 func (h *HRHandler) CreateTeacher(c *gin.Context) {
@@ -137,7 +162,8 @@ func (h *HRHandler) CreateTeacher(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, teacherToJSON(resp.Teacher))
+	deptMap := h.fetchDepartmentMap(c)
+	c.JSON(http.StatusCreated, teacherToJSON(resp.Teacher, deptMap[resp.Teacher.DepartmentId]))
 }
 
 func (h *HRHandler) GetTeacher(c *gin.Context) {
@@ -146,7 +172,8 @@ func (h *HRHandler) GetTeacher(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, teacherToJSON(resp.Teacher))
+	deptMap := h.fetchDepartmentMap(c)
+	c.JSON(http.StatusOK, teacherToJSON(resp.Teacher, deptMap[resp.Teacher.DepartmentId]))
 }
 
 func (h *HRHandler) UpdateTeacher(c *gin.Context) {
@@ -174,7 +201,8 @@ func (h *HRHandler) UpdateTeacher(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, teacherToJSON(resp.Teacher))
+	deptMap := h.fetchDepartmentMap(c)
+	c.JSON(http.StatusOK, teacherToJSON(resp.Teacher, deptMap[resp.Teacher.DepartmentId]))
 }
 
 func (h *HRHandler) DeleteTeacher(c *gin.Context) {
