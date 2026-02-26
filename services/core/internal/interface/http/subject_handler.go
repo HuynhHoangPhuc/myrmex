@@ -18,6 +18,23 @@ func NewSubjectHandler(subjects subjectv1.SubjectServiceClient, prerequisites su
 	return &SubjectHandler{subjects: subjects, prerequisites: prerequisites}
 }
 
+// subjectToJSON converts a proto Subject to a frontend-compatible JSON map.
+func subjectToJSON(s *subjectv1.Subject) gin.H {
+	return gin.H{
+		"id":            s.Id,
+		"code":          s.Code,
+		"name":          s.Name,
+		"credits":       s.Credits,
+		"department_id": s.DepartmentId,
+		"description":   s.Description,
+		"weekly_hours":  s.WeeklyHours,
+		"is_active":     s.IsActive,
+		"prerequisites": []gin.H{}, // populated separately via /prerequisites endpoint
+		"created_at":    protoTime(s.CreatedAt),
+		"updated_at":    protoTime(s.UpdatedAt),
+	}
+}
+
 // ListSubjects GET /subjects?page=&page_size=&department_id=
 func (h *SubjectHandler) ListSubjects(c *gin.Context) {
 	page, pageSize := parsePage(c)
@@ -33,7 +50,17 @@ func (h *SubjectHandler) ListSubjects(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"subjects": resp.Subjects, "pagination": resp.Pagination})
+
+	data := make([]gin.H, len(resp.Subjects))
+	for i, s := range resp.Subjects {
+		data[i] = subjectToJSON(s)
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"data":      data,
+		"total":     resp.Pagination.GetTotal(),
+		"page":      page,
+		"page_size": pageSize,
+	})
 }
 
 // CreateSubject POST /subjects
@@ -44,6 +71,7 @@ func (h *SubjectHandler) CreateSubject(c *gin.Context) {
 		Credits      int32  `json:"credits" binding:"required"`
 		DepartmentID string `json:"department_id" binding:"required"`
 		Description  string `json:"description"`
+		WeeklyHours  int32  `json:"weekly_hours"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -56,12 +84,13 @@ func (h *SubjectHandler) CreateSubject(c *gin.Context) {
 		Credits:      body.Credits,
 		DepartmentId: body.DepartmentID,
 		Description:  body.Description,
+		WeeklyHours:  body.WeeklyHours,
 	})
 	if err != nil {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"subject": resp.Subject})
+	c.JSON(http.StatusCreated, subjectToJSON(resp.Subject))
 }
 
 // GetSubject GET /subjects/:id
@@ -71,7 +100,7 @@ func (h *SubjectHandler) GetSubject(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"subject": resp.Subject})
+	c.JSON(http.StatusOK, subjectToJSON(resp.Subject))
 }
 
 // UpdateSubject PATCH /subjects/:id
@@ -82,6 +111,7 @@ func (h *SubjectHandler) UpdateSubject(c *gin.Context) {
 		Credits      *int32  `json:"credits"`
 		DepartmentID *string `json:"department_id"`
 		Description  *string `json:"description"`
+		WeeklyHours  *int32  `json:"weekly_hours"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -95,12 +125,13 @@ func (h *SubjectHandler) UpdateSubject(c *gin.Context) {
 		Credits:      body.Credits,
 		DepartmentId: body.DepartmentID,
 		Description:  body.Description,
+		WeeklyHours:  body.WeeklyHours,
 	})
 	if err != nil {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"subject": resp.Subject})
+	c.JSON(http.StatusOK, subjectToJSON(resp.Subject))
 }
 
 // DeleteSubject DELETE /subjects/:id
@@ -113,14 +144,22 @@ func (h *SubjectHandler) DeleteSubject(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// ListPrerequisites GET /subjects/:id/prerequisites
+// ListPrerequisites GET /subjects/:id/prerequisites — returns array directly
 func (h *SubjectHandler) ListPrerequisites(c *gin.Context) {
 	resp, err := h.prerequisites.ListPrerequisites(c.Request.Context(), &subjectv1.ListPrerequisitesRequest{SubjectId: c.Param("id")})
 	if err != nil {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"prerequisites": resp.Prerequisites})
+	prereqs := make([]gin.H, len(resp.Prerequisites))
+	for i, p := range resp.Prerequisites {
+		prereqs[i] = gin.H{
+			"subject_id":       p.SubjectId,
+			"prerequisite_id":  p.PrerequisiteId,
+			"prerequisite_type": "hard", // default; proto doesn't carry type yet
+		}
+	}
+	c.JSON(http.StatusOK, prereqs)
 }
 
 // AddPrerequisite POST /subjects/:id/prerequisites
@@ -141,7 +180,11 @@ func (h *SubjectHandler) AddPrerequisite(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"prerequisite": resp.Prerequisite})
+	c.JSON(http.StatusCreated, gin.H{
+		"subject_id":        resp.Prerequisite.SubjectId,
+		"prerequisite_id":   resp.Prerequisite.PrerequisiteId,
+		"prerequisite_type": "hard",
+	})
 }
 
 // RemovePrerequisite DELETE /subjects/:id/prerequisites/:prereqId

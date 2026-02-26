@@ -18,6 +18,7 @@ type moduleHandlers struct {
 	HR        *httpif.HRHandler
 	Subject   *httpif.SubjectHandler
 	Timetable *httpif.TimetableHandler
+	Dashboard *httpif.DashboardHandler
 	conns     []*grpc.ClientConn
 }
 
@@ -34,16 +35,23 @@ func (m *moduleHandlers) Close() {
 func buildModuleHandlers(v *viper.Viper, js jetstream.JetStream, log *zap.Logger) moduleHandlers {
 	var h moduleHandlers
 
+	// Track individual gRPC clients for DashboardHandler aggregation.
+	var (
+		teacherClient    hrv1.TeacherServiceClient
+		departmentClient hrv1.DepartmentServiceClient
+		subjectClient    subjectv1.SubjectServiceClient
+		semesterClient   timetablev1.SemesterServiceClient
+	)
+
 	if addr := v.GetString("hr.grpc_addr"); addr != "" {
 		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			log.Warn("hr grpc client failed", zap.Error(err))
 		} else {
 			h.conns = append(h.conns, conn)
-			h.HR = httpif.NewHRHandler(
-				hrv1.NewTeacherServiceClient(conn),
-				hrv1.NewDepartmentServiceClient(conn),
-			)
+			teacherClient = hrv1.NewTeacherServiceClient(conn)
+			departmentClient = hrv1.NewDepartmentServiceClient(conn)
+			h.HR = httpif.NewHRHandler(teacherClient, departmentClient)
 			log.Info("hr handler ready", zap.String("addr", addr))
 		}
 	}
@@ -54,8 +62,9 @@ func buildModuleHandlers(v *viper.Viper, js jetstream.JetStream, log *zap.Logger
 			log.Warn("subject grpc client failed", zap.Error(err))
 		} else {
 			h.conns = append(h.conns, conn)
+			subjectClient = subjectv1.NewSubjectServiceClient(conn)
 			h.Subject = httpif.NewSubjectHandler(
-				subjectv1.NewSubjectServiceClient(conn),
+				subjectClient,
 				subjectv1.NewPrerequisiteServiceClient(conn),
 			)
 			log.Info("subject handler ready", zap.String("addr", addr))
@@ -68,14 +77,18 @@ func buildModuleHandlers(v *viper.Viper, js jetstream.JetStream, log *zap.Logger
 			log.Warn("timetable grpc client failed", zap.Error(err))
 		} else {
 			h.conns = append(h.conns, conn)
+			semesterClient = timetablev1.NewSemesterServiceClient(conn)
 			h.Timetable = httpif.NewTimetableHandler(
 				timetablev1.NewTimetableServiceClient(conn),
-				timetablev1.NewSemesterServiceClient(conn),
+				semesterClient,
 				js,
 			)
 			log.Info("timetable handler ready", zap.String("addr", addr))
 		}
 	}
+
+	// Dashboard aggregates counts from all modules; nil clients are handled gracefully.
+	h.Dashboard = httpif.NewDashboardHandler(teacherClient, departmentClient, subjectClient, semesterClient)
 
 	return h
 }

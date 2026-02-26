@@ -24,6 +24,10 @@ message Teacher {
   bool is_active = 6;
   google.protobuf.Timestamp created_at = 7;
   google.protobuf.Timestamp updated_at = 8;
+  string employee_code = 9;
+  int32 max_hours_per_week = 10;
+  repeated string specializations = 11;
+  string phone = 12;
 }
 
 message TimeSlot {
@@ -37,6 +41,10 @@ message CreateTeacherRequest {
   string email = 2;
   string department_id = 3;
   string title = 4;
+  string employee_code = 5;
+  int32 max_hours_per_week = 6;
+  repeated string specializations = 7;
+  string phone = 8;
 }
 
 message CreateTeacherResponse {

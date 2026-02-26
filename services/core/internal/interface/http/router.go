@@ -18,6 +18,7 @@ type RouterConfig struct {
 	HRHandler        *HRHandler
 	SubjectHandler   *SubjectHandler
 	TimetableHandler *TimetableHandler
+	DashboardHandler *DashboardHandler
 	JWTService       *auth.JWTService
 	Logger           *zap.Logger
 }
@@ -54,6 +55,14 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 	protected := api.Group("")
 	protected.Use(middleware.AuthMiddleware(cfg.JWTService))
 	{
+		// Current user profile
+		protected.GET("/auth/me", cfg.UserHandler.Me)
+
+		// Dashboard stats
+		if cfg.DashboardHandler != nil {
+			protected.GET("/dashboard/stats", cfg.DashboardHandler.Stats)
+		}
+
 		// User routes
 		users := protected.Group("/users")
 		{

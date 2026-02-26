@@ -145,6 +145,7 @@ func main() {
 		HRHandler:        modHandlers.HR,
 		SubjectHandler:   modHandlers.Subject,
 		TimetableHandler: modHandlers.Timetable,
+		DashboardHandler: modHandlers.Dashboard,
 		JWTService:       jwtSvc,
 		Logger:           zapLog,
 	})

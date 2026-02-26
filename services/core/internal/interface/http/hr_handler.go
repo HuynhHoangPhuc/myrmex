@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -36,6 +37,47 @@ func parsePage(c *gin.Context) (int32, int32) {
 	return page, pageSize
 }
 
+// protoTime converts a proto Timestamp to an RFC3339 string, returns "" if nil.
+func protoTime(ts interface{ AsTime() time.Time }) string {
+	if ts == nil {
+		return ""
+	}
+	return ts.AsTime().Format(time.RFC3339)
+}
+
+// teacherToJSON converts a proto Teacher to a frontend-compatible JSON map.
+func teacherToJSON(t *hrv1.Teacher) gin.H {
+	specs := t.Specializations
+	if specs == nil {
+		specs = []string{}
+	}
+	return gin.H{
+		"id":                t.Id,
+		"employee_code":     t.EmployeeCode,
+		"full_name":         t.FullName,
+		"email":             t.Email,
+		"phone":             t.Phone,
+		"title":             t.Title,
+		"department_id":     t.DepartmentId,
+		"max_hours_per_week": t.MaxHoursPerWeek,
+		"is_active":         t.IsActive,
+		"specializations":   specs,
+		"created_at":        protoTime(t.CreatedAt),
+		"updated_at":        protoTime(t.UpdatedAt),
+	}
+}
+
+// departmentToJSON converts a proto Department to a frontend-compatible JSON map.
+func departmentToJSON(d *hrv1.Department) gin.H {
+	return gin.H{
+		"id":         d.Id,
+		"name":       d.Name,
+		"code":       d.Code,
+		"created_at": protoTime(d.CreatedAt),
+		"updated_at": protoTime(d.UpdatedAt),
+	}
+}
+
 // --- Teacher handlers ---
 
 func (h *HRHandler) ListTeachers(c *gin.Context) {
@@ -52,15 +94,29 @@ func (h *HRHandler) ListTeachers(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"teachers": resp.Teachers, "pagination": resp.Pagination})
+
+	data := make([]gin.H, len(resp.Teachers))
+	for i, t := range resp.Teachers {
+		data[i] = teacherToJSON(t)
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"data":      data,
+		"total":     resp.Pagination.GetTotal(),
+		"page":      page,
+		"page_size": pageSize,
+	})
 }
 
 func (h *HRHandler) CreateTeacher(c *gin.Context) {
 	var body struct {
-		FullName     string `json:"full_name" binding:"required"`
-		Email        string `json:"email" binding:"required"`
-		DepartmentId string `json:"department_id" binding:"required"`
-		Title        string `json:"title" binding:"required"`
+		FullName        string   `json:"full_name" binding:"required"`
+		Email           string   `json:"email" binding:"required"`
+		DepartmentId    string   `json:"department_id" binding:"required"`
+		Title           string   `json:"title" binding:"required"`
+		EmployeeCode    string   `json:"employee_code"`
+		MaxHoursPerWeek int32    `json:"max_hours_per_week"`
+		Specializations []string `json:"specializations"`
+		Phone           string   `json:"phone"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -68,16 +124,20 @@ func (h *HRHandler) CreateTeacher(c *gin.Context) {
 	}
 
 	resp, err := h.teachers.CreateTeacher(c.Request.Context(), &hrv1.CreateTeacherRequest{
-		FullName:     body.FullName,
-		Email:        body.Email,
-		DepartmentId: body.DepartmentId,
-		Title:        body.Title,
+		FullName:        body.FullName,
+		Email:           body.Email,
+		DepartmentId:    body.DepartmentId,
+		Title:           body.Title,
+		EmployeeCode:    body.EmployeeCode,
+		MaxHoursPerWeek: body.MaxHoursPerWeek,
+		Specializations: body.Specializations,
+		Phone:           body.Phone,
 	})
 	if err != nil {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"teacher": resp.Teacher})
+	c.JSON(http.StatusCreated, teacherToJSON(resp.Teacher))
 }
 
 func (h *HRHandler) GetTeacher(c *gin.Context) {
@@ -86,7 +146,7 @@ func (h *HRHandler) GetTeacher(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"teacher": resp.Teacher})
+	c.JSON(http.StatusOK, teacherToJSON(resp.Teacher))
 }
 
 func (h *HRHandler) UpdateTeacher(c *gin.Context) {
@@ -114,7 +174,7 @@ func (h *HRHandler) UpdateTeacher(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"teacher": resp.Teacher})
+	c.JSON(http.StatusOK, teacherToJSON(resp.Teacher))
 }
 
 func (h *HRHandler) DeleteTeacher(c *gin.Context) {
@@ -168,7 +228,17 @@ func (h *HRHandler) ListDepartments(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"departments": resp.Departments, "pagination": resp.Pagination})
+
+	data := make([]gin.H, len(resp.Departments))
+	for i, d := range resp.Departments {
+		data[i] = departmentToJSON(d)
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"data":      data,
+		"total":     resp.Pagination.GetTotal(),
+		"page":      page,
+		"page_size": pageSize,
+	})
 }
 
 func (h *HRHandler) CreateDepartment(c *gin.Context) {
@@ -189,5 +259,5 @@ func (h *HRHandler) CreateDepartment(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"department": resp.Department})
+	c.JSON(http.StatusCreated, departmentToJSON(resp.Department))
 }

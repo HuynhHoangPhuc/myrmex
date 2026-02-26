@@ -33,6 +33,8 @@ type Subject struct {
 	Description   string                 `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	WeeklyHours   int32                  `protobuf:"varint,9,opt,name=weekly_hours,json=weeklyHours,proto3" json:"weekly_hours,omitempty"`
+	IsActive      bool                   `protobuf:"varint,10,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -123,6 +125,20 @@ func (x *Subject) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Subject) GetWeeklyHours() int32 {
+	if x != nil {
+		return x.WeeklyHours
+	}
+	return 0
+}
+
+func (x *Subject) GetIsActive() bool {
+	if x != nil {
+		return x.IsActive
+	}
+	return false
+}
+
 type CreateSubjectRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
@@ -130,6 +146,7 @@ type CreateSubjectRequest struct {
 	Credits       int32                  `protobuf:"varint,3,opt,name=credits,proto3" json:"credits,omitempty"`
 	DepartmentId  string                 `protobuf:"bytes,4,opt,name=department_id,json=departmentId,proto3" json:"department_id,omitempty"`
 	Description   string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	WeeklyHours   int32                  `protobuf:"varint,6,opt,name=weekly_hours,json=weeklyHours,proto3" json:"weekly_hours,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -197,6 +214,13 @@ func (x *CreateSubjectRequest) GetDescription() string {
 		return x.Description
 	}
 	return ""
+}
+
+func (x *CreateSubjectRequest) GetWeeklyHours() int32 {
+	if x != nil {
+		return x.WeeklyHours
+	}
+	return 0
 }
 
 type CreateSubjectResponse struct {
@@ -443,6 +467,7 @@ type UpdateSubjectRequest struct {
 	Credits       *int32                 `protobuf:"varint,4,opt,name=credits,proto3,oneof" json:"credits,omitempty"`
 	DepartmentId  *string                `protobuf:"bytes,5,opt,name=department_id,json=departmentId,proto3,oneof" json:"department_id,omitempty"`
 	Description   *string                `protobuf:"bytes,6,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	WeeklyHours   *int32                 `protobuf:"varint,7,opt,name=weekly_hours,json=weeklyHours,proto3,oneof" json:"weekly_hours,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -517,6 +542,13 @@ func (x *UpdateSubjectRequest) GetDescription() string {
 		return *x.Description
 	}
 	return ""
+}
+
+func (x *UpdateSubjectRequest) GetWeeklyHours() int32 {
+	if x != nil && x.WeeklyHours != nil {
+		return *x.WeeklyHours
+	}
+	return 0
 }
 
 type UpdateSubjectResponse struct {
@@ -648,7 +680,7 @@ var File_subject_v1_subject_proto protoreflect.FileDescriptor
 const file_subject_v1_subject_proto_rawDesc = "" +
 	"\n" +
 	"\x18subject/v1/subject.proto\x12\n" +
-	"subject.v1\x1a\x14core/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x98\x02\n" +
+	"subject.v1\x1a\x14core/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd8\x02\n" +
 	"\aSubject\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\tR\x04code\x12\x12\n" +
@@ -659,13 +691,17 @@ const file_subject_v1_subject_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\x9f\x01\n" +
+	"updated_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12!\n" +
+	"\fweekly_hours\x18\t \x01(\x05R\vweeklyHours\x12\x1b\n" +
+	"\tis_active\x18\n" +
+	" \x01(\bR\bisActive\"\xc2\x01\n" +
 	"\x14CreateSubjectRequest\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\tR\x04code\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
 	"\acredits\x18\x03 \x01(\x05R\acredits\x12#\n" +
 	"\rdepartment_id\x18\x04 \x01(\tR\fdepartmentId\x12 \n" +
-	"\vdescription\x18\x05 \x01(\tR\vdescription\"F\n" +
+	"\vdescription\x18\x05 \x01(\tR\vdescription\x12!\n" +
+	"\fweekly_hours\x18\x06 \x01(\x05R\vweeklyHours\"F\n" +
 	"\x15CreateSubjectResponse\x12-\n" +
 	"\asubject\x18\x01 \x01(\v2\x13.subject.v1.SubjectR\asubject\"#\n" +
 	"\x11GetSubjectRequest\x12\x0e\n" +
@@ -682,20 +718,22 @@ const file_subject_v1_subject_proto_rawDesc = "" +
 	"\bsubjects\x18\x01 \x03(\v2\x13.subject.v1.SubjectR\bsubjects\x12;\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2\x1b.core.v1.PaginationResponseR\n" +
-	"pagination\"\x88\x02\n" +
+	"pagination\"\xc1\x02\n" +
 	"\x14UpdateSubjectRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\x04code\x18\x02 \x01(\tH\x00R\x04code\x88\x01\x01\x12\x17\n" +
 	"\x04name\x18\x03 \x01(\tH\x01R\x04name\x88\x01\x01\x12\x1d\n" +
 	"\acredits\x18\x04 \x01(\x05H\x02R\acredits\x88\x01\x01\x12(\n" +
 	"\rdepartment_id\x18\x05 \x01(\tH\x03R\fdepartmentId\x88\x01\x01\x12%\n" +
-	"\vdescription\x18\x06 \x01(\tH\x04R\vdescription\x88\x01\x01B\a\n" +
+	"\vdescription\x18\x06 \x01(\tH\x04R\vdescription\x88\x01\x01\x12&\n" +
+	"\fweekly_hours\x18\a \x01(\x05H\x05R\vweeklyHours\x88\x01\x01B\a\n" +
 	"\x05_codeB\a\n" +
 	"\x05_nameB\n" +
 	"\n" +
 	"\b_creditsB\x10\n" +
 	"\x0e_department_idB\x0e\n" +
-	"\f_description\"F\n" +
+	"\f_descriptionB\x0f\n" +
+	"\r_weekly_hours\"F\n" +
 	"\x15UpdateSubjectResponse\x12-\n" +
 	"\asubject\x18\x01 \x01(\v2\x13.subject.v1.SubjectR\asubject\"&\n" +
 	"\x14DeleteSubjectRequest\x12\x0e\n" +

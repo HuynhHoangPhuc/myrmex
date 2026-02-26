@@ -62,16 +62,25 @@ func (s *TeacherServer) CreateTeacher(ctx context.Context, req *hrv1.CreateTeach
 		deptID = &id
 	}
 
-	// Generate employee code from email prefix as default
-	employeeCode := fmt.Sprintf("TC-%s", req.Email[:min(8, len(req.Email))])
+	// Use provided employee_code or generate a default from email prefix
+	employeeCode := req.EmployeeCode
+	if employeeCode == "" {
+		employeeCode = fmt.Sprintf("TC-%s", req.Email[:min(8, len(req.Email))])
+	}
+	maxHours := int(req.MaxHoursPerWeek)
+	if maxHours <= 0 {
+		maxHours = 20
+	}
 
 	teacher, err := s.createTeacher.Handle(ctx, command.CreateTeacherCommand{
 		EmployeeCode:    employeeCode,
 		FullName:        req.FullName,
 		Email:           req.Email,
+		Phone:           req.Phone,
 		Title:           req.Title,
 		DepartmentID:    deptID,
-		MaxHoursPerWeek: 20,
+		MaxHoursPerWeek: maxHours,
+		Specializations: req.Specializations,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "create teacher: %v", err)
@@ -265,13 +274,17 @@ func (s *TeacherServer) UpdateTeacherAvailability(ctx context.Context, req *hrv1
 
 func teacherToProto(t *entity.Teacher) *hrv1.Teacher {
 	p := &hrv1.Teacher{
-		Id:        t.ID.String(),
-		FullName:  t.FullName,
-		Email:     t.Email,
-		Title:     t.Title,
-		IsActive:  t.IsActive,
-		CreatedAt: timestamppb.New(t.CreatedAt),
-		UpdatedAt: timestamppb.New(t.UpdatedAt),
+		Id:              t.ID.String(),
+		FullName:        t.FullName,
+		Email:           t.Email,
+		Phone:           t.Phone,
+		Title:           t.Title,
+		IsActive:        t.IsActive,
+		EmployeeCode:    t.EmployeeCode,
+		MaxHoursPerWeek: int32(t.MaxHoursPerWeek),
+		Specializations: t.Specializations,
+		CreatedAt:       timestamppb.New(t.CreatedAt),
+		UpdatedAt:       timestamppb.New(t.UpdatedAt),
 	}
 	if t.DepartmentID != nil {
 		p.DepartmentId = t.DepartmentID.String()

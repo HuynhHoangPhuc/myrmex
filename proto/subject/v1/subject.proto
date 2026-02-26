@@ -22,6 +22,8 @@ message Subject {
   string description = 6;
   google.protobuf.Timestamp created_at = 7;
   google.protobuf.Timestamp updated_at = 8;
+  int32 weekly_hours = 9;
+  bool is_active = 10;
 }
 
 message CreateSubjectRequest {
@@ -30,6 +32,7 @@ message CreateSubjectRequest {
   int32 credits = 3;
   string department_id = 4;
   string description = 5;
+  int32 weekly_hours = 6;
 }
 
 message CreateSubjectResponse {
@@ -61,6 +64,7 @@ message UpdateSubjectRequest {
   optional int32 credits = 4;
   optional string department_id = 5;
   optional string description = 6;
+  optional int32 weekly_hours = 7;
 }
 
 message UpdateSubjectResponse {

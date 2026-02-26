@@ -18,6 +18,7 @@ type CreateTeacherCommand struct {
 	Title           string
 	DepartmentID    *uuid.UUID
 	MaxHoursPerWeek int
+	Specializations []string
 }
 
 // CreateTeacherHandler handles teacher creation.
@@ -47,5 +48,11 @@ func (h *CreateTeacherHandler) Handle(ctx context.Context, cmd CreateTeacherComm
 	if err != nil {
 		return nil, fmt.Errorf("create teacher: %w", err)
 	}
+	for _, spec := range cmd.Specializations {
+		if err := h.repo.AddSpecialization(ctx, created.ID, spec); err != nil {
+			return nil, fmt.Errorf("add specialization %q: %w", spec, err)
+		}
+	}
+	created.Specializations = cmd.Specializations
 	return created, nil
 }

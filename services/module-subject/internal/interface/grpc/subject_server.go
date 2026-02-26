@@ -50,6 +50,7 @@ func (s *SubjectServer) CreateSubject(ctx context.Context, req *subjectv1.Create
 		Credits:      req.GetCredits(),
 		Description:  req.GetDescription(),
 		DepartmentID: req.GetDepartmentId(),
+		WeeklyHours:  req.GetWeeklyHours(),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "create subject: %v", err)
@@ -140,6 +141,10 @@ func (s *SubjectServer) UpdateSubject(ctx context.Context, req *subjectv1.Update
 		v := req.GetDepartmentId()
 		cmd.DepartmentID = &v
 	}
+	if req.WeeklyHours != nil {
+		v := req.GetWeeklyHours()
+		cmd.WeeklyHours = &v
+	}
 
 	subject, err := s.updateHandler.Handle(ctx, cmd)
 	if err != nil {
@@ -169,6 +174,8 @@ func subjectToProto(s *entity.Subject) *subjectv1.Subject {
 		Credits:      s.Credits,
 		DepartmentId: s.DepartmentID,
 		Description:  s.Description,
+		WeeklyHours:  s.WeeklyHours,
+		IsActive:     s.IsActive,
 		CreatedAt:    timestamppb.New(s.CreatedAt),
 		UpdatedAt:    timestamppb.New(s.UpdatedAt),
 	}

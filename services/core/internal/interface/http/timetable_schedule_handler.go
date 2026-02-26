@@ -164,7 +164,17 @@ func (h *TimetableHandler) SuggestTeachers(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"suggestions": resp.Suggestions})
+	suggestions := make([]gin.H, len(resp.Suggestions))
+	for i, s := range resp.Suggestions {
+		suggestions[i] = gin.H{
+			"teacher_id":   s.TeacherId,
+			"teacher_name": s.TeacherName,
+			"score":        s.Score,
+			"reasons":      []string{},
+			"is_available": true,
+		}
+	}
+	c.JSON(http.StatusOK, suggestions)
 }
 
 // StreamScheduleStatus streams schedule generation events via SSE.

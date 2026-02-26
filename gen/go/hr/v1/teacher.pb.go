@@ -24,17 +24,21 @@ const (
 )
 
 type Teacher struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	FullName      string                 `protobuf:"bytes,2,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
-	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
-	DepartmentId  string                 `protobuf:"bytes,4,opt,name=department_id,json=departmentId,proto3" json:"department_id,omitempty"`
-	Title         string                 `protobuf:"bytes,5,opt,name=title,proto3" json:"title,omitempty"`
-	IsActive      bool                   `protobuf:"varint,6,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	FullName        string                 `protobuf:"bytes,2,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
+	Email           string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	DepartmentId    string                 `protobuf:"bytes,4,opt,name=department_id,json=departmentId,proto3" json:"department_id,omitempty"`
+	Title           string                 `protobuf:"bytes,5,opt,name=title,proto3" json:"title,omitempty"`
+	IsActive        bool                   `protobuf:"varint,6,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
+	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt       *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	EmployeeCode    string                 `protobuf:"bytes,9,opt,name=employee_code,json=employeeCode,proto3" json:"employee_code,omitempty"`
+	MaxHoursPerWeek int32                  `protobuf:"varint,10,opt,name=max_hours_per_week,json=maxHoursPerWeek,proto3" json:"max_hours_per_week,omitempty"`
+	Specializations []string               `protobuf:"bytes,11,rep,name=specializations,proto3" json:"specializations,omitempty"`
+	Phone           string                 `protobuf:"bytes,12,opt,name=phone,proto3" json:"phone,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Teacher) Reset() {
@@ -123,6 +127,34 @@ func (x *Teacher) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Teacher) GetEmployeeCode() string {
+	if x != nil {
+		return x.EmployeeCode
+	}
+	return ""
+}
+
+func (x *Teacher) GetMaxHoursPerWeek() int32 {
+	if x != nil {
+		return x.MaxHoursPerWeek
+	}
+	return 0
+}
+
+func (x *Teacher) GetSpecializations() []string {
+	if x != nil {
+		return x.Specializations
+	}
+	return nil
+}
+
+func (x *Teacher) GetPhone() string {
+	if x != nil {
+		return x.Phone
+	}
+	return ""
+}
+
 type TimeSlot struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	DayOfWeek     int32                  `protobuf:"varint,1,opt,name=day_of_week,json=dayOfWeek,proto3" json:"day_of_week,omitempty"`
@@ -184,13 +216,17 @@ func (x *TimeSlot) GetEndPeriod() int32 {
 }
 
 type CreateTeacherRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	FullName      string                 `protobuf:"bytes,1,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
-	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	DepartmentId  string                 `protobuf:"bytes,3,opt,name=department_id,json=departmentId,proto3" json:"department_id,omitempty"`
-	Title         string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	FullName        string                 `protobuf:"bytes,1,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
+	Email           string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	DepartmentId    string                 `protobuf:"bytes,3,opt,name=department_id,json=departmentId,proto3" json:"department_id,omitempty"`
+	Title           string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	EmployeeCode    string                 `protobuf:"bytes,5,opt,name=employee_code,json=employeeCode,proto3" json:"employee_code,omitempty"`
+	MaxHoursPerWeek int32                  `protobuf:"varint,6,opt,name=max_hours_per_week,json=maxHoursPerWeek,proto3" json:"max_hours_per_week,omitempty"`
+	Specializations []string               `protobuf:"bytes,7,rep,name=specializations,proto3" json:"specializations,omitempty"`
+	Phone           string                 `protobuf:"bytes,8,opt,name=phone,proto3" json:"phone,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *CreateTeacherRequest) Reset() {
@@ -247,6 +283,34 @@ func (x *CreateTeacherRequest) GetDepartmentId() string {
 func (x *CreateTeacherRequest) GetTitle() string {
 	if x != nil {
 		return x.Title
+	}
+	return ""
+}
+
+func (x *CreateTeacherRequest) GetEmployeeCode() string {
+	if x != nil {
+		return x.EmployeeCode
+	}
+	return ""
+}
+
+func (x *CreateTeacherRequest) GetMaxHoursPerWeek() int32 {
+	if x != nil {
+		return x.MaxHoursPerWeek
+	}
+	return 0
+}
+
+func (x *CreateTeacherRequest) GetSpecializations() []string {
+	if x != nil {
+		return x.Specializations
+	}
+	return nil
+}
+
+func (x *CreateTeacherRequest) GetPhone() string {
+	if x != nil {
+		return x.Phone
 	}
 	return ""
 }
@@ -899,7 +963,7 @@ var File_hr_v1_teacher_proto protoreflect.FileDescriptor
 
 const file_hr_v1_teacher_proto_rawDesc = "" +
 	"\n" +
-	"\x13hr/v1/teacher.proto\x12\x05hr.v1\x1a\x14core/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9a\x02\n" +
+	"\x13hr/v1/teacher.proto\x12\x05hr.v1\x1a\x14core/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xac\x03\n" +
 	"\aTeacher\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tfull_name\x18\x02 \x01(\tR\bfullName\x12\x14\n" +
@@ -910,17 +974,26 @@ const file_hr_v1_teacher_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"l\n" +
+	"updated_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12#\n" +
+	"\remployee_code\x18\t \x01(\tR\femployeeCode\x12+\n" +
+	"\x12max_hours_per_week\x18\n" +
+	" \x01(\x05R\x0fmaxHoursPerWeek\x12(\n" +
+	"\x0fspecializations\x18\v \x03(\tR\x0fspecializations\x12\x14\n" +
+	"\x05phone\x18\f \x01(\tR\x05phone\"l\n" +
 	"\bTimeSlot\x12\x1e\n" +
 	"\vday_of_week\x18\x01 \x01(\x05R\tdayOfWeek\x12!\n" +
 	"\fstart_period\x18\x02 \x01(\x05R\vstartPeriod\x12\x1d\n" +
 	"\n" +
-	"end_period\x18\x03 \x01(\x05R\tendPeriod\"\x84\x01\n" +
+	"end_period\x18\x03 \x01(\x05R\tendPeriod\"\x96\x02\n" +
 	"\x14CreateTeacherRequest\x12\x1b\n" +
 	"\tfull_name\x18\x01 \x01(\tR\bfullName\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12#\n" +
 	"\rdepartment_id\x18\x03 \x01(\tR\fdepartmentId\x12\x14\n" +
-	"\x05title\x18\x04 \x01(\tR\x05title\"A\n" +
+	"\x05title\x18\x04 \x01(\tR\x05title\x12#\n" +
+	"\remployee_code\x18\x05 \x01(\tR\femployeeCode\x12+\n" +
+	"\x12max_hours_per_week\x18\x06 \x01(\x05R\x0fmaxHoursPerWeek\x12(\n" +
+	"\x0fspecializations\x18\a \x03(\tR\x0fspecializations\x12\x14\n" +
+	"\x05phone\x18\b \x01(\tR\x05phone\"A\n" +
 	"\x15CreateTeacherResponse\x12(\n" +
 	"\ateacher\x18\x01 \x01(\v2\x0e.hr.v1.TeacherR\ateacher\"#\n" +
 	"\x11GetTeacherRequest\x12\x0e\n" +
