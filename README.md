@@ -5,7 +5,7 @@
 ## Overview
 
 - **Type**: Modular microservice ERP (like Odoo, but Go-native)
-- **AI Integration**: ChatGPT/Claude-powered agent for conversational operations
+- **AI Integration**: Multi-LLM support (OpenAI, Claude, Gemini) for conversational operations
 - **MVP**: University faculty management (HR, Subjects, Timetable modules)
 - **Tech Stack**: Go 1.26 + gRPC + NATS JetStream + PostgreSQL + React
 
@@ -18,7 +18,7 @@ Requires only Docker & Docker Compose.
 ```bash
 # Optional: set LLM_API_KEY for AI chat feature
 cp .env.example .env
-# edit .env and set LLM_API_KEY=your-key
+# edit .env and set LLM_API_KEY and LLM_PROVIDER (openai|claude|gemini)
 
 # Start everything (builds images, runs migrations, seeds demo data)
 make demo
@@ -91,10 +91,11 @@ myrmex/
 - **Authentication**: JWT (access + refresh tokens, 15min + 7days)
 
 ### AI Agent Features
-- **Multi-LLM Support**: Claude Haiku 4.5 (default) or OpenAI (configurable)
+- **Multi-LLM Support**: Claude, OpenAI, or Gemini (configurable; Gemini free tier available)
 - **Tool Registry**: Dynamic registration of domain operations as callable tools
 - **Conversational Operations**: Chat-driven scheduling, teacher assignments, subject creation
-- **WebSocket**: Real-time streaming responses
+- **WebSocket**: Real-time streaming responses with markdown rendering
+- **Provider Flexibility**: Switch between LLM providers with single config change
 
 ### Frontend
 - **Modern Stack**: React 19 + TypeScript 5.7 + TanStack Router/Query/Form/Table
@@ -176,7 +177,28 @@ WebSocket  /ws/chat?token=ACCESS_TOKEN  # Stream chat responses
 
 ## Environment Variables
 
-**Core Service** (services/core/config/local.yaml):
+### LLM Configuration (All Providers)
+
+Set these environment variables for AI chat (optional; omit to disable):
+
+```bash
+# Required: API key for your chosen LLM provider
+# OpenAI:  https://platform.openai.com/api-keys
+# Claude:  https://console.anthropic.com/
+# Gemini:  https://aistudio.google.com/app/apikey (free tier)
+LLM_API_KEY=your-api-key
+
+# Optional: Provider and model (defaults shown below)
+LLM_PROVIDER=openai              # "openai" | "claude" | "gemini"
+LLM_MODEL=gpt-4o-mini           # Provider-specific model name
+
+# Provider Examples:
+# OpenAI:  LLM_PROVIDER=openai  LLM_MODEL=gpt-4o-mini
+# Claude:  LLM_PROVIDER=claude  LLM_MODEL=claude-haiku-4-5-20251001
+# Gemini:  LLM_PROVIDER=gemini  LLM_MODEL=gemini-3-flash-preview  # free tier
+```
+
+### Core Service (services/core/config/local.yaml):
 ```yaml
 server:
   http_port: 8080
@@ -188,9 +210,9 @@ auth:
   refresh_token_ttl: 7d
 
 llm:
-  provider: claude  # or openai
-  model: claude-haiku-4-5-20251001
-  api_key: ${CLAUDE_API_KEY}
+  provider: ${LLM_PROVIDER}          # "openai" | "claude" | "gemini"
+  model: ${LLM_MODEL}
+  api_key: ${LLM_API_KEY}
 
 nats:
   url: nats://localhost:4222

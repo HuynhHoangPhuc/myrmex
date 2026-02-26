@@ -2,6 +2,71 @@
 
 All notable changes to the Myrmex project are documented here.
 
+## [2026-02-26] — Multi-LLM Provider Support & WebSocket Fix
+
+**Status**: Complete
+
+### Summary
+Added support for multiple LLM providers (OpenAI, Claude, Gemini), fixed WebSocket compatibility issue by replacing `coder/websocket` with `gorilla/websocket`, implemented markdown rendering in chat responses, and enhanced Docker Compose configuration.
+
+### Backend Changes
+- **WebSocket Fix**: Replaced `coder/websocket` with `gorilla/websocket` in `services/core/internal/interface/http/chat_handler.go`
+  - Old library was incompatible with Gin's response writer
+  - gorilla/websocket provides proper Gin integration
+- **Multi-LLM Provider Support**: Extended LLM infrastructure to support 3 providers
+  - New file: `services/core/internal/infrastructure/llm/gemini_provider.go`
+  - Updated `LLMProvider` interface with `ChatWithTools()` and `StreamChat()` methods
+  - Provider abstraction allows seamless switching between OpenAI, Claude, and Gemini
+  - `ToolCall.ProviderMeta` field stores provider-specific metadata (e.g., Gemini's `thoughtSignature` for multi-turn tool history)
+  - ThinkingBudget disabled in Gemini config to avoid signature requirements on non-thinking usage
+- **Configuration Updates**
+  - `LLM_PROVIDER` env var: supports "openai" | "claude" | "gemini"
+  - `LLM_MODEL` env var: configurable per provider
+  - Docker Compose now passes `LLM_PROVIDER` and `LLM_MODEL` to core service
+
+### Frontend Changes
+- **Markdown Rendering**: Added `react-markdown` to `chat-message.tsx` for formatted LLM responses
+  - AI chat responses now render markdown (bold, italic, lists, code blocks)
+  - Improves readability of complex instructions or formatted data
+
+### Documentation Updates
+- Updated README.md with multi-provider examples (OpenAI, Claude, Gemini)
+- Updated .env.example with Gemini free tier model guidance
+- Updated deployment-guide.md with 3-provider configuration section
+- Updated system-architecture.md to reflect provider flexibility and ProviderMeta usage
+- Updated codebase-summary.md with Gemini provider and WebSocket notes
+
+### Configuration Examples
+```bash
+# OpenAI (default)
+LLM_PROVIDER=openai
+LLM_MODEL=gpt-4o-mini
+LLM_API_KEY=sk-...
+
+# Claude
+LLM_PROVIDER=claude
+LLM_MODEL=claude-haiku-4-5-20251001
+LLM_API_KEY=sk-ant-...
+
+# Gemini (free tier)
+LLM_PROVIDER=gemini
+LLM_MODEL=gemini-3-flash-preview  # Current free model
+LLM_API_KEY=your-gemini-api-key
+```
+
+### Docker Compose Enhancement
+- All docker compose targets now use `--env-file .env` to pick up root .env configuration
+- Enables proper environment variable inheritance in subdirectory compose files
+- New `COMPOSE` variable in Makefile standardizes command invocation
+
+### Quality Metrics
+- All services compile: `go build ./...` ✓
+- No breaking changes to existing APIs or proto contracts
+- Provider-agnostic chat interface maintains backward compatibility
+- Configuration flexible for development and production environments
+
+---
+
 ## [2026-02-25] — Demo-in-a-Box: Docker One-Liner Deployment
 
 **Status**: Complete

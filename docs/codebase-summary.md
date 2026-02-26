@@ -67,7 +67,7 @@ myrmex/
 │   │   │   ├── infrastructure/
 │   │   │   │   ├── persistence/ # User repository, event store impl
 │   │   │   │   ├── auth/   # JWT, bcrypt
-│   │   │   │   ├── llm/    # Claude + OpenAI provider adapters
+│   │   │   │   ├── llm/    # OpenAI, Claude, Gemini provider adapters
 │   │   │   │   ├── agent/  # Tool registry + executor
 │   │   │   │   └── messaging/ # NATS publisher
 │   │   │   ├── interface/
@@ -337,6 +337,28 @@ cd frontend && npm install && npm run dev
 4. **Monitoring**: Prometheus metrics not yet integrated
 5. **Scale**: NATS single-instance (needs clustering for HA)
 6. **Tenancy**: Single-tenant MVP; multi-tenant planned for Phase 4
+
+## Infrastructure Updates (Feb 26)
+
+### WebSocket Fix
+- Switched from `coder/websocket` to `gorilla/websocket` in HTTP chat handler
+- Old library was incompatible with Gin's response writer; gorilla/websocket resolves compatibility issues
+
+### Multi-LLM Provider Support
+- Added Gemini provider alongside existing OpenAI and Claude
+- New file: `services/core/internal/infrastructure/llm/gemini_provider.go`
+- `LLMProvider` interface: `ChatWithTools()` + `StreamChat()` methods
+- Config: `LLM_PROVIDER` (default: openai), `LLM_MODEL=gemini-3-flash-preview` for Gemini free tier
+- `ToolCall.ProviderMeta` field for provider-specific metadata (e.g., Gemini's `thoughtSignature`)
+- ThinkingBudget disabled in Gemini to avoid signature requirements on non-thinking usage
+
+### Docker Compose Enhancement
+- All docker compose targets now use `--env-file .env` for root .env pickup
+- New `COMPOSE` variable defined in Makefile
+- `LLM_PROVIDER` and `LLM_MODEL` env vars now passed to core container
+
+### Frontend Chat Enhancement
+- Added `react-markdown` to `chat-message.tsx` for markdown rendering in AI chat bubble
 
 ## Proto & API Updates (Feb 26)
 

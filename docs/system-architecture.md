@@ -139,7 +139,7 @@ Myrmex is a microservice architecture with modular services communicating via gR
 **Outbound Dependencies**:
 - PostgreSQL (core schema: users, event_store, conversations)
 - NATS JetStream (publish events)
-- Claude/OpenAI API (LLM inference)
+- LLM API (OpenAI, Claude, or Gemini for LLM inference)
 
 **Inbound Dependencies**:
 - Module-HR (gRPC)
@@ -330,8 +330,9 @@ Myrmex is a microservice architecture with modular services communicating via gR
 2. Core Chat Gateway
    - Validate JWT (from query param)
    - Pass message to LLM with tool definitions
+   - Support multiple providers (OpenAI, Claude, Gemini)
 
-3. LLM (Claude/OpenAI)
+3. LLM (OpenAI/Claude/Gemini)
    - Receives system prompt: "You are a university scheduling assistant"
    - Receives tool schema:
      [
@@ -343,23 +344,25 @@ Myrmex is a microservice architecture with modular services communicating via gR
        ...
      ]
    - Analyzes message, calls tool: create_subject(name="Math 101", credits=3, ...)
+   - Provider-specific metadata stored in ToolCall.ProviderMeta (e.g., Gemini's thoughtSignature)
 
 4. Tool Executor (Self-Referential HTTP)
-   - Receives LLM tool call
+   - Receives LLM tool call (with ProviderMeta if needed for multi-turn history)
    - Validates parameters
    - Dispatches via HTTP to core's own API (selfURL + internal JWT token)
      Example: POST /api/timetable/semesters/{id}/generate (with internal JWT header)
    - Tool endpoint routes to appropriate module gRPC (Module-Subject, Module-HR, Module-Timetable)
    - Returns result to LLM
-   - Note: selfURL is core's HTTP base URL (e.g., "http://localhost:8000")
+   - Note: selfURL is core's HTTP base URL (e.g., "http://localhost:8000" or "http://core:8080" in Docker)
    - Note: internalJWT is a service-level JWT with 24h TTL generated at startup
 
 5. LLM Response
    - Streams confirmation: "I've created subject Math 101 with 3 credits"
+   - Response markdown-rendered on frontend
    - WebSocket streaming to client
 
 6. Client
-   - Displays chat message
+   - Displays chat message with markdown formatting
    - Invalidates /subjects query
    - Refreshes subject list
 ```

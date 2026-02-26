@@ -311,10 +311,14 @@ auth:
   refresh_token_ttl: 7d    # Refresh token lifetime
 
 llm:
-  provider: "claude"                                    # "claude" or "openai"
-  model: "claude-haiku-4-5-20251001"                  # Model name
-  api_key: "${CLAUDE_API_KEY}"                         # From env var
+  provider: "${LLM_PROVIDER}"                          # "openai" | "claude" | "gemini"
+  model: "${LLM_MODEL}"                                # Provider-specific model name
+  api_key: "${LLM_API_KEY}"                            # From env var
   timeout: 30s                                         # Request timeout
+  # Examples:
+  # OpenAI:  provider: "openai"  model: "gpt-4o-mini"
+  # Claude:  provider: "claude"  model: "claude-haiku-4-5-20251001"
+  # Gemini:  provider: "gemini"  model: "gemini-3-flash-preview"
 
 database:
   url: "postgres://myrmex:myrmex_dev@localhost:5432/myrmex?sslmode=disable"
