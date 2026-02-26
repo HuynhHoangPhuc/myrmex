@@ -10,6 +10,7 @@ COPY services/module-hr/ services/module-hr/
 COPY services/core/go.mod services/core/go.mod
 COPY services/module-subject/go.mod services/module-subject/go.mod
 COPY services/module-timetable/go.mod services/module-timetable/go.mod
+COPY services/module-analytics/go.mod services/module-analytics/go.mod
 
 WORKDIR /workspace/services/module-hr
 RUN go build -o /bin/module-hr ./cmd/server
