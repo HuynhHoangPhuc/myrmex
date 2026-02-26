@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -27,6 +28,44 @@ func NewTimetableHandler(
 	return &TimetableHandler{timetable: timetable, semesters: semesters, natsJS: natsJS}
 }
 
+// semesterToJSON converts a proto Semester to a frontend-compatible JSON map.
+// academic_year is derived from the year and term numbers.
+// is_active is inferred by checking whether today falls within the semester dates.
+func semesterToJSON(s *timetablev1.Semester) gin.H {
+	startDate := protoTime(s.StartDate)
+	endDate := protoTime(s.EndDate)
+
+	// Derive academic_year string from year and term (e.g. "2026 Term 1")
+	academicYear := fmt.Sprintf("%d Term %d", s.Year, s.Term)
+
+	// Compute is_active: semester is active if today is between start and end dates
+	isActive := false
+	if s.StartDate != nil && s.EndDate != nil {
+		now := time.Now()
+		isActive = !now.Before(s.StartDate.AsTime()) && !now.After(s.EndDate.AsTime())
+	}
+
+	offeredSubjectIDs := s.OfferedSubjectIds
+	if offeredSubjectIDs == nil {
+		offeredSubjectIDs = []string{}
+	}
+	return gin.H{
+		"id":                  s.Id,
+		"name":                s.Name,
+		"year":                s.Year,
+		"term":                s.Term,
+		"academic_year":       academicYear,
+		"start_date":          startDate,
+		"end_date":            endDate,
+		"is_active":           isActive,
+		"offered_subject_ids": offeredSubjectIDs,
+		"time_slots":          []gin.H{},
+		"rooms":               []gin.H{},
+		"created_at":          "",
+		"updated_at":          "",
+	}
+}
+
 // --- Semester handlers ---
 
 func (h *TimetableHandler) ListSemesters(c *gin.Context) {
@@ -38,7 +77,17 @@ func (h *TimetableHandler) ListSemesters(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"semesters": resp.Semesters, "pagination": resp.Pagination})
+
+	data := make([]gin.H, len(resp.Semesters))
+	for i, s := range resp.Semesters {
+		data[i] = semesterToJSON(s)
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"data":      data,
+		"total":     resp.Pagination.GetTotal(),
+		"page":      page,
+		"page_size": pageSize,
+	})
 }
 
 func (h *TimetableHandler) CreateSemester(c *gin.Context) {
@@ -76,7 +125,7 @@ func (h *TimetableHandler) CreateSemester(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"semester": resp.Semester})
+	c.JSON(http.StatusCreated, semesterToJSON(resp.Semester))
 }
 
 func (h *TimetableHandler) GetSemester(c *gin.Context) {
@@ -87,7 +136,7 @@ func (h *TimetableHandler) GetSemester(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"semester": resp.Semester})
+	c.JSON(http.StatusOK, semesterToJSON(resp.Semester))
 }
 
 func (h *TimetableHandler) AddOfferedSubject(c *gin.Context) {
@@ -107,7 +156,7 @@ func (h *TimetableHandler) AddOfferedSubject(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"semester": resp.Semester})
+	c.JSON(http.StatusOK, semesterToJSON(resp.Semester))
 }
 
 func (h *TimetableHandler) RemoveOfferedSubject(c *gin.Context) {
