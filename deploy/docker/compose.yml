@@ -58,6 +58,8 @@ services:
       SUBJECT_GRPC_ADDR: "module-subject:50053"
       TIMETABLE_GRPC_ADDR: "module-timetable:50054"
       LLM_API_KEY: "${LLM_API_KEY:-}"
+      LLM_PROVIDER: "${LLM_PROVIDER:-}"
+      LLM_MODEL: "${LLM_MODEL:-}"
     depends_on:
       migrate:
         condition: service_completed_successfully

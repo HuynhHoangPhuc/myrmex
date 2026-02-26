@@ -3,6 +3,9 @@
 SERVICES := core module-hr module-subject module-timetable
 export PATH := $(HOME)/go/bin:$(PATH)
 
+# Pass root .env to docker compose (compose file lives in a subdirectory)
+COMPOSE := docker compose -f deploy/docker/compose.yml $(if $(wildcard .env),--env-file .env,)
+
 proto:
 	go tool buf generate
 
@@ -28,10 +31,10 @@ lint:
 	done
 
 up:
-	docker compose -f deploy/docker/compose.yml up -d
+	$(COMPOSE) up -d
 
 down:
-	docker compose -f deploy/docker/compose.yml down
+	$(COMPOSE) down
 
 migrate:
 	@for svc in $(SERVICES); do \
@@ -53,8 +56,8 @@ reset-db:
 	$(MAKE) seed
 
 demo:
-	docker compose -f deploy/docker/compose.yml down -v --remove-orphans 2>/dev/null || true
-	docker compose -f deploy/docker/compose.yml up --build -d
+	$(COMPOSE) down -v --remove-orphans 2>/dev/null || true
+	$(COMPOSE) up --build -d
 	@echo ""
 	@echo "Myrmex is starting up..."
 	@echo "  Frontend: http://localhost:3000"
@@ -64,11 +67,11 @@ demo:
 	@echo "Run 'make demo-down' to stop"
 
 demo-down:
-	docker compose -f deploy/docker/compose.yml down
+	$(COMPOSE) down
 
 demo-logs:
-	docker compose -f deploy/docker/compose.yml logs -f
+	$(COMPOSE) logs -f
 
 demo-reset:
-	docker compose -f deploy/docker/compose.yml down -v
+	$(COMPOSE) down -v
 	$(MAKE) demo
