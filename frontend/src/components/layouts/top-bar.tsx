@@ -1,6 +1,6 @@
 import { useRouterState, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { LogOut, User, ChevronRight } from 'lucide-react'
+import { LogOut, User, ChevronRight, Bot } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -111,8 +111,13 @@ function useBreadcrumbs(): Crumb[] {
   })
 }
 
-// Top bar: breadcrumbs on left, user dropdown on right
-export function TopBar() {
+interface TopBarProps {
+  chatOpen?: boolean
+  onToggleChat?: () => void
+}
+
+// Top bar: breadcrumbs on left, AI toggle + user dropdown on right
+export function TopBar({ chatOpen, onToggleChat }: TopBarProps) {
   const breadcrumbs = useBreadcrumbs()
   const { data: user } = useCurrentUser()
   const logout = useLogout()
@@ -137,6 +142,21 @@ export function TopBar() {
           </span>
         ))}
       </nav>
+
+      <div className="flex items-center gap-2">
+        {/* AI assistant toggle */}
+        {onToggleChat && (
+          <Button
+            variant={chatOpen ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={onToggleChat}
+            className="gap-1.5"
+            title={chatOpen ? 'Close AI assistant' : 'Open AI assistant'}
+          >
+            <Bot className="h-4 w-4" />
+            <span className="hidden sm:inline text-xs">AI</span>
+          </Button>
+        )}
 
       {/* User dropdown */}
       <DropdownMenu>
@@ -170,6 +190,7 @@ export function TopBar() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
     </header>
   )
 }
