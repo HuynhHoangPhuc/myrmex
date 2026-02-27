@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { ChevronDown, ChevronRight, Wrench, Zap } from 'lucide-react'
+import { CheckCircle2, Wrench } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { cn } from '@/lib/utils/cn'
 import type { ChatMessage as ChatMessageType } from '@/chat/types'
@@ -9,11 +8,11 @@ interface ChatMessageProps {
 }
 
 /**
- * Renders a single chat message bubble.
+ * Renders a single chat message.
  * - user: right-aligned blue bubble
- * - assistant: left-aligned gray bubble
- * - tool_call: compact card showing tool name + args
- * - tool_result: collapsible JSON result card
+ * - assistant: left-aligned gray bubble with Markdown
+ * - tool_call: compact card with friendly action label
+ * - tool_result: minimal success badge (no JSON)
  */
 export function ChatMessage({ message }: ChatMessageProps) {
   switch (message.role) {
@@ -24,7 +23,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
     case 'tool_call':
       return <ToolCallCard toolName={message.toolName} args={message.toolArgs} />
     case 'tool_result':
-      return <ToolResultCard toolName={message.toolName} result={message.toolResult} />
+      return <ToolResultCard result={message.toolResult} />
     default:
       return null
   }
@@ -95,18 +94,17 @@ function ToolCallCard({
   toolName?: string
   args?: Record<string, unknown>
 }) {
+  const label = friendlyToolLabel(toolName)
+  const paramSummary = args ? friendlyArgs(args) : null
+
   return (
     <div className="flex justify-start">
       <div className="flex max-w-[85%] items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs">
         <Wrench className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
         <div className="min-w-0">
-          <span className="font-medium text-amber-800">{toolName ?? 'tool'}</span>
-          {args && Object.keys(args).length > 0 && (
-            <p className="mt-0.5 truncate text-amber-700">
-              {Object.entries(args)
-                .map(([k, v]) => `${k}: ${String(v)}`)
-                .join(', ')}
-            </p>
+          <span className="font-medium text-amber-800">{label}</span>
+          {paramSummary && (
+            <p className="mt-0.5 truncate text-amber-600">{paramSummary}</p>
           )}
         </div>
       </div>
@@ -114,38 +112,14 @@ function ToolCallCard({
   )
 }
 
-function ToolResultCard({
-  toolName,
-  result,
-}: {
-  toolName?: string
-  result?: string
-}) {
-  const [expanded, setExpanded] = useState(false)
-
-  const preview = formatResultPreview(result)
+function ToolResultCard({ result }: { result?: string }) {
+  const summary = getResultSummary(result)
 
   return (
     <div className="flex justify-start">
-      <div className="max-w-[85%] rounded-lg border border-green-200 bg-green-50 text-xs">
-        <button
-          className="flex w-full items-center gap-2 px-3 py-2 text-left"
-          onClick={() => setExpanded((v) => !v)}
-        >
-          <Zap className="h-3.5 w-3.5 shrink-0 text-green-600" />
-          <span className="font-medium text-green-800">{toolName ?? 'result'}</span>
-          <span className="ml-1 truncate text-green-700">{preview}</span>
-          {expanded ? (
-            <ChevronDown className="ml-auto h-3 w-3 shrink-0 text-green-600" />
-          ) : (
-            <ChevronRight className="ml-auto h-3 w-3 shrink-0 text-green-600" />
-          )}
-        </button>
-        {expanded && result && (
-          <pre className="max-h-48 overflow-auto border-t border-green-200 px-3 py-2 text-green-900">
-            {formatJSON(result)}
-          </pre>
-        )}
+      <div className="flex max-w-[85%] items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs">
+        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600" />
+        <span className="text-green-700">{summary}</span>
       </div>
     </div>
   )
@@ -170,25 +144,47 @@ function TypingIndicator() {
 
 // --- Helpers ---
 
-function formatResultPreview(result?: string): string {
-  if (!result) return ''
+/** Maps internal tool names to human-readable action labels. */
+const TOOL_LABELS: Record<string, string> = {
+  'hr.list_teachers': 'Searching teachers',
+  'hr.get_teacher': 'Looking up teacher',
+  'subject.list_subjects': 'Searching subjects',
+  'subject.get_prerequisites': 'Loading prerequisites',
+  'timetable.list_semesters': 'Checking semesters',
+  'timetable.generate': 'Generating timetable',
+  'timetable.suggest_teachers': 'Finding available teachers',
+}
+
+/** Returns a friendly label for a tool name, falling back to title-casing the raw name. */
+function friendlyToolLabel(toolName?: string): string {
+  if (!toolName) return 'Working…'
+  return TOOL_LABELS[toolName] ?? toolName.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Returns a short, human-readable summary of tool args.
+ * Skips UUID values (not meaningful to display).
+ */
+function friendlyArgs(args: Record<string, unknown>): string | null {
+  const meaningful = Object.entries(args).filter(
+    ([, v]) => v !== null && v !== undefined && v !== '' && !UUID_RE.test(String(v)),
+  )
+  if (meaningful.length === 0) return null
+  return meaningful.map(([k, v]) => `${k.replace(/_/g, ' ')}: ${String(v)}`).join(' · ')
+}
+
+/** Returns a plain-language summary of a tool result (no JSON). */
+function getResultSummary(result?: string): string {
+  if (!result) return 'Done'
   try {
     const parsed = JSON.parse(result)
-    if (Array.isArray(parsed)) return `${parsed.length} items`
-    if (typeof parsed === 'object' && parsed !== null) {
-      const keys = Object.keys(parsed)
-      return keys.slice(0, 2).join(', ')
+    if (Array.isArray(parsed)) {
+      return parsed.length === 0 ? 'No results found' : `Found ${parsed.length} result${parsed.length === 1 ? '' : 's'}`
     }
   } catch {
     // not JSON
   }
-  return result.slice(0, 40)
-}
-
-function formatJSON(raw: string): string {
-  try {
-    return JSON.stringify(JSON.parse(raw), null, 2)
-  } catch {
-    return raw
-  }
+  return 'Done'
 }

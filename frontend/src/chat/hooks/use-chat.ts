@@ -26,6 +26,8 @@ interface UseChatReturn {
   messages: ChatMessage[]
   isConnected: boolean
   isStreaming: boolean
+  /** True from sendMessage until the first text chunk arrives — used to show typing dots */
+  isWaiting: boolean
   sendMessage: (content: string) => void
   clearMessages: () => void
 }
@@ -38,6 +40,8 @@ export function useChat(): UseChatReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isConnected, setIsConnected] = useState(false)
   const [isStreaming, setIsStreaming] = useState(false)
+  // True from sendMessage until the first text chunk — shows typing dots before streaming begins
+  const [isWaiting, setIsWaiting] = useState(false)
 
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectAttempts = useRef(0)
@@ -64,6 +68,7 @@ export function useChat(): UseChatReturn {
     ws.onclose = () => {
       setIsConnected(false)
       setIsStreaming(false)
+      setIsWaiting(false)
       streamingIdRef.current = null
 
       // Auto-reconnect with cap
@@ -101,6 +106,7 @@ export function useChat(): UseChatReturn {
           } else {
             const id = crypto.randomUUID()
             streamingIdRef.current = id
+            setIsWaiting(false)
             setIsStreaming(true)
             appendMessage({
               id,
@@ -139,12 +145,14 @@ export function useChat(): UseChatReturn {
         case 'done': {
           streamingIdRef.current = null
           setIsStreaming(false)
+          setIsWaiting(false)
           break
         }
 
         case 'error': {
           streamingIdRef.current = null
           setIsStreaming(false)
+          setIsWaiting(false)
           appendMessage({
             id: crypto.randomUUID(),
             role: 'assistant',
@@ -177,8 +185,9 @@ export function useChat(): UseChatReturn {
       timestamp: new Date(),
     })
 
-    // Reset streaming state for this new turn
+    // Reset streaming state for this new turn, show typing dots while waiting for first chunk
     streamingIdRef.current = null
+    setIsWaiting(true)
 
     const msg: WsClientMessage = { type: 'message', content }
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -191,5 +200,5 @@ export function useChat(): UseChatReturn {
     streamingIdRef.current = null
   }, [])
 
-  return { messages, isConnected, isStreaming, sendMessage, clearMessages }
+  return { messages, isConnected, isStreaming, isWaiting, sendMessage, clearMessages }
 }
