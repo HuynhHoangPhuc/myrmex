@@ -337,6 +337,17 @@ Phase 4: Enterprise
 
 ## Change Log
 
+### 2026-02-27 (Timetable, AI Chat & Teacher Availability Fixes)
+- Fixed schedule generation HTTP response: Now returns full schedule object instead of `{schedule_id}`
+- Fixed SQL WHERE clause bug in `ListSchedulesPaged` (operator precedence)
+- Added schedule status tracking: `generating` → `completed` or `failed`
+- Enriched semester response with `time_slots` and `rooms` via gRPC
+- Fixed AI chat system prompt: Explicit workflow for `list_semesters` before `generate`
+- Increased AI tool iterations from 5 to 10 for multi-step workflows
+- Added `timetable.list_semesters` tool to tool registry
+- Fixed teacher availability representation: Time slots (HH:MM) instead of period integers
+- Phase 1 status: Timetable + AI features fully functional and bug-free
+
 ### 2026-02-26 (API Response Standardization & Frontend Fixes)
 - Standardized all list endpoints to return `{ data, total, page, page_size }` format
 - Fixed HR, Subject, and Timetable response formats for consistency

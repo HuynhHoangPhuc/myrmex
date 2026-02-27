@@ -2,6 +2,58 @@
 
 All notable changes to the Myrmex project are documented here.
 
+## [2026-02-27] — Timetable, AI Chat & Teacher Availability Fixes
+
+**Status**: Complete
+
+### Summary
+Fixed critical bugs in schedule generation HTTP response format, SQL WHERE clause operator precedence, AI chat agent system prompt (timetable workflow), and teacher weekly availability (time slot representation). Enriched semester response with time slots and rooms via gRPC RPCs.
+
+### Backend Fixes
+- **HTTP Response Format** (`services/core/internal/interface/http/timetable_schedule_handler.go`):
+  - `GenerateSchedule` now returns full `scheduleToJSON(resp.Schedule)` with all fields
+  - Was incorrectly returning `{schedule_id: ...}` which prevented frontend parsing of `data.id`
+- **SQL Query Bug** (`services/module-timetable/internal/infrastructure/persistence/sqlc/queries.go`):
+  - Fixed `ListSchedulesPaged` WHERE clause operator precedence
+  - Was: `($1::uuid IS NULL OR NOT $1 = '000...'::uuid AND semester_id = $1)` (wrong grouping)
+  - Now: `($1 = '000...'::uuid OR semester_id = $1)` (correct filter logic)
+- **Schedule Status Constants** (`services/module-timetable/internal/domain/valueobject/schedule_status.go`):
+  - Added: `generating`, `completed`, `failed` constants
+  - Generate handler: Sets initial status to `generating`, post-success to `completed`, on failure to `failed`
+- **Semester Enrichment** (`services/core/internal/interface/http/timetable_handler.go`):
+  - `GetSemester` now fetches and returns `time_slots` and `rooms` via gRPC
+  - Added `ListTimeSlots` and `ListRooms` RPCs to proto (module-timetable)
+  - Semester response includes denormalized time slot and room data for frontend
+- **AI Chat System Prompt** (`services/core/internal/application/command/chat_message_handler.go`):
+  - Added explicit workflow instruction: Always call `timetable.list_semesters` first to get UUID before calling `timetable.generate`
+  - Increased `maxToolIterations` from 5 to 10 to allow multi-step workflows
+- **Tool Registry** (`services/core/internal/infrastructure/agent/tool_registry.go`):
+  - Added `timetable.list_semesters` tool for fetching semester UUIDs
+  - Fixed `timetable.suggest_teachers`: Removed unused `semester_id` required field
+- **Tool Executor** (`services/core/internal/infrastructure/agent/tool_executor.go`):
+  - Added `timetable.list_semesters` case: `GET /api/timetable/semesters?page=1&page_size=50`
+
+### Frontend Fixes
+- **HR Module** (`services/core/internal/interface/http/hr_handler.go`):
+  - `GetTeacher` now fetches and includes `availability: [{day_of_week, start_time, end_time}]` in response
+  - Added period↔time conversion helpers:
+    - `hrSlotStart()`, `hrSlotEnd()`: Map periods 1-6 to 07:00–19:00 in 2-hour increments
+    - `hrTimeToSlot()`: Convert time strings to period integers
+  - `GetTeacherAvailability`: Returns `availability` with RFC3339 time strings instead of raw period integers
+  - `UpdateTeacherAvailability`: Accepts `{available_slots: [{day_of_week, start_time, end_time}]}`, converts to periods before storage
+- **Teacher Mutations** (`frontend/src/modules/hr/hooks/use-teacher-mutations.ts`):
+  - Fixed field name from `availability` to `available_slots` in PUT request body
+
+### Quality Metrics
+- All services compile: `go build ./...` ✓
+- All tests pass: `make test` ✓
+- Frontend TypeScript check: `npx tsc --noEmit` ✓
+- No breaking changes to existing APIs
+- Timetable feature: Now fully functional (generation, status tracking, detail view)
+- AI agent: Fixed workflow coordination for semester-dependent operations
+
+---
+
 ## [2026-02-26] — Analytics Module & Testing Infrastructure Complete
 
 **Status**: Complete

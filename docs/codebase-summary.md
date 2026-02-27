@@ -450,3 +450,35 @@ make demo
 ### Subject Proto Enhancements
 - `weekly_hours: int32` — Contact hours per week (constraint for CSP)
 - `is_active: bool` — Offering status (defaults true)
+
+## Bug Fixes & Enhancements (Feb 27)
+
+### Schedule Generation & HTTP Response
+- Fixed `GenerateSchedule` HTTP response to return full schedule object (was returning only `{schedule_id}`)
+- Added schedule status constants: `generating`, `completed`, `failed`
+- Schedule status tracks generation state: starts as `generating`, transitions to `completed` or `failed`
+
+### SQL Query Bug Fix
+- Fixed `ListSchedulesPaged` WHERE clause operator precedence bug
+- Corrected: `($1 = '000...'::uuid OR semester_id = $1)` (was missing proper grouping)
+- Prevents incorrect filtering when `semester_id` parameter is NULL
+
+### Semester Response Enrichment
+- `GetSemester` now fetches and includes `time_slots` (reference data) and `rooms` via gRPC
+- Added `ListTimeSlots` and `ListRooms` RPCs to timetable proto
+- Enables frontend to render schedules with full time slot and room context
+
+### AI Chat Agent Improvements
+- System prompt: Added explicit workflow instruction for semester-dependent operations
+  - Always call `timetable.list_semesters` first to get semester UUID
+  - Then call `timetable.generate` with the UUID
+- Increased `maxToolIterations` from 5 to 10 for complex multi-step workflows
+- Added `timetable.list_semesters` tool to tool registry
+- Fixed `timetable.suggest_teachers`: Removed unused `semester_id` required field
+
+### Teacher Availability & Time Representation
+- Teacher availability now represents time slots as RFC3339 time strings (HH:MM format)
+- Period-to-time conversion: 6 periods mapped to 07:00–19:00 in 2-hour increments
+- `GetTeacher` HTTP response includes `availability: [{day_of_week, start_time, end_time}]`
+- `UpdateTeacherAvailability` accepts `{available_slots: [{day_of_week, start_time, end_time}]}`
+- Conversion helpers: `hrSlotStart()`, `hrSlotEnd()`, `hrTimeToSlot()` for seamless backend storage
