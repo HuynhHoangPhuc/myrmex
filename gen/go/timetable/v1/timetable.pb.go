@@ -1003,6 +1003,154 @@ func (x *ManualAssignResponse) GetEntry() *ScheduleEntry {
 	return nil
 }
 
+type Room struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Capacity      int32                  `protobuf:"varint,3,opt,name=capacity,proto3" json:"capacity,omitempty"`
+	RoomType      string                 `protobuf:"bytes,4,opt,name=room_type,json=roomType,proto3" json:"room_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Room) Reset() {
+	*x = Room{}
+	mi := &file_timetable_v1_timetable_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Room) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Room) ProtoMessage() {}
+
+func (x *Room) ProtoReflect() protoreflect.Message {
+	mi := &file_timetable_v1_timetable_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Room.ProtoReflect.Descriptor instead.
+func (*Room) Descriptor() ([]byte, []int) {
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *Room) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Room) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Room) GetCapacity() int32 {
+	if x != nil {
+		return x.Capacity
+	}
+	return 0
+}
+
+func (x *Room) GetRoomType() string {
+	if x != nil {
+		return x.RoomType
+	}
+	return ""
+}
+
+type ListRoomsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRoomsRequest) Reset() {
+	*x = ListRoomsRequest{}
+	mi := &file_timetable_v1_timetable_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRoomsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRoomsRequest) ProtoMessage() {}
+
+func (x *ListRoomsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_timetable_v1_timetable_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRoomsRequest.ProtoReflect.Descriptor instead.
+func (*ListRoomsRequest) Descriptor() ([]byte, []int) {
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{16}
+}
+
+type ListRoomsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Rooms         []*Room                `protobuf:"bytes,1,rep,name=rooms,proto3" json:"rooms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRoomsResponse) Reset() {
+	*x = ListRoomsResponse{}
+	mi := &file_timetable_v1_timetable_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRoomsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRoomsResponse) ProtoMessage() {}
+
+func (x *ListRoomsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_timetable_v1_timetable_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRoomsResponse.ProtoReflect.Descriptor instead.
+func (*ListRoomsResponse) Descriptor() ([]byte, []int) {
+	return file_timetable_v1_timetable_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ListRoomsResponse) GetRooms() []*Room {
+	if x != nil {
+		return x.Rooms
+	}
+	return nil
+}
+
 var File_timetable_v1_timetable_proto protoreflect.FileDescriptor
 
 const file_timetable_v1_timetable_proto_rawDesc = "" +
@@ -1099,14 +1247,23 @@ const file_timetable_v1_timetable_proto_rawDesc = "" +
 	"\n" +
 	"teacher_id\x18\x03 \x01(\tR\tteacherId\"I\n" +
 	"\x14ManualAssignResponse\x121\n" +
-	"\x05entry\x18\x01 \x01(\v2\x1b.timetable.v1.ScheduleEntryR\x05entry2\xc6\x04\n" +
+	"\x05entry\x18\x01 \x01(\v2\x1b.timetable.v1.ScheduleEntryR\x05entry\"c\n" +
+	"\x04Room\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
+	"\bcapacity\x18\x03 \x01(\x05R\bcapacity\x12\x1b\n" +
+	"\troom_type\x18\x04 \x01(\tR\broomType\"\x12\n" +
+	"\x10ListRoomsRequest\"=\n" +
+	"\x11ListRoomsResponse\x12(\n" +
+	"\x05rooms\x18\x01 \x03(\v2\x12.timetable.v1.RoomR\x05rooms2\x94\x05\n" +
 	"\x10TimetableService\x12a\n" +
 	"\x10GenerateSchedule\x12%.timetable.v1.GenerateScheduleRequest\x1a&.timetable.v1.GenerateScheduleResponse\x12R\n" +
 	"\vGetSchedule\x12 .timetable.v1.GetScheduleRequest\x1a!.timetable.v1.GetScheduleResponse\x12X\n" +
 	"\rListSchedules\x12\".timetable.v1.ListSchedulesRequest\x1a#.timetable.v1.ListSchedulesResponse\x12j\n" +
 	"\x13UpdateScheduleEntry\x12(.timetable.v1.UpdateScheduleEntryRequest\x1a).timetable.v1.UpdateScheduleEntryResponse\x12^\n" +
 	"\x0fSuggestTeachers\x12$.timetable.v1.SuggestTeachersRequest\x1a%.timetable.v1.SuggestTeachersResponse\x12U\n" +
-	"\fManualAssign\x12!.timetable.v1.ManualAssignRequest\x1a\".timetable.v1.ManualAssignResponseBBZ@github.com/HuynhHoangPhuc/myrmex/gen/go/timetable/v1;timetablev1b\x06proto3"
+	"\fManualAssign\x12!.timetable.v1.ManualAssignRequest\x1a\".timetable.v1.ManualAssignResponse\x12L\n" +
+	"\tListRooms\x12\x1e.timetable.v1.ListRoomsRequest\x1a\x1f.timetable.v1.ListRoomsResponseBBZ@github.com/HuynhHoangPhuc/myrmex/gen/go/timetable/v1;timetablev1b\x06proto3"
 
 var (
 	file_timetable_v1_timetable_proto_rawDescOnce sync.Once
@@ -1120,7 +1277,7 @@ func file_timetable_v1_timetable_proto_rawDescGZIP() []byte {
 	return file_timetable_v1_timetable_proto_rawDescData
 }
 
-var file_timetable_v1_timetable_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_timetable_v1_timetable_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_timetable_v1_timetable_proto_goTypes = []any{
 	(*ScheduleEntry)(nil),               // 0: timetable.v1.ScheduleEntry
 	(*Schedule)(nil),                    // 1: timetable.v1.Schedule
@@ -1137,34 +1294,40 @@ var file_timetable_v1_timetable_proto_goTypes = []any{
 	(*TeacherSuggestion)(nil),           // 12: timetable.v1.TeacherSuggestion
 	(*ManualAssignRequest)(nil),         // 13: timetable.v1.ManualAssignRequest
 	(*ManualAssignResponse)(nil),        // 14: timetable.v1.ManualAssignResponse
-	(*timestamppb.Timestamp)(nil),       // 15: google.protobuf.Timestamp
+	(*Room)(nil),                        // 15: timetable.v1.Room
+	(*ListRoomsRequest)(nil),            // 16: timetable.v1.ListRoomsRequest
+	(*ListRoomsResponse)(nil),           // 17: timetable.v1.ListRoomsResponse
+	(*timestamppb.Timestamp)(nil),       // 18: google.protobuf.Timestamp
 }
 var file_timetable_v1_timetable_proto_depIdxs = []int32{
 	0,  // 0: timetable.v1.Schedule.entries:type_name -> timetable.v1.ScheduleEntry
-	15, // 1: timetable.v1.Schedule.created_at:type_name -> google.protobuf.Timestamp
+	18, // 1: timetable.v1.Schedule.created_at:type_name -> google.protobuf.Timestamp
 	1,  // 2: timetable.v1.ListSchedulesResponse.schedules:type_name -> timetable.v1.Schedule
 	1,  // 3: timetable.v1.GenerateScheduleResponse.schedule:type_name -> timetable.v1.Schedule
 	1,  // 4: timetable.v1.GetScheduleResponse.schedule:type_name -> timetable.v1.Schedule
 	0,  // 5: timetable.v1.UpdateScheduleEntryResponse.entry:type_name -> timetable.v1.ScheduleEntry
 	12, // 6: timetable.v1.SuggestTeachersResponse.suggestions:type_name -> timetable.v1.TeacherSuggestion
 	0,  // 7: timetable.v1.ManualAssignResponse.entry:type_name -> timetable.v1.ScheduleEntry
-	4,  // 8: timetable.v1.TimetableService.GenerateSchedule:input_type -> timetable.v1.GenerateScheduleRequest
-	6,  // 9: timetable.v1.TimetableService.GetSchedule:input_type -> timetable.v1.GetScheduleRequest
-	2,  // 10: timetable.v1.TimetableService.ListSchedules:input_type -> timetable.v1.ListSchedulesRequest
-	8,  // 11: timetable.v1.TimetableService.UpdateScheduleEntry:input_type -> timetable.v1.UpdateScheduleEntryRequest
-	10, // 12: timetable.v1.TimetableService.SuggestTeachers:input_type -> timetable.v1.SuggestTeachersRequest
-	13, // 13: timetable.v1.TimetableService.ManualAssign:input_type -> timetable.v1.ManualAssignRequest
-	5,  // 14: timetable.v1.TimetableService.GenerateSchedule:output_type -> timetable.v1.GenerateScheduleResponse
-	7,  // 15: timetable.v1.TimetableService.GetSchedule:output_type -> timetable.v1.GetScheduleResponse
-	3,  // 16: timetable.v1.TimetableService.ListSchedules:output_type -> timetable.v1.ListSchedulesResponse
-	9,  // 17: timetable.v1.TimetableService.UpdateScheduleEntry:output_type -> timetable.v1.UpdateScheduleEntryResponse
-	11, // 18: timetable.v1.TimetableService.SuggestTeachers:output_type -> timetable.v1.SuggestTeachersResponse
-	14, // 19: timetable.v1.TimetableService.ManualAssign:output_type -> timetable.v1.ManualAssignResponse
-	14, // [14:20] is the sub-list for method output_type
-	8,  // [8:14] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	15, // 8: timetable.v1.ListRoomsResponse.rooms:type_name -> timetable.v1.Room
+	4,  // 9: timetable.v1.TimetableService.GenerateSchedule:input_type -> timetable.v1.GenerateScheduleRequest
+	6,  // 10: timetable.v1.TimetableService.GetSchedule:input_type -> timetable.v1.GetScheduleRequest
+	2,  // 11: timetable.v1.TimetableService.ListSchedules:input_type -> timetable.v1.ListSchedulesRequest
+	8,  // 12: timetable.v1.TimetableService.UpdateScheduleEntry:input_type -> timetable.v1.UpdateScheduleEntryRequest
+	10, // 13: timetable.v1.TimetableService.SuggestTeachers:input_type -> timetable.v1.SuggestTeachersRequest
+	13, // 14: timetable.v1.TimetableService.ManualAssign:input_type -> timetable.v1.ManualAssignRequest
+	16, // 15: timetable.v1.TimetableService.ListRooms:input_type -> timetable.v1.ListRoomsRequest
+	5,  // 16: timetable.v1.TimetableService.GenerateSchedule:output_type -> timetable.v1.GenerateScheduleResponse
+	7,  // 17: timetable.v1.TimetableService.GetSchedule:output_type -> timetable.v1.GetScheduleResponse
+	3,  // 18: timetable.v1.TimetableService.ListSchedules:output_type -> timetable.v1.ListSchedulesResponse
+	9,  // 19: timetable.v1.TimetableService.UpdateScheduleEntry:output_type -> timetable.v1.UpdateScheduleEntryResponse
+	11, // 20: timetable.v1.TimetableService.SuggestTeachers:output_type -> timetable.v1.SuggestTeachersResponse
+	14, // 21: timetable.v1.TimetableService.ManualAssign:output_type -> timetable.v1.ManualAssignResponse
+	17, // 22: timetable.v1.TimetableService.ListRooms:output_type -> timetable.v1.ListRoomsResponse
+	16, // [16:23] is the sub-list for method output_type
+	9,  // [9:16] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_timetable_v1_timetable_proto_init() }
@@ -1179,7 +1342,7 @@ func file_timetable_v1_timetable_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_timetable_v1_timetable_proto_rawDesc), len(file_timetable_v1_timetable_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

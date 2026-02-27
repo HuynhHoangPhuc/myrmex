@@ -25,6 +25,7 @@ const (
 	TimetableService_UpdateScheduleEntry_FullMethodName = "/timetable.v1.TimetableService/UpdateScheduleEntry"
 	TimetableService_SuggestTeachers_FullMethodName     = "/timetable.v1.TimetableService/SuggestTeachers"
 	TimetableService_ManualAssign_FullMethodName        = "/timetable.v1.TimetableService/ManualAssign"
+	TimetableService_ListRooms_FullMethodName           = "/timetable.v1.TimetableService/ListRooms"
 )
 
 // TimetableServiceClient is the client API for TimetableService service.
@@ -37,6 +38,7 @@ type TimetableServiceClient interface {
 	UpdateScheduleEntry(ctx context.Context, in *UpdateScheduleEntryRequest, opts ...grpc.CallOption) (*UpdateScheduleEntryResponse, error)
 	SuggestTeachers(ctx context.Context, in *SuggestTeachersRequest, opts ...grpc.CallOption) (*SuggestTeachersResponse, error)
 	ManualAssign(ctx context.Context, in *ManualAssignRequest, opts ...grpc.CallOption) (*ManualAssignResponse, error)
+	ListRooms(ctx context.Context, in *ListRoomsRequest, opts ...grpc.CallOption) (*ListRoomsResponse, error)
 }
 
 type timetableServiceClient struct {
@@ -107,6 +109,16 @@ func (c *timetableServiceClient) ManualAssign(ctx context.Context, in *ManualAss
 	return out, nil
 }
 
+func (c *timetableServiceClient) ListRooms(ctx context.Context, in *ListRoomsRequest, opts ...grpc.CallOption) (*ListRoomsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListRoomsResponse)
+	err := c.cc.Invoke(ctx, TimetableService_ListRooms_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TimetableServiceServer is the server API for TimetableService service.
 // All implementations must embed UnimplementedTimetableServiceServer
 // for forward compatibility.
@@ -117,6 +129,7 @@ type TimetableServiceServer interface {
 	UpdateScheduleEntry(context.Context, *UpdateScheduleEntryRequest) (*UpdateScheduleEntryResponse, error)
 	SuggestTeachers(context.Context, *SuggestTeachersRequest) (*SuggestTeachersResponse, error)
 	ManualAssign(context.Context, *ManualAssignRequest) (*ManualAssignResponse, error)
+	ListRooms(context.Context, *ListRoomsRequest) (*ListRoomsResponse, error)
 	mustEmbedUnimplementedTimetableServiceServer()
 }
 
@@ -144,6 +157,9 @@ func (UnimplementedTimetableServiceServer) SuggestTeachers(context.Context, *Sug
 }
 func (UnimplementedTimetableServiceServer) ManualAssign(context.Context, *ManualAssignRequest) (*ManualAssignResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ManualAssign not implemented")
+}
+func (UnimplementedTimetableServiceServer) ListRooms(context.Context, *ListRoomsRequest) (*ListRoomsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListRooms not implemented")
 }
 func (UnimplementedTimetableServiceServer) mustEmbedUnimplementedTimetableServiceServer() {}
 func (UnimplementedTimetableServiceServer) testEmbeddedByValue()                          {}
@@ -274,6 +290,24 @@ func _TimetableService_ManualAssign_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TimetableService_ListRooms_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRoomsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TimetableServiceServer).ListRooms(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TimetableService_ListRooms_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TimetableServiceServer).ListRooms(ctx, req.(*ListRoomsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TimetableService_ServiceDesc is the grpc.ServiceDesc for TimetableService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -304,6 +338,10 @@ var TimetableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ManualAssign",
 			Handler:    _TimetableService_ManualAssign_Handler,
+		},
+		{
+			MethodName: "ListRooms",
+			Handler:    _TimetableService_ListRooms_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

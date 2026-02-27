@@ -24,6 +24,7 @@ const (
 	SemesterService_ListSemesters_FullMethodName        = "/timetable.v1.SemesterService/ListSemesters"
 	SemesterService_AddOfferedSubject_FullMethodName    = "/timetable.v1.SemesterService/AddOfferedSubject"
 	SemesterService_RemoveOfferedSubject_FullMethodName = "/timetable.v1.SemesterService/RemoveOfferedSubject"
+	SemesterService_ListTimeSlots_FullMethodName        = "/timetable.v1.SemesterService/ListTimeSlots"
 )
 
 // SemesterServiceClient is the client API for SemesterService service.
@@ -35,6 +36,7 @@ type SemesterServiceClient interface {
 	ListSemesters(ctx context.Context, in *ListSemestersRequest, opts ...grpc.CallOption) (*ListSemestersResponse, error)
 	AddOfferedSubject(ctx context.Context, in *AddOfferedSubjectRequest, opts ...grpc.CallOption) (*AddOfferedSubjectResponse, error)
 	RemoveOfferedSubject(ctx context.Context, in *RemoveOfferedSubjectRequest, opts ...grpc.CallOption) (*RemoveOfferedSubjectResponse, error)
+	ListTimeSlots(ctx context.Context, in *ListTimeSlotsRequest, opts ...grpc.CallOption) (*ListTimeSlotsResponse, error)
 }
 
 type semesterServiceClient struct {
@@ -95,6 +97,16 @@ func (c *semesterServiceClient) RemoveOfferedSubject(ctx context.Context, in *Re
 	return out, nil
 }
 
+func (c *semesterServiceClient) ListTimeSlots(ctx context.Context, in *ListTimeSlotsRequest, opts ...grpc.CallOption) (*ListTimeSlotsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTimeSlotsResponse)
+	err := c.cc.Invoke(ctx, SemesterService_ListTimeSlots_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SemesterServiceServer is the server API for SemesterService service.
 // All implementations must embed UnimplementedSemesterServiceServer
 // for forward compatibility.
@@ -104,6 +116,7 @@ type SemesterServiceServer interface {
 	ListSemesters(context.Context, *ListSemestersRequest) (*ListSemestersResponse, error)
 	AddOfferedSubject(context.Context, *AddOfferedSubjectRequest) (*AddOfferedSubjectResponse, error)
 	RemoveOfferedSubject(context.Context, *RemoveOfferedSubjectRequest) (*RemoveOfferedSubjectResponse, error)
+	ListTimeSlots(context.Context, *ListTimeSlotsRequest) (*ListTimeSlotsResponse, error)
 	mustEmbedUnimplementedSemesterServiceServer()
 }
 
@@ -128,6 +141,9 @@ func (UnimplementedSemesterServiceServer) AddOfferedSubject(context.Context, *Ad
 }
 func (UnimplementedSemesterServiceServer) RemoveOfferedSubject(context.Context, *RemoveOfferedSubjectRequest) (*RemoveOfferedSubjectResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RemoveOfferedSubject not implemented")
+}
+func (UnimplementedSemesterServiceServer) ListTimeSlots(context.Context, *ListTimeSlotsRequest) (*ListTimeSlotsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListTimeSlots not implemented")
 }
 func (UnimplementedSemesterServiceServer) mustEmbedUnimplementedSemesterServiceServer() {}
 func (UnimplementedSemesterServiceServer) testEmbeddedByValue()                         {}
@@ -240,6 +256,24 @@ func _SemesterService_RemoveOfferedSubject_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SemesterService_ListTimeSlots_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTimeSlotsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SemesterServiceServer).ListTimeSlots(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SemesterService_ListTimeSlots_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SemesterServiceServer).ListTimeSlots(ctx, req.(*ListTimeSlotsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SemesterService_ServiceDesc is the grpc.ServiceDesc for SemesterService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -266,6 +300,10 @@ var SemesterService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveOfferedSubject",
 			Handler:    _SemesterService_RemoveOfferedSubject_Handler,
+		},
+		{
+			MethodName: "ListTimeSlots",
+			Handler:    _SemesterService_ListTimeSlots_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

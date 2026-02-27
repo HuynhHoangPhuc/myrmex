@@ -11,6 +11,7 @@ service TimetableService {
   rpc UpdateScheduleEntry(UpdateScheduleEntryRequest) returns (UpdateScheduleEntryResponse);
   rpc SuggestTeachers(SuggestTeachersRequest) returns (SuggestTeachersResponse);
   rpc ManualAssign(ManualAssignRequest) returns (ManualAssignResponse);
+  rpc ListRooms(ListRoomsRequest) returns (ListRoomsResponse);
 }
 
 message ScheduleEntry {
@@ -112,4 +113,17 @@ message ManualAssignRequest {
 
 message ManualAssignResponse {
   ScheduleEntry entry = 1;
+}
+
+message Room {
+  string id = 1;
+  string name = 2;
+  int32 capacity = 3;
+  string room_type = 4;
+}
+
+message ListRoomsRequest {}
+
+message ListRoomsResponse {
+  repeated Room rooms = 1;
 }

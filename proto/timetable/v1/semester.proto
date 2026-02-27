@@ -11,6 +11,7 @@ service SemesterService {
   rpc ListSemesters(ListSemestersRequest) returns (ListSemestersResponse);
   rpc AddOfferedSubject(AddOfferedSubjectRequest) returns (AddOfferedSubjectResponse);
   rpc RemoveOfferedSubject(RemoveOfferedSubjectRequest) returns (RemoveOfferedSubjectResponse);
+  rpc ListTimeSlots(ListTimeSlotsRequest) returns (ListTimeSlotsResponse);
 }
 
 message Semester {
@@ -69,4 +70,20 @@ message RemoveOfferedSubjectRequest {
 
 message RemoveOfferedSubjectResponse {
   Semester semester = 1;
+}
+
+message TimeSlot {
+  string id = 1;
+  string semester_id = 2;
+  int32 day_of_week = 3;
+  int32 start_period = 4;
+  int32 end_period = 5;
+}
+
+message ListTimeSlotsRequest {
+  string semester_id = 1;
+}
+
+message ListTimeSlotsResponse {
+  repeated TimeSlot time_slots = 1;
 }
