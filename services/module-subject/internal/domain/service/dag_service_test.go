@@ -174,6 +174,96 @@ func TestDAGService_ValidateFullDAG(t *testing.T) {
 	})
 }
 
+func TestDAGService_CheckConflicts(t *testing.T) {
+	hard := func(subj, prereq int) *entity.Prerequisite {
+		e := edge(subj, prereq)
+		e.Type = "hard"
+		return e
+	}
+	soft := func(subj, prereq int) *entity.Prerequisite {
+		e := edge(subj, prereq)
+		e.Type = "soft"
+		return e
+	}
+
+	t.Run("no conflicts — all hard prereqs in set", func(t *testing.T) {
+		// A(2) depends hard on B(1); both in set → no conflict
+		repo := &mockPrereqRepo{edges: []*entity.Prerequisite{hard(2, 1)}}
+		result, err := NewDAGService(repo).CheckConflicts(context.Background(), []uuid.UUID{mustUUID(1), mustUUID(2)})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(result) != 0 {
+			t.Errorf("expected no conflicts, got %v", result)
+		}
+	})
+
+	t.Run("missing hard prereq", func(t *testing.T) {
+		// A(2) depends hard on B(1); only A in set → conflict
+		repo := &mockPrereqRepo{edges: []*entity.Prerequisite{hard(2, 1)}}
+		result, err := NewDAGService(repo).CheckConflicts(context.Background(), []uuid.UUID{mustUUID(2)})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(result) != 1 {
+			t.Fatalf("expected 1 conflict, got %d", len(result))
+		}
+		missing := result[mustUUID(2)]
+		if len(missing) != 1 || missing[0] != mustUUID(1) {
+			t.Errorf("expected B missing from A's conflicts, got %v", missing)
+		}
+	})
+
+	t.Run("soft prereq missing — not a conflict", func(t *testing.T) {
+		// A(2) depends soft on B(1); only A in set → no conflict (soft is advisory)
+		repo := &mockPrereqRepo{edges: []*entity.Prerequisite{soft(2, 1)}}
+		result, err := NewDAGService(repo).CheckConflicts(context.Background(), []uuid.UUID{mustUUID(2)})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(result) != 0 {
+			t.Errorf("expected no conflicts for soft prereq, got %v", result)
+		}
+	})
+
+	t.Run("transitive: B missing C while A and B in set", func(t *testing.T) {
+		// A(3) hard→ B(2) hard→ C(1); set=[A,B], C missing → conflict on B
+		repo := &mockPrereqRepo{edges: []*entity.Prerequisite{hard(3, 2), hard(2, 1)}}
+		result, err := NewDAGService(repo).CheckConflicts(context.Background(), []uuid.UUID{mustUUID(2), mustUUID(3)})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(result) != 1 {
+			t.Fatalf("expected 1 conflict (B missing C), got %d", len(result))
+		}
+		if _, ok := result[mustUUID(2)]; !ok {
+			t.Error("expected conflict on B(2)")
+		}
+	})
+
+	t.Run("empty set — no conflicts", func(t *testing.T) {
+		repo := &mockPrereqRepo{edges: []*entity.Prerequisite{hard(2, 1)}}
+		result, err := NewDAGService(repo).CheckConflicts(context.Background(), nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(result) != 0 {
+			t.Errorf("expected no conflicts for empty set, got %v", result)
+		}
+	})
+
+	t.Run("single subject with no edges — no conflicts", func(t *testing.T) {
+		repo := &mockPrereqRepo{edges: nil}
+		result, err := NewDAGService(repo).CheckConflicts(context.Background(), []uuid.UUID{mustUUID(1)})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(result) != 0 {
+			t.Errorf("expected no conflicts, got %v", result)
+		}
+	})
+}
+
 func indexMap(ids []uuid.UUID) map[uuid.UUID]int {
 	m := make(map[uuid.UUID]int, len(ids))
 	for i, id := range ids {

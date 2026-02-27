@@ -186,7 +186,7 @@ func TestPrerequisiteServer_AddPrerequisite_Success(t *testing.T) {
 	addHandler := command.NewAddPrerequisiteHandler(prereqRepo, subjectRepo, service.NewDAGService(prereqRepo), command.NewNoopPublisher())
 
 	conn := startSubjectTestServer(t, func(server *grpc.Server) {
-		subjectv1.RegisterPrerequisiteServiceServer(server, NewPrerequisiteServer(addHandler, nil, nil, nil, nil))
+		subjectv1.RegisterPrerequisiteServiceServer(server, NewPrerequisiteServer(addHandler, nil, nil, nil, nil, nil, nil))
 	})
 
 	client := subjectv1.NewPrerequisiteServiceClient(conn)
@@ -216,7 +216,7 @@ func TestPrerequisiteServer_AddPrerequisite_Cycle(t *testing.T) {
 	addHandler := command.NewAddPrerequisiteHandler(prereqRepo, subjectRepo, service.NewDAGService(prereqRepo), command.NewNoopPublisher())
 
 	conn := startSubjectTestServer(t, func(server *grpc.Server) {
-		subjectv1.RegisterPrerequisiteServiceServer(server, NewPrerequisiteServer(addHandler, nil, nil, nil, nil))
+		subjectv1.RegisterPrerequisiteServiceServer(server, NewPrerequisiteServer(addHandler, nil, nil, nil, nil, nil, nil))
 	})
 
 	client := subjectv1.NewPrerequisiteServiceClient(conn)
