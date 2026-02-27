@@ -51,7 +51,7 @@ export function useUpdateAvailability(teacherId: string) {
     mutationFn: async (slots: TeacherAvailability[]) => {
       const { data } = await apiClient.put<Teacher>(
         `${ENDPOINTS.hr.teacher(teacherId)}/availability`,
-        { availability: slots },
+        { available_slots: slots },
       )
       return data
     },
