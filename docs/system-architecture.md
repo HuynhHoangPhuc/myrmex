@@ -183,9 +183,11 @@ Myrmex is a microservice architecture with modular services communicating via gR
 **Port**: gRPC `:50053`
 
 **Key Entities**:
-- **Subject**: id, code, name, credits, weekly_hours, department_id
-- **Prerequisite**: subject_id, prerequisite_subject_id, type (strict/recommended/corequisite), priority (1-5)
+- **Subject**: id, code, name, credits, weekly_hours, department_id, is_active
+- **Prerequisite**: subject_id, prerequisite_subject_id, type (strict/recommended/corequisite), priority (1-5 soft: -2 to +2 hard)
 - **DAG**: In-memory representation for cycle detection + topological sort
+- **DAGNode**: Subject with metadata for visualization (id, code, name, credits, department_id)
+- **DAGEdge**: Prerequisite link with type and priority for conflict detection
 
 **Key Operations**:
 - CRUD: Subject
@@ -193,6 +195,8 @@ Myrmex is a microservice architecture with modular services communicating via gR
 - Remove prerequisite
 - Topological sort (all DAGs starting from a subject)
 - Validate DAG (full cycle check)
+- **GetFullDAG**: Returns all subjects + prerequisite edges (for DAG visualization)
+- **CheckPrerequisiteConflicts**: Detects missing prerequisites in a subject set
 
 **Domain Services**:
 - **DAGService**: Cycle detection (DFS with 3 colors: white/gray/black)
@@ -252,8 +256,8 @@ Myrmex is a microservice architecture with modular services communicating via gR
 **Key Operations**:
 - CRUD: Semester + offerings
 - CRUD: Room
-- **ListTimeSlots**: Fetch reference time slot data (day_of_week, period, time range)
-- **ListRooms**: Fetch available rooms (id, code, capacity)
+- **ListTimeSlots**: Fetch reference time slot data (day_of_week, period, time range) — RPC: `ListTimeSlots`
+- **ListRooms**: Fetch available rooms (id, code, capacity) — RPC: `ListRooms`
 - **GenerateSchedule**: Trigger CSP solver (async) — returns status `generating` → `completed` or `failed`
 - **ListSchedules**: Paginated list with optional semester filter
 - **GetSchedule**: Fetch generated schedule with status + enriched entries
@@ -468,6 +472,9 @@ Note: maxToolIterations=10 enables complex workflows requiring multiple tool cal
 | GET | `/api/analytics/dashboard-summary` | Module-Analytics | KPI cards: teacher count, avg workload, schedule completion % |
 | GET | `/api/analytics/workload` | Module-Analytics | Workload analytics per teacher with period breakdown |
 | GET | `/api/analytics/utilization` | Module-Analytics | Resource utilization metrics (rooms, teachers, semesters) |
+| GET | `/api/analytics/department-metrics` | Module-Analytics | Department-level metrics (teachers per dept, specialization coverage) |
+| GET | `/api/analytics/schedule-metrics` | Module-Analytics | Schedule metrics (completion rate, conflicts, constraints) |
+| GET | `/api/analytics/schedule-heatmap` | Module-Analytics | Schedule density heatmap (day/period utilization) |
 | GET | `/api/analytics/export/pdf?semester_id=:id` | Module-Analytics | PDF schedule export |
 | GET | `/api/analytics/export/excel?semester_id=:id` | Module-Analytics | Excel schedule export |
 | **Chat** | | | |
@@ -643,6 +650,19 @@ event_store (same pattern)
 - **HTTP ↔ Core**: Standard REST request/response
 - **Core ↔ Module gRPC**: Blocking call with timeout (5s default)
 - **Module ↔ Module gRPC**: Blocking call with timeout
+
+**Example: Prerequisite Conflict Detection**
+```
+1. Frontend: POST /api/subjects/dag/check-conflicts
+   { subject_ids: ["math101", "physics201", "cs302"] }
+2. Core routes to Module-Subject gRPC
+3. Module-Subject checks prerequisites:
+   - physics201 requires math101 ✓
+   - cs302 requires math101 ✓
+4. Returns: { has_conflicts: false, conflicts: [] }
+   Or: { has_conflicts: true, conflicts: [{subject: "advanced-calc", missing: "linear-algebra"}] }
+5. Frontend renders ConflictWarningBanner with "Add missing" button if conflicts exist
+```
 
 ### Event-Driven (Asynchronous)
 - **NATS JetStream**: Durability + ordering

@@ -2,6 +2,41 @@
 
 All notable changes to the Myrmex project are documented here.
 
+## [2026-02-27] — UI Enhancements & Chat Panel Redesign
+
+**Status**: Complete
+
+### Summary
+Implemented tooltip component, AI assistant toggle button, redesigned chat panel from floating FAB to fixed right-side panel with expand/fullscreen capabilities, and enhanced breadcrumb UX with dynamic entity name resolution. Added prerequisites column to subjects table with PrereqChip component for consistent styling.
+
+### Frontend Implementation
+- **Tooltip Component** (`frontend/src/components/ui/tooltip.tsx`): New Radix UI-based tooltip for interactive hints
+- **AI Assistant Toggle Button** (`frontend/src/components/layouts/top-bar.tsx`): Easy access to chat features from top bar
+- **Chat Panel Redesign** (`frontend/src/chat/components/chat-panel.tsx`):
+  - Converted from floating FAB bubble to fixed right-side panel (380px wide)
+  - Added expand/fullscreen support for immersive chat
+  - Added clear messages button for fresh conversations
+  - Maintained WebSocket connection and auto-reconnect logic
+- **Breadcrumb Entity Resolution** (`frontend/src/components/layouts/breadcrumb.tsx`):
+  - Dynamic entity name fetching via React Query hooks
+  - Supports subjects, teachers, semesters with dedicated queries
+  - Provides context-aware navigation across modules
+- **PrereqChip Component** (`frontend/src/modules/subject/components/prereq-chip.tsx`): NEW
+  - Consistent prerequisite code styling with department color coding
+  - Hover card tooltips showing prerequisite type and priority
+- **Subjects Table Enhancements** (`frontend/src/modules/subject/components/subject-columns.tsx`):
+  - Added prerequisites column with PrereqChip rendering
+  - Displays prerequisite count badge
+  - Links to full DAG visualization
+
+### Quality Metrics
+- Frontend TypeScript check: `npx tsc --noEmit` ✓
+- All existing tests pass ✓
+- No breaking changes to existing APIs
+- Chat panel maintains full feature parity with previous FAB
+
+---
+
 ## [2026-02-27] — Advanced Prerequisites: Interactive DAG Viz + Conflict Detection (Phase 3 Sub-Phase)
 
 **Status**: Complete

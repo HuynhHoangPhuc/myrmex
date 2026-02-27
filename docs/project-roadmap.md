@@ -109,7 +109,7 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 
 ## Phase 3: Advanced Features (IN PROGRESS)
 
-**Timeline**: Q3 2026 (4-5 weeks) | **Status**: 25% Complete (Advanced Prerequisites sub-phase done, Q2.5)
+**Timeline**: Q3 2026 (4-5 weeks) | **Status**: ~35% Complete (Advanced Prerequisites sub-phase done, Feb 27)
 
 ### Goals
 - Implement advanced prerequisite conflict detection (DONE)
@@ -340,6 +340,16 @@ Phase 4: Enterprise
 ---
 
 ## Change Log
+
+### 2026-02-27 (UI Enhancements & Chat Panel Redesign)
+- Tooltip component: New Radix UI-based tooltip for interactive hints
+- AI assistant toggle button: Added to top bar for easy access to chat features
+- Chat panel redesign: Converted floating FAB bubble to fixed right-side panel (380px wide)
+- Chat panel features: Expand/fullscreen support, clear messages button for fresh conversations
+- Breadcrumb UX: Dynamic entity name resolution via React Query (subjects, teachers, semesters)
+- Prerequisites column: Added to subjects table with PrereqChip components
+- PrereqChip component: Consistent prerequisite code styling with hover card tooltips
+- Result: Enhanced UI/UX with better chat integration and improved subject management
 
 ### 2026-02-27 (Timetable, AI Chat & Teacher Availability Fixes)
 - Fixed schedule generation HTTP response: Now returns full schedule object instead of `{schedule_id}`

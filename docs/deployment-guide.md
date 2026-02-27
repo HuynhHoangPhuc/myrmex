@@ -175,6 +175,9 @@ SUBJECT_GRPC_PORT=50053
 # Timetable Service
 TIMETABLE_GRPC_PORT=50054
 
+# Analytics Service
+ANALYTICS_HTTP_ADDR=":8080"
+
 # Frontend
 VITE_API_URL="http://localhost:8080"
 ```
@@ -264,6 +267,14 @@ go run ./cmd/server
 cd services/module-timetable
 go run ./cmd/server
 # Output: Server listening on :50054 (gRPC)
+```
+
+**Terminal 5: Analytics Service**
+```bash
+cd services/module-analytics
+go run ./cmd/server
+# Output: Server listening on :8080 (HTTP)
+# Consumes NATS events for ETL
 ```
 
 ### Step 8: Start Frontend

@@ -173,7 +173,7 @@ myrmex/
 │   │   │   ├── shared/     # DataTable, FormField, PageHeader, ConfirmDialog
 │   │   │   └── ui/         # Shadcn/ui primitives (11 components)
 │   │   ├── chat/
-│   │   │   ├── components/ # ChatPanel (FAB), ChatMessage, ChatInput
+│   │   │   ├── components/ # ChatPanel (fixed right-side panel with expand/fullscreen), ChatMessage, ChatInput
 │   │   │   ├── hooks/      # use-chat.ts (WebSocket + auto-reconnect)
 │   │   │   └── types.ts    # WsServerEvent, WsClientMessage
 │   │   ├── modules/
@@ -183,7 +183,9 @@ myrmex/
 │   │   │   │   │   ├── prerequisite-dag.tsx        # React Flow DAG canvas + controls
 │   │   │   │   │   ├── dag-subject-node.tsx        # Custom node rendering
 │   │   │   │   │   ├── conflict-warning-banner.tsx # Conflict display + auto-fix
-│   │   │   │   │   └── offering-manager.tsx        # Semester offerings with conflict checks
+│   │   │   │   │   ├── offering-manager.tsx        # Semester offerings with conflict checks
+│   │   │   │   │   ├── prereq-chip.tsx             # Prerequisite code styling with tooltips
+│   │   │   │   │   └── subject-columns.tsx         # Table columns including prerequisites
 │   │   │   │   ├── utils/
 │   │   │   │   │   ├── dag-layout.ts     # Dagre layout helper
 │   │   │   │   │   └── dept-color.ts     # Deterministic dept color mapping
@@ -249,6 +251,7 @@ myrmex/
 | **Form** | TanStack Form + Zod | 1.28.3 + 3.24.1 | Form validation |
 | **Table** | TanStack Table | 8.21.3 | Data table with pagination, sorting |
 | **UI Framework** | Shadcn/ui | Latest | Radix UI + Tailwind CSS 4 |
+| **UI Tooltips** | Radix UI Tooltip | Latest | Interactive tooltips component |
 | **HTTP Client** | Axios | 1.7.9 | API requests + interceptors |
 | **Icons** | Lucide React | 0.575.0 | Icon library |
 
@@ -404,10 +407,20 @@ make demo
 ### Module-Analytics Service
 - New service: `services/module-analytics` for business intelligence
 - Star-schema analytics database: `dim_teacher`, `dim_subject`, `dim_department`, `dim_semester`, `fact_schedule_entry`
-- Dashboard APIs: `/api/analytics/dashboard-summary`, `/api/analytics/workload`, `/api/analytics/utilization`
+- Dashboard APIs: `/api/analytics/dashboard-summary`, `/api/analytics/workload`, `/api/analytics/utilization`, `/api/analytics/department-metrics`, `/api/analytics/schedule-metrics`, `/api/analytics/schedule-heatmap`
 - Export functionality: PDF/Excel schedule generation via `export_handler.go`
 - NATS event consumer: Processes NATS events (hr.teacher.*, subject.*, schedule.generation_completed) for ETL
 - All operations via HTTP (reverse-proxied by core gateway at `/api/analytics/*`)
+
+### Frontend UX Enhancements (Feb 27)
+- **Breadcrumb Entity Name Resolution**: Dynamic entity name resolution via React Query
+  - Subjects: Fetches subject names from `/api/subjects`
+  - Teachers: Fetches teacher names from `/api/hr/teachers`
+  - Semesters: Fetches semester names from `/api/timetable/semesters`
+  - Provides context-aware navigation across modules
+- **Tooltip Component**: Radix UI-based tooltip for interactive hints on UI elements
+- **AI Assistant Toggle**: Added to top bar for easy access to chat features
+- **Chat Panel**: Fixed right-side panel (380px wide) with expand/fullscreen support and clear messages button
 
 ### Frontend Testing Infrastructure
 - **Vitest + React Testing Library**: Unit tests integrated in vite.config.ts

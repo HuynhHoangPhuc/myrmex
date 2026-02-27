@@ -96,9 +96,15 @@ Create an extensible, AI-native ERP that lets institutions operate via conversat
 - WebSocket endpoint `/ws/chat?token=ACCESS_TOKEN`
 - Tool registry for domain operations:
   - Create subject, add teacher, generate schedule, etc.
-- Multi-LLM support: Claude (default), OpenAI (configurable)
+- Multi-LLM support: Claude, OpenAI, Gemini (configurable)
 - Message persistence to PostgreSQL
 - Streaming responses via WebSocket
+
+#### FR-11: Analytics & Reporting (Module-Analytics)
+- Workload analytics: hours per teacher, utilization metrics
+- Dashboard KPIs: teacher count, average workload, schedule completion %
+- Export schedules (PDF, Excel) via iText
+- Star-schema database for efficient analytics queries
 
 ### Non-Functional Requirements
 
@@ -168,10 +174,10 @@ Create an extensible, AI-native ERP that lets institutions operate via conversat
 - [x] Proto field additions for enriched entity models (Feb 26)
 
 ### Phase 2 (Post-MVP) - Analytics & Reporting
-- [ ] Workload analytics: hours per teacher, utilization metrics
-- [ ] Conflict reports: prerequisites, capacity violations
-- [ ] Export schedules (PDF, Excel)
-- [ ] Dashboard with KPIs
+- [x] Workload analytics: hours per teacher, utilization metrics
+- [x] Conflict reports: prerequisites, capacity violations
+- [x] Export schedules (PDF, Excel)
+- [x] Dashboard with KPIs
 
 ### Phase 3 - Advanced Features
 - [ ] Mobile app (React Native)
@@ -244,14 +250,15 @@ Create an extensible, AI-native ERP that lets institutions operate via conversat
 - Module-HR (depends on: Core pkg, NATS, PostgreSQL)
 - Module-Subject (depends on: Core pkg, NATS, PostgreSQL)
 - Module-Timetable (depends on: Core pkg, Module-Subject gRPC, NATS, PostgreSQL)
+- Module-Analytics (depends on: Core pkg, NATS, PostgreSQL; consumes events)
 
 ## Timeline (Estimated)
 
 | Phase | Duration | Status |
 |-------|----------|--------|
-| Phase 1: MVP (Departments, Teachers, Subjects, Timetable) | 4 weeks | In Progress |
-| Phase 2: Analytics & Reporting | 2 weeks | Planned |
-| Phase 3: Advanced Features | 4 weeks | Planned |
+| Phase 1: MVP (Departments, Teachers, Subjects, Timetable) | 4 weeks | Complete |
+| Phase 2: Analytics & Reporting | 2 weeks | Complete |
+| Phase 3: Advanced Features | 4 weeks | In Progress |
 | Phase 4: Enterprise | 6 weeks | Planned |
 
 ## Glossary
