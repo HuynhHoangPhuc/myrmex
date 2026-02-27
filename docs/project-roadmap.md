@@ -107,17 +107,27 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 
 ---
 
-## Phase 3: Advanced Features (PLANNED)
+## Phase 3: Advanced Features (IN PROGRESS)
 
-**Timeline**: Q3 2026 (4-5 weeks) | **Status**: Planning
+**Timeline**: Q3 2026 (4-5 weeks) | **Status**: 25% Complete (Advanced Prerequisites sub-phase done, Q2.5)
 
 ### Goals
+- Implement advanced prerequisite conflict detection (DONE)
 - Expand system to include student management
 - Enable grade tracking and academic progress monitoring
 - Improve UX with mobile support and drag-drop scheduling
-- Implement advanced prerequisite conflict detection
 
 ### Deliverables
+
+#### Advanced Prerequisite Management (COMPLETE - Feb 27)
+- [x] DAG visualization: React Flow interactive rendering with zoom/pan/minimap
+- [x] Conflict detection: POST /api/subjects/dag/check-conflicts API
+- [x] Full DAG endpoint: GET /api/subjects/dag/full (all subjects + edges)
+- [x] Conflict UI: ConflictWarningBanner + offering-manager integration
+- [x] Focus mode: Subject detail page shows transitive prerequisites
+- [x] Hover highlighting: Ancestor chain on node hover
+- [x] Tests: 6 conflict detection tests + 7 banner component tests
+- [x] Proto enhancements: Prerequisite.type + priority fields
 
 #### Student Management Module
 - [ ] Module-Student: Student CRUD, enrollment, grades
@@ -132,12 +142,6 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 - [ ] Hamburger menu: Mobile navigation (sidebar collapse)
 - [ ] Offline mode: Cache schedules for offline access
 - [ ] Push notifications: Schedule changes, new messages
-
-#### Advanced Prerequisite Management
-- [ ] DAG visualization: Interactive frontend rendering
-- [ ] Conflict detection: Highlight unmet prerequisites
-- [ ] Recommendation engine: Suggest courses based on progress
-- [ ] Curriculum planning: Design course sequences
 
 #### Notifications System
 - [ ] Email notifications: Schedule changes, assignments

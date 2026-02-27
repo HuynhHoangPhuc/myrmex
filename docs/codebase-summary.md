@@ -178,7 +178,16 @@ myrmex/
 │   │   │   └── types.ts    # WsServerEvent, WsClientMessage
 │   │   ├── modules/
 │   │   │   ├── hr/         # Teacher + Department (components, hooks, types)
-│   │   │   ├── subject/    # Subject + Prerequisites (DAG viz)
+│   │   │   ├── subject/    # Subject + Prerequisites (React Flow DAG viz, conflict detection)
+│   │   │   │   ├── components/
+│   │   │   │   │   ├── prerequisite-dag.tsx        # React Flow DAG canvas + controls
+│   │   │   │   │   ├── dag-subject-node.tsx        # Custom node rendering
+│   │   │   │   │   ├── conflict-warning-banner.tsx # Conflict display + auto-fix
+│   │   │   │   │   └── offering-manager.tsx        # Semester offerings with conflict checks
+│   │   │   │   ├── utils/
+│   │   │   │   │   ├── dag-layout.ts     # Dagre layout helper
+│   │   │   │   │   └── dept-color.ts     # Deterministic dept color mapping
+│   │   │   │   └── hooks/use-subjects.ts # useFullDAG, useCheckConflicts
 │   │   │   ├── timetable/  # Semester + Schedule (CSP trigger, calendar)
 │   │   │   └── analytics/  # Dashboard KPIs, workload/utilization charts, exports
 │   │   └── routes/         # File-based routing (auto-routed by TanStack)
@@ -236,6 +245,7 @@ myrmex/
 | **Frontend** | React | 19 | SPA UI |
 | **Router** | TanStack Router | 1.161.3 | File-based routing |
 | **State** | TanStack Query | 5.90.21 | Server state management |
+| **Graph Viz** | React Flow + Dagre | 12.10.1 + 2.0.4 | Interactive DAG visualization |
 | **Form** | TanStack Form + Zod | 1.28.3 + 3.24.1 | Form validation |
 | **Table** | TanStack Table | 8.21.3 | Data table with pagination, sorting |
 | **UI Framework** | Shadcn/ui | Latest | Radix UI + Tailwind CSS 4 |

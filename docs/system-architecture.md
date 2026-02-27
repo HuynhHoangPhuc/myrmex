@@ -448,6 +448,8 @@ Note: maxToolIterations=10 enables complex workflows requiring multiple tool cal
 | GET | `/api/subjects/:id/prerequisites` | Module-Subject | Array of prerequisites |
 | POST | `/api/subjects/:id/prerequisites` | Module-Subject | Add prerequisite |
 | DELETE | `/api/subjects/:id/prerequisites/:prereqId` | Module-Subject | Remove prerequisite |
+| GET | `/api/subjects/dag/full` | Module-Subject | Full DAG (nodes + edges) for all subjects |
+| POST | `/api/subjects/dag/check-conflicts` | Module-Subject | Check prerequisite conflicts in subject set |
 | **Timetable Module** | | | |
 | GET | `/api/timetable/semesters` | Module-Timetable | Paginated list; tool: `timetable.list_semesters` |
 | POST | `/api/timetable/semesters` | Module-Timetable | Create semester (body: name, year, term, start_date, end_date) |
