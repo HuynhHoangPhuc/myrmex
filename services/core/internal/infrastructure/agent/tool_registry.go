@@ -131,12 +131,24 @@ var SubjectTools = []RegisteredTool{
 var TimetableTools = []RegisteredTool{
 	{
 		Definition: llm.Tool{
+			Name:        "timetable.list_semesters",
+			Description: "List all semesters with their UUIDs, names, and dates. Call this first to get a valid semester UUID before calling timetable.generate.",
+			Parameters: rawSchema(`{
+				"type": "object",
+				"properties": {}
+			}`),
+		},
+		ModuleName: "timetable",
+		MethodName: "list_semesters",
+	},
+	{
+		Definition: llm.Tool{
 			Name:        "timetable.generate",
-			Description: "Generate a timetable for a semester using CSP solver. Returns a schedule or best-partial on timeout.",
+			Description: "Generate a timetable for a semester using CSP solver. Requires a valid semester UUID — call timetable.list_semesters first to get valid UUIDs.",
 			Parameters: rawSchema(`{
 				"type": "object",
 				"properties": {
-					"semester_id": {"type": "string", "description": "UUID of the semester to generate schedule for"}
+					"semester_id": {"type": "string", "description": "UUID of the semester (get it from timetable.list_semesters)"}
 				},
 				"required": ["semester_id"]
 			}`),
@@ -147,14 +159,13 @@ var TimetableTools = []RegisteredTool{
 	{
 		Definition: llm.Tool{
 			Name:        "timetable.suggest_teachers",
-			Description: "Suggest available teachers for a given subject and time slot.",
+			Description: "Suggest available teachers for a given subject.",
 			Parameters: rawSchema(`{
 				"type": "object",
 				"properties": {
-					"subject_id":  {"type": "string", "description": "UUID of the subject"},
-					"semester_id": {"type": "string", "description": "UUID of the semester"}
+					"subject_id": {"type": "string", "description": "UUID of the subject"}
 				},
-				"required": ["subject_id", "semester_id"]
+				"required": ["subject_id"]
 			}`),
 		},
 		ModuleName: "timetable",

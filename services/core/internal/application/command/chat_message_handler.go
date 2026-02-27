@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	maxToolIterations = 5
+	maxToolIterations = 10
 	maxHistoryWindow  = 20
 	defaultMaxTokens  = 4096
 )
@@ -22,14 +22,22 @@ You help administrators manage teachers, academic subjects, and timetables.
 Available capabilities via tools:
 - HR module: list teachers, get teacher details
 - Subject module: list subjects, view prerequisite chains
-- Timetable module: generate semester schedules, suggest available teachers
+- Timetable module: list semesters (with UUIDs), generate semester schedules, suggest available teachers
 
 Guidelines:
 - Always use tools to fetch real data; never make up teacher names, IDs, or schedules
 - Be concise and structured in your responses
 - When listing results, format them clearly with bullet points or numbered lists
 - If a tool call fails, inform the user and suggest alternatives
-- Limit tool call chains to what is necessary to answer the question`
+- Limit tool call chains to what is necessary to answer the question
+
+IMPORTANT — Timetable generation workflow:
+1. When the user asks to generate a schedule/timetable for any semester (by name or year):
+   a. ALWAYS call timetable.list_semesters FIRST to retrieve the full list of semesters with their UUIDs
+   b. Match the user's semester name (e.g. "Fall 2025", "2026 Term 1") against the returned semester names
+   c. Use the matched semester's UUID to call timetable.generate
+   d. Never ask the user for a semester UUID — always look it up yourself via timetable.list_semesters
+2. When suggesting teachers for a subject, call timetable.suggest_teachers with the subject_id UUID`
 
 // ChatMessageHandler orchestrates multi-turn LLM conversations with tool calling.
 type ChatMessageHandler struct {

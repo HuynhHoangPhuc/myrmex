@@ -160,15 +160,17 @@ func buildEndpoint(baseURL, module, method string, args map[string]interface{}) 
 		id, _ := args["subject_id"].(string)
 		return fmt.Sprintf("%s/api/subjects/%s/prerequisites", base, id), http.MethodGet
 
+	case "timetable.list_semesters":
+		return base + "/api/timetable/semesters?page=1&page_size=50", http.MethodGet
+
 	case "timetable.generate":
 		// POST: triggers schedule generation for a semester
 		id, _ := args["semester_id"].(string)
 		return fmt.Sprintf("%s/api/timetable/semesters/%s/generate", base, id), http.MethodPost
 
 	case "timetable.suggest_teachers":
-		// Route: GET /api/timetable/suggest-teachers?subject_id=...&semester_id=...
 		url := base + "/api/timetable/suggest-teachers"
-		if params := buildQueryParams(args, "subject_id", "semester_id"); params != "" {
+		if params := buildQueryParams(args, "subject_id"); params != "" {
 			url += "?" + params
 		}
 		return url, http.MethodGet
