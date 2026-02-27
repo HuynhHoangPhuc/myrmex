@@ -107,9 +107,11 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 		if cfg.SubjectHandler != nil {
 			subjects := protected.Group("/subjects")
 			{
-				// Static routes before parameterized to avoid conflicts
+				// Static /dag/* routes MUST come before /:id to avoid param capture
 				subjects.GET("/dag/validate", cfg.SubjectHandler.ValidateDAG)
 				subjects.GET("/dag/topological-sort", cfg.SubjectHandler.TopologicalSort)
+				subjects.GET("/dag/full", cfg.SubjectHandler.FullDAG)
+				subjects.POST("/dag/check-conflicts", cfg.SubjectHandler.CheckConflicts)
 				subjects.GET("", cfg.SubjectHandler.ListSubjects)
 				subjects.POST("", cfg.SubjectHandler.CreateSubject)
 				subjects.GET("/:id", cfg.SubjectHandler.GetSubject)

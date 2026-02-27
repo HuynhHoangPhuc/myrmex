@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/entity"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/repository"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/valueobject"
 )
 
 // DAGService manages the directed acyclic graph of subject prerequisites.
@@ -172,6 +173,34 @@ func (d *DAGService) ValidateFullDAG(ctx context.Context) (isValid bool, cyclePa
 		}
 	}
 	return true, nil, nil
+}
+
+// CheckConflicts returns subjects in the given set that have hard prerequisites
+// NOT present in the same set. Used for semester offering validation.
+func (d *DAGService) CheckConflicts(ctx context.Context, subjectIDs []uuid.UUID) (map[uuid.UUID][]uuid.UUID, error) {
+	edges, err := d.prereqRepo.ListAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("load prerequisites: %w", err)
+	}
+
+	idSet := make(map[uuid.UUID]bool, len(subjectIDs))
+	for _, id := range subjectIDs {
+		idSet[id] = true
+	}
+
+	conflicts := make(map[uuid.UUID][]uuid.UUID)
+	for _, e := range edges {
+		if e.Type != valueobject.PrerequisiteTypeHard {
+			continue
+		}
+		if !idSet[e.SubjectID] {
+			continue
+		}
+		if !idSet[e.PrerequisiteID] {
+			conflicts[e.SubjectID] = append(conflicts[e.SubjectID], e.PrerequisiteID)
+		}
+	}
+	return conflicts, nil
 }
 
 // formatCyclePath converts a UUID path to string slice for error reporting.

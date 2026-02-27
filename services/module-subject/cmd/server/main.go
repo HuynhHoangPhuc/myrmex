@@ -94,6 +94,8 @@ func main() {
 	listPrereqsHandler := query.NewListPrerequisitesHandler(prereqRepo)
 	validateDAGHandler := query.NewValidateDAGHandler(dagService)
 	topoSortHandler := query.NewTopologicalSortHandler(dagService)
+	fullDAGHandler := query.NewGetFullDAGHandler(subjectRepo, prereqRepo)
+	checkConflictsHandler := query.NewCheckConflictsHandler(dagService, subjectRepo)
 
 	// 8. gRPC servers (interface layer)
 	subjectServer := grpcif.NewSubjectServer(
@@ -109,6 +111,8 @@ func main() {
 		listPrereqsHandler,
 		validateDAGHandler,
 		topoSortHandler,
+		fullDAGHandler,
+		checkConflictsHandler,
 	)
 
 	// 9. gRPC server setup
