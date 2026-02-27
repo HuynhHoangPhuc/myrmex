@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/shared/page-header'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
-import { PrerequisiteGraph } from '@/modules/subject/components/prerequisite-graph'
+import { PrerequisiteDAG } from '@/modules/subject/components/prerequisite-dag'
 import { useSubject, useAllSubjects, useAddPrerequisite, useRemovePrerequisite } from '@/modules/subject/hooks/use-subjects'
 import type { PrerequisiteType } from '@/modules/subject/types'
 
@@ -125,7 +125,7 @@ function SubjectDetailPage() {
       <div>
         <h2 className="mb-3 text-lg font-semibold">Prerequisite Graph</h2>
         <div className="rounded-lg border overflow-hidden">
-          <PrerequisiteGraph focusSubjectId={id} />
+          <PrerequisiteDAG focusSubjectId={id} />
         </div>
       </div>
 

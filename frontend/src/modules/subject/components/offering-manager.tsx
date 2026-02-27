@@ -4,7 +4,8 @@ import { apiClient } from '@/lib/api/client'
 import { ENDPOINTS } from '@/lib/api/endpoints'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
-import { useAllSubjects } from '../hooks/use-subjects'
+import { useAllSubjects, useCheckConflicts } from '../hooks/use-subjects'
+import { ConflictWarningBanner } from './conflict-warning-banner'
 import { useAllSemesters, useSemester } from '@/modules/timetable/hooks/use-semesters'
 
 // Add a single subject offering to a semester
@@ -52,6 +53,19 @@ export function OfferingManager() {
   const addOffering = useAddOffering(selectedSemesterId)
   const removeOffering = useRemoveOffering(selectedSemesterId)
   const isSaving = addOffering.isPending || removeOffering.isPending
+
+  // Conflict detection: check which checked subjects have missing hard prerequisites.
+  const checkedArray = React.useMemo(() => [...checkedIds], [checkedIds])
+  const { data: conflictData } = useCheckConflicts(checkedArray)
+  const conflicts = conflictData?.conflicts ?? []
+
+  function handleAddMissing(ids: string[]) {
+    setCheckedIds((prev) => {
+      const next = new Set(prev)
+      ids.forEach((id) => next.add(id))
+      return next
+    })
+  }
 
   function toggle(subjectId: string) {
     setCheckedIds((prev) => {
@@ -110,6 +124,8 @@ export function OfferingManager() {
               </label>
             ))}
           </div>
+
+          <ConflictWarningBanner conflicts={conflicts} onAddMissing={handleAddMissing} />
 
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">{checkedIds.size} subject(s) offered</p>

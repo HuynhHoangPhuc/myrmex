@@ -8,6 +8,8 @@ import type {
   UpdateSubjectInput,
   AddPrerequisiteInput,
   Prerequisite,
+  FullDAGResponse,
+  CheckConflictsResponse,
 } from '../types'
 
 interface SubjectListParams {
@@ -114,6 +116,32 @@ export function useAddPrerequisite(subjectId: string) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['subjects', subjectId] })
     },
+  })
+}
+
+export function useFullDAG() {
+  return useQuery({
+    queryKey: ['subjects', 'dag', 'full'] as const,
+    queryFn: async () => {
+      const { data } = await apiClient.get<FullDAGResponse>(ENDPOINTS.subjects.dag.full)
+      return data
+    },
+    staleTime: 60_000, // DAG changes infrequently
+  })
+}
+
+export function useCheckConflicts(subjectIds: string[]) {
+  return useQuery({
+    queryKey: ['subjects', 'dag', 'check-conflicts', subjectIds.slice().sort().join(',')] as const,
+    queryFn: async () => {
+      const { data } = await apiClient.post<CheckConflictsResponse>(
+        ENDPOINTS.subjects.dag.checkConflicts,
+        { subject_ids: subjectIds }
+      )
+      return data
+    },
+    enabled: subjectIds.length > 1,
+    staleTime: 30_000,
   })
 }
 

@@ -16,6 +16,10 @@ export const ENDPOINTS = {
     list: '/subjects',
     detail: (id: string) => `/subjects/${id}`,
     prerequisites: (id: string) => `/subjects/${id}/prerequisites`,
+    dag: {
+      full: '/subjects/dag/full',
+      checkConflicts: '/subjects/dag/check-conflicts',
+    },
   },
   timetable: {
     semesters: '/timetable/semesters',
