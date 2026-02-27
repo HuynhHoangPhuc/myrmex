@@ -1,7 +1,10 @@
 import * as React from 'react'
 import { Link } from '@tanstack/react-router'
+import { useQueries } from '@tanstack/react-query'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
+import { apiClient } from '@/lib/api/client'
+import { ENDPOINTS } from '@/lib/api/endpoints'
 import { useAllSubjects } from '../hooks/use-subjects'
 import type { Subject, Prerequisite } from '../types'
 
@@ -94,14 +97,40 @@ interface PrerequisiteGraphProps {
 export function PrerequisiteGraph({ focusSubjectId }: PrerequisiteGraphProps) {
   const { data: subjects = [], isLoading } = useAllSubjects()
 
+  // Fetch prerequisites for ALL subjects in parallel so the DAG can be layered
+  const prereqQueries = useQueries({
+    queries: subjects.map((s) => ({
+      queryKey: ['subjects', s.id, 'prerequisites'] as const,
+      queryFn: async () => {
+        const { data } = await apiClient.get<Prerequisite[]>(ENDPOINTS.subjects.prerequisites(s.id))
+        return { subjectId: s.id, prerequisites: data }
+      },
+      staleTime: 5 * 60 * 1000,
+    })),
+  })
+
+  const prereqsLoading = prereqQueries.some((q) => q.isLoading)
+
+  // Merge prerequisites into subjects
+  const subjectsWithPrereqs = React.useMemo(() => {
+    const prereqMap = new Map<string, Prerequisite[]>()
+    prereqQueries.forEach((q) => {
+      if (q.data) prereqMap.set(q.data.subjectId, q.data.prerequisites)
+    })
+    return subjects.map((s) => ({
+      ...s,
+      prerequisites: prereqMap.get(s.id) ?? s.prerequisites ?? [],
+    }))
+  }, [subjects, prereqQueries])
+
   const visibleSubjects = React.useMemo(() => {
-    if (!focusSubjectId) return subjects
-    const focus = subjects.find((s) => s.id === focusSubjectId)
-    if (!focus) return subjects
+    if (!focusSubjectId) return subjectsWithPrereqs
+    const focus = subjectsWithPrereqs.find((s) => s.id === focusSubjectId)
+    if (!focus) return subjectsWithPrereqs
     const prereqIds = new Set(focus.prerequisites?.map((p) => p.prerequisite_id) ?? [])
     prereqIds.add(focusSubjectId)
-    return subjects.filter((s) => prereqIds.has(s.id))
-  }, [subjects, focusSubjectId])
+    return subjectsWithPrereqs.filter((s) => prereqIds.has(s.id))
+  }, [subjectsWithPrereqs, focusSubjectId])
 
   const layers = React.useMemo(() => assignLayers(visibleSubjects), [visibleSubjects])
 
@@ -117,7 +146,7 @@ export function PrerequisiteGraph({ focusSubjectId }: PrerequisiteGraphProps) {
     return Array.from(groups.entries()).sort((a, b) => a[0] - b[0])
   }, [visibleSubjects, layers])
 
-  if (isLoading) return <LoadingSpinner />
+  if (isLoading || prereqsLoading) return <LoadingSpinner />
 
   if (visibleSubjects.length === 0) {
     return <p className="text-sm text-muted-foreground">No subjects found.</p>
