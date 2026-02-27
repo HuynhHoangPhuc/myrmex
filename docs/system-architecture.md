@@ -150,14 +150,18 @@ Myrmex is a microservice architecture with modular services communicating via gR
 
 **Key Entities**:
 - **Department**: id, name, created_at, deleted_at
-- **Teacher**: id, name, email, department_id, specializations[], availability{}
-- **Availability**: day_of_week → periods[] (value object)
+- **Teacher**: id, name, email, department_id, specializations[], availability[]
+- **Availability**: {day_of_week, start_time, end_time} (value object) — Time slots in RFC3339 format (HH:MM)
+  - Example: {day_of_week: "MONDAY", start_time: "07:00", end_time: "19:00"}
+  - Periods 1-6 mapped to: 07:00-09:00, 09:00-11:00, 11:00-13:00, 13:00-15:00, 15:00-17:00, 17:00-19:00
 
 **Key Operations**:
 - CRUD: Create/Read/Update/Delete department
-- CRUD: Create/Read/Update/Delete teacher
-- Update teacher availability (days + periods per day)
-- Assign specializations to teachers
+- CRUD: Create/Read/Update/Delete teacher (includes availability in response)
+- **GetTeacher**: Returns `availability: [{day_of_week, start_time, end_time}]` as time strings
+- **GetTeacherAvailability**: Fetch availability with time-based representation
+- **UpdateTeacherAvailability**: Accept `{available_slots: [{day_of_week, start_time, end_time}]}`, store as period integers
+- **Assign specializations**: Link teachers to subject specializations
 
 **Domain Services**:
 - Availability validation
@@ -248,10 +252,13 @@ Myrmex is a microservice architecture with modular services communicating via gR
 **Key Operations**:
 - CRUD: Semester + offerings
 - CRUD: Room
-- **GenerateSchedule**: Trigger CSP solver (async)
-- GetSchedule: Fetch generated schedule with status
-- UpdateEntry: Manual assignment with validation
-- SuggestTeachers: Ranking by specialization match + availability
+- **ListTimeSlots**: Fetch reference time slot data (day_of_week, period, time range)
+- **ListRooms**: Fetch available rooms (id, code, capacity)
+- **GenerateSchedule**: Trigger CSP solver (async) — returns status `generating` → `completed` or `failed`
+- **ListSchedules**: Paginated list with optional semester filter
+- **GetSchedule**: Fetch generated schedule with status + enriched entries
+- **UpdateEntry**: Manual teacher assignment with validation
+- **SuggestTeachers**: Ranking by specialization match + availability
 
 **Domain Services**:
 - **CSPService**: Constraint satisfaction problem solver
@@ -356,11 +363,23 @@ Myrmex is a microservice architecture with modular services communicating via gR
    - Validate JWT (from query param)
    - Pass message to LLM with tool definitions
    - Support multiple providers (OpenAI, Claude, Gemini)
+   - maxToolIterations: 10 (allows multi-step workflows)
 
 3. LLM (OpenAI/Claude/Gemini)
    - Receives system prompt: "You are a university scheduling assistant"
+   - Receives explicit workflow instructions: "Always call timetable.list_semesters first to get UUID before calling timetable.generate"
    - Receives tool schema:
      [
+       {
+         name: "timetable.list_semesters",
+         description: "Fetch available semesters with UUIDs",
+         parameters: {page, page_size}
+       },
+       {
+         name: "timetable.generate",
+         description: "Generate schedule for semester",
+         parameters: {semester_id}
+       },
        {
          name: "create_subject",
          description: "Create a new subject",
@@ -390,7 +409,16 @@ Myrmex is a microservice architecture with modular services communicating via gR
    - Displays chat message with markdown formatting
    - Invalidates /subjects query
    - Refreshes subject list
+
+**Example: "Generate a schedule for the current semester"** (Multi-step workflow)
+
 ```
+1. LLM receives message: "Generate a schedule for the current semester"
+2. Step 1: LLM calls timetable.list_semesters → Returns semester UUIDs
+3. Step 2: LLM calls timetable.generate with returned semester UUID → Triggers CSP solver
+4. Returns: "Schedule generation started for Semester X. Please check back in 30 seconds."
+```
+Note: maxToolIterations=10 enables complex workflows requiring multiple tool calls.
 
 ## API Endpoints (Complete Reference)
 
@@ -407,8 +435,8 @@ Myrmex is a microservice architecture with modular services communicating via gR
 | GET | `/api/hr/teachers/:id` | Module-HR | Single teacher |
 | PATCH | `/api/hr/teachers/:id` | Module-HR | Update teacher |
 | DELETE | `/api/hr/teachers/:id` | Module-HR | Soft delete |
-| GET | `/api/hr/teachers/:id/availability` | Module-HR | Availability schedule |
-| PUT | `/api/hr/teachers/:id/availability` | Module-HR | Update availability |
+| GET | `/api/hr/teachers/:id/availability` | Module-HR | Availability schedule: `{ availability: [{day_of_week, start_time, end_time}] }` (time strings) |
+| PUT | `/api/hr/teachers/:id/availability` | Module-HR | Update availability (body: `{ available_slots: [{day_of_week, start_time, end_time}] }`) |
 | GET | `/api/hr/departments` | Module-HR | Paginated list |
 | POST | `/api/hr/departments` | Module-HR | Create department |
 | **Subject Module** | | | |
@@ -421,14 +449,16 @@ Myrmex is a microservice architecture with modular services communicating via gR
 | POST | `/api/subjects/:id/prerequisites` | Module-Subject | Add prerequisite |
 | DELETE | `/api/subjects/:id/prerequisites/:prereqId` | Module-Subject | Remove prerequisite |
 | **Timetable Module** | | | |
-| GET | `/api/timetable/semesters` | Module-Timetable | Paginated list |
+| GET | `/api/timetable/semesters` | Module-Timetable | Paginated list; tool: `timetable.list_semesters` |
 | POST | `/api/timetable/semesters` | Module-Timetable | Create semester (body: name, year, term, start_date, end_date) |
-| GET | `/api/timetable/semesters/:id` | Module-Timetable | Single semester (includes offered_subject_ids, year, term, academic_year, is_active) |
+| GET | `/api/timetable/semesters/:id` | Module-Timetable | Single semester (includes offered_subject_ids, year, term, academic_year, is_active, time_slots, rooms) |
 | POST | `/api/timetable/semesters/:id/offered-subjects` | Module-Timetable | Add subject offering (body: subject_id) |
 | DELETE | `/api/timetable/semesters/:id/offered-subjects/:subjectId` | Module-Timetable | Remove subject offering |
-| POST | `/api/timetable/semesters/:id/generate` | Module-Timetable | Trigger CSP schedule generation |
+| POST | `/api/timetable/semesters/:id/generate` | Module-Timetable | Trigger CSP schedule generation; returns status `generating` → `completed`/`failed` |
+| GET | `/api/timetable/time-slots` | Module-Timetable | Reference time slots (day_of_week, period, start_time, end_time); gRPC: ListTimeSlots |
+| GET | `/api/timetable/rooms` | Module-Timetable | List available rooms; gRPC: ListRooms |
 | GET | `/api/timetable/schedules` | Module-Timetable | Paginated list |
-| GET | `/api/timetable/schedules/:id` | Module-Timetable | Single schedule with entries |
+| GET | `/api/timetable/schedules/:id` | Module-Timetable | Single schedule with enriched entries (subject_name, teacher_name, room_name) |
 | PUT | `/api/timetable/schedules/:id/entries/:entryId` | Module-Timetable | Manual teacher assignment (body: teacher_id) |
 | GET | `/api/timetable/suggest-teachers` | Module-Timetable | Query: subject_id, day_of_week, start_period, end_period; returns array |
 | GET | `/api/timetable/schedules/:id/stream` | Module-Timetable | SSE stream of schedule generation progress |
