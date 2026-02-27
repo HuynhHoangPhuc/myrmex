@@ -1,7 +1,7 @@
 // Interactive prerequisite DAG using React Flow + Dagre layout.
 // Replaces the old flex-layout PrerequisiteGraph with zoom/pan/minimap support.
 
-import { useMemo, useCallback, useState } from 'react'
+import { useMemo, useCallback, useState, createContext } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import {
   ReactFlow,
@@ -21,6 +21,10 @@ import { layoutDAG } from '../utils/dag-layout'
 import { getDeptColor } from '../utils/dept-color'
 
 const nodeTypes = { subject: DagSubjectNode }
+
+// Context for hover highlight — avoids rebuilding nodes on every hover,
+// which caused React Flow to fire spurious mouse leave/enter events (infinite blink).
+export const DagHoverContext = createContext<Set<string> | null>(null)
 
 interface PrerequisiteDAGProps {
   focusSubjectId?: string
@@ -118,13 +122,13 @@ export function PrerequisiteDAG({ focusSubjectId, conflicts }: PrerequisiteDAGPr
         credits: n.credits,
         departmentId: n.department_id,
         hasConflict: conflicts?.has(n.id) ?? false,
-        // Dim nodes not in the hover ancestor chain.
-        highlighted: highlightedIds ? highlightedIds.has(n.id) : undefined,
+        // Highlight state intentionally omitted — passed via DagHoverContext
+        // to avoid rebuilding nodes on every hover (which caused infinite blink).
       },
     }))
 
     return layoutDAG(rfNodes, filteredEdges)
-  }, [dag, visibleIds, rawEdges, conflicts, highlightedIds])
+  }, [dag, visibleIds, rawEdges, conflicts])
 
   const onNodeClick: NodeMouseHandler = useCallback(
     (_event, node) => {
@@ -141,21 +145,23 @@ export function PrerequisiteDAG({ focusSubjectId, conflicts }: PrerequisiteDAGPr
 
   return (
     <div style={{ height: focusSubjectId ? 420 : 620 }}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodeClick={onNodeClick}
-        onNodeMouseEnter={(_event, node) => setHoveredId(node.id)}
-        onNodeMouseLeave={() => setHoveredId(null)}
-        fitView
-        minZoom={0.2}
-        maxZoom={2}
-      >
-        <Controls />
-        <MiniMap nodeColor={(n) => getDeptColor((n.data as { departmentId?: string }).departmentId ?? '')} />
-        <Background variant={BackgroundVariant.Dots} />
-      </ReactFlow>
+      <DagHoverContext.Provider value={highlightedIds}>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          onNodeClick={onNodeClick}
+          onNodeMouseEnter={(_event, node) => setHoveredId(node.id)}
+          onNodeMouseLeave={() => setHoveredId(null)}
+          fitView
+          minZoom={0.2}
+          maxZoom={2}
+        >
+          <Controls />
+          <MiniMap nodeColor={(n) => getDeptColor((n.data as { departmentId?: string }).departmentId ?? '')} />
+          <Background variant={BackgroundVariant.Dots} />
+        </ReactFlow>
+      </DagHoverContext.Provider>
       {/* Edge type legend */}
       <div className="flex gap-4 px-3 py-2 text-xs text-muted-foreground border-t bg-muted/30">
         <span className="flex items-center gap-1.5">

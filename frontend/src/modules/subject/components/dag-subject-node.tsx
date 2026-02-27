@@ -1,21 +1,26 @@
 // Custom React Flow node displaying subject code, name, credits, and department color.
 // The `hasConflict` flag switches the border to red (used by conflict detection).
 
+import { useContext } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { Badge } from '@/components/ui/badge'
 import { getDeptColor } from '../utils/dept-color'
+import { DagHoverContext } from './prerequisite-dag'
 
 export interface SubjectNodeData {
   code: string
   name: string
   credits: number
   departmentId: string
-  highlighted?: boolean  // false = dimmed (ancestor highlight mode)
   hasConflict?: boolean  // true = red border (conflict detection)
 }
 
-export function DagSubjectNode({ data }: NodeProps) {
+export function DagSubjectNode({ data, id }: NodeProps) {
   const d = data as unknown as SubjectNodeData
+  // Read highlight state from context (not node data) to avoid React Flow
+  // re-processing nodes on hover, which caused infinite blink loops.
+  const highlightedIds = useContext(DagHoverContext)
+  const isDimmed = highlightedIds !== null && !highlightedIds.has(id)
   const borderColor = d.hasConflict ? '#ef4444' : getDeptColor(d.departmentId)
 
   return (
@@ -26,7 +31,7 @@ export function DagSubjectNode({ data }: NodeProps) {
         style={{
           borderColor,
           width: 170,
-          opacity: d.highlighted === false ? 0.25 : 1,
+          opacity: isDimmed ? 0.25 : 1,
         }}
       >
         <p className="font-mono text-xs font-bold truncate" style={{ color: borderColor }}>
