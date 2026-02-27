@@ -25,6 +25,8 @@ type Prerequisite struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	SubjectId      string                 `protobuf:"bytes,1,opt,name=subject_id,json=subjectId,proto3" json:"subject_id,omitempty"`
 	PrerequisiteId string                 `protobuf:"bytes,2,opt,name=prerequisite_id,json=prerequisiteId,proto3" json:"prerequisite_id,omitempty"`
+	Type           string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`          // "hard" or "soft"
+	Priority       int32                  `protobuf:"varint,4,opt,name=priority,proto3" json:"priority,omitempty"` // 1-5
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -71,6 +73,20 @@ func (x *Prerequisite) GetPrerequisiteId() string {
 		return x.PrerequisiteId
 	}
 	return ""
+}
+
+func (x *Prerequisite) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *Prerequisite) GetPriority() int32 {
+	if x != nil {
+		return x.Priority
+	}
+	return 0
 }
 
 type AddPrerequisiteRequest struct {
@@ -513,16 +529,482 @@ func (x *TopologicalSortResponse) GetSubjectIds() []string {
 	return nil
 }
 
+type GetFullDAGRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetFullDAGRequest) Reset() {
+	*x = GetFullDAGRequest{}
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetFullDAGRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetFullDAGRequest) ProtoMessage() {}
+
+func (x *GetFullDAGRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetFullDAGRequest.ProtoReflect.Descriptor instead.
+func (*GetFullDAGRequest) Descriptor() ([]byte, []int) {
+	return file_subject_v1_prerequisite_proto_rawDescGZIP(), []int{11}
+}
+
+type DAGNode struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Code          string                 `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Credits       int32                  `protobuf:"varint,4,opt,name=credits,proto3" json:"credits,omitempty"`
+	DepartmentId  string                 `protobuf:"bytes,5,opt,name=department_id,json=departmentId,proto3" json:"department_id,omitempty"`
+	WeeklyHours   int32                  `protobuf:"varint,6,opt,name=weekly_hours,json=weeklyHours,proto3" json:"weekly_hours,omitempty"`
+	IsActive      bool                   `protobuf:"varint,7,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DAGNode) Reset() {
+	*x = DAGNode{}
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DAGNode) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DAGNode) ProtoMessage() {}
+
+func (x *DAGNode) ProtoReflect() protoreflect.Message {
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DAGNode.ProtoReflect.Descriptor instead.
+func (*DAGNode) Descriptor() ([]byte, []int) {
+	return file_subject_v1_prerequisite_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *DAGNode) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DAGNode) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *DAGNode) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *DAGNode) GetCredits() int32 {
+	if x != nil {
+		return x.Credits
+	}
+	return 0
+}
+
+func (x *DAGNode) GetDepartmentId() string {
+	if x != nil {
+		return x.DepartmentId
+	}
+	return ""
+}
+
+func (x *DAGNode) GetWeeklyHours() int32 {
+	if x != nil {
+		return x.WeeklyHours
+	}
+	return 0
+}
+
+func (x *DAGNode) GetIsActive() bool {
+	if x != nil {
+		return x.IsActive
+	}
+	return false
+}
+
+type DAGEdge struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SourceId      string                 `protobuf:"bytes,1,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"` // prerequisite (must be completed first)
+	TargetId      string                 `protobuf:"bytes,2,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"` // subject that depends on source
+	Type          string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`                         // "hard" | "soft"
+	Priority      int32                  `protobuf:"varint,4,opt,name=priority,proto3" json:"priority,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DAGEdge) Reset() {
+	*x = DAGEdge{}
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DAGEdge) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DAGEdge) ProtoMessage() {}
+
+func (x *DAGEdge) ProtoReflect() protoreflect.Message {
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DAGEdge.ProtoReflect.Descriptor instead.
+func (*DAGEdge) Descriptor() ([]byte, []int) {
+	return file_subject_v1_prerequisite_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *DAGEdge) GetSourceId() string {
+	if x != nil {
+		return x.SourceId
+	}
+	return ""
+}
+
+func (x *DAGEdge) GetTargetId() string {
+	if x != nil {
+		return x.TargetId
+	}
+	return ""
+}
+
+func (x *DAGEdge) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *DAGEdge) GetPriority() int32 {
+	if x != nil {
+		return x.Priority
+	}
+	return 0
+}
+
+type GetFullDAGResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Nodes         []*DAGNode             `protobuf:"bytes,1,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	Edges         []*DAGEdge             `protobuf:"bytes,2,rep,name=edges,proto3" json:"edges,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetFullDAGResponse) Reset() {
+	*x = GetFullDAGResponse{}
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetFullDAGResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetFullDAGResponse) ProtoMessage() {}
+
+func (x *GetFullDAGResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetFullDAGResponse.ProtoReflect.Descriptor instead.
+func (*GetFullDAGResponse) Descriptor() ([]byte, []int) {
+	return file_subject_v1_prerequisite_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *GetFullDAGResponse) GetNodes() []*DAGNode {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+func (x *GetFullDAGResponse) GetEdges() []*DAGEdge {
+	if x != nil {
+		return x.Edges
+	}
+	return nil
+}
+
+type CheckConflictsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SubjectIds    []string               `protobuf:"bytes,1,rep,name=subject_ids,json=subjectIds,proto3" json:"subject_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckConflictsRequest) Reset() {
+	*x = CheckConflictsRequest{}
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckConflictsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckConflictsRequest) ProtoMessage() {}
+
+func (x *CheckConflictsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckConflictsRequest.ProtoReflect.Descriptor instead.
+func (*CheckConflictsRequest) Descriptor() ([]byte, []int) {
+	return file_subject_v1_prerequisite_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *CheckConflictsRequest) GetSubjectIds() []string {
+	if x != nil {
+		return x.SubjectIds
+	}
+	return nil
+}
+
+type MissingPrerequisite struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Code          string                 `protobuf:"bytes,3,opt,name=code,proto3" json:"code,omitempty"`
+	Type          string                 `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"` // "hard" | "soft"
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MissingPrerequisite) Reset() {
+	*x = MissingPrerequisite{}
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MissingPrerequisite) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MissingPrerequisite) ProtoMessage() {}
+
+func (x *MissingPrerequisite) ProtoReflect() protoreflect.Message {
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MissingPrerequisite.ProtoReflect.Descriptor instead.
+func (*MissingPrerequisite) Descriptor() ([]byte, []int) {
+	return file_subject_v1_prerequisite_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *MissingPrerequisite) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *MissingPrerequisite) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *MissingPrerequisite) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *MissingPrerequisite) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+type ConflictDetail struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SubjectId     string                 `protobuf:"bytes,1,opt,name=subject_id,json=subjectId,proto3" json:"subject_id,omitempty"`
+	SubjectName   string                 `protobuf:"bytes,2,opt,name=subject_name,json=subjectName,proto3" json:"subject_name,omitempty"`
+	Missing       []*MissingPrerequisite `protobuf:"bytes,3,rep,name=missing,proto3" json:"missing,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConflictDetail) Reset() {
+	*x = ConflictDetail{}
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConflictDetail) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConflictDetail) ProtoMessage() {}
+
+func (x *ConflictDetail) ProtoReflect() protoreflect.Message {
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConflictDetail.ProtoReflect.Descriptor instead.
+func (*ConflictDetail) Descriptor() ([]byte, []int) {
+	return file_subject_v1_prerequisite_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ConflictDetail) GetSubjectId() string {
+	if x != nil {
+		return x.SubjectId
+	}
+	return ""
+}
+
+func (x *ConflictDetail) GetSubjectName() string {
+	if x != nil {
+		return x.SubjectName
+	}
+	return ""
+}
+
+func (x *ConflictDetail) GetMissing() []*MissingPrerequisite {
+	if x != nil {
+		return x.Missing
+	}
+	return nil
+}
+
+type CheckConflictsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Conflicts     []*ConflictDetail      `protobuf:"bytes,1,rep,name=conflicts,proto3" json:"conflicts,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckConflictsResponse) Reset() {
+	*x = CheckConflictsResponse{}
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckConflictsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckConflictsResponse) ProtoMessage() {}
+
+func (x *CheckConflictsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_subject_v1_prerequisite_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckConflictsResponse.ProtoReflect.Descriptor instead.
+func (*CheckConflictsResponse) Descriptor() ([]byte, []int) {
+	return file_subject_v1_prerequisite_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *CheckConflictsResponse) GetConflicts() []*ConflictDetail {
+	if x != nil {
+		return x.Conflicts
+	}
+	return nil
+}
+
 var File_subject_v1_prerequisite_proto protoreflect.FileDescriptor
 
 const file_subject_v1_prerequisite_proto_rawDesc = "" +
 	"\n" +
 	"\x1dsubject/v1/prerequisite.proto\x12\n" +
-	"subject.v1\"V\n" +
+	"subject.v1\"\x86\x01\n" +
 	"\fPrerequisite\x12\x1d\n" +
 	"\n" +
 	"subject_id\x18\x01 \x01(\tR\tsubjectId\x12'\n" +
-	"\x0fprerequisite_id\x18\x02 \x01(\tR\x0eprerequisiteId\"`\n" +
+	"\x0fprerequisite_id\x18\x02 \x01(\tR\x0eprerequisiteId\x12\x12\n" +
+	"\x04type\x18\x03 \x01(\tR\x04type\x12\x1a\n" +
+	"\bpriority\x18\x04 \x01(\x05R\bpriority\"`\n" +
 	"\x16AddPrerequisiteRequest\x12\x1d\n" +
 	"\n" +
 	"subject_id\x18\x01 \x01(\tR\tsubjectId\x12'\n" +
@@ -547,13 +1029,48 @@ const file_subject_v1_prerequisite_proto_rawDesc = "" +
 	"\x16TopologicalSortRequest\":\n" +
 	"\x17TopologicalSortResponse\x12\x1f\n" +
 	"\vsubject_ids\x18\x01 \x03(\tR\n" +
-	"subjectIds2\xe4\x03\n" +
+	"subjectIds\"\x13\n" +
+	"\x11GetFullDAGRequest\"\xc0\x01\n" +
+	"\aDAGNode\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04code\x18\x02 \x01(\tR\x04code\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x18\n" +
+	"\acredits\x18\x04 \x01(\x05R\acredits\x12#\n" +
+	"\rdepartment_id\x18\x05 \x01(\tR\fdepartmentId\x12!\n" +
+	"\fweekly_hours\x18\x06 \x01(\x05R\vweeklyHours\x12\x1b\n" +
+	"\tis_active\x18\a \x01(\bR\bisActive\"s\n" +
+	"\aDAGEdge\x12\x1b\n" +
+	"\tsource_id\x18\x01 \x01(\tR\bsourceId\x12\x1b\n" +
+	"\ttarget_id\x18\x02 \x01(\tR\btargetId\x12\x12\n" +
+	"\x04type\x18\x03 \x01(\tR\x04type\x12\x1a\n" +
+	"\bpriority\x18\x04 \x01(\x05R\bpriority\"j\n" +
+	"\x12GetFullDAGResponse\x12)\n" +
+	"\x05nodes\x18\x01 \x03(\v2\x13.subject.v1.DAGNodeR\x05nodes\x12)\n" +
+	"\x05edges\x18\x02 \x03(\v2\x13.subject.v1.DAGEdgeR\x05edges\"8\n" +
+	"\x15CheckConflictsRequest\x12\x1f\n" +
+	"\vsubject_ids\x18\x01 \x03(\tR\n" +
+	"subjectIds\"a\n" +
+	"\x13MissingPrerequisite\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
+	"\x04code\x18\x03 \x01(\tR\x04code\x12\x12\n" +
+	"\x04type\x18\x04 \x01(\tR\x04type\"\x8d\x01\n" +
+	"\x0eConflictDetail\x12\x1d\n" +
+	"\n" +
+	"subject_id\x18\x01 \x01(\tR\tsubjectId\x12!\n" +
+	"\fsubject_name\x18\x02 \x01(\tR\vsubjectName\x129\n" +
+	"\amissing\x18\x03 \x03(\v2\x1f.subject.v1.MissingPrerequisiteR\amissing\"R\n" +
+	"\x16CheckConflictsResponse\x128\n" +
+	"\tconflicts\x18\x01 \x03(\v2\x1a.subject.v1.ConflictDetailR\tconflicts2\x96\x05\n" +
 	"\x13PrerequisiteService\x12Z\n" +
 	"\x0fAddPrerequisite\x12\".subject.v1.AddPrerequisiteRequest\x1a#.subject.v1.AddPrerequisiteResponse\x12c\n" +
 	"\x12RemovePrerequisite\x12%.subject.v1.RemovePrerequisiteRequest\x1a&.subject.v1.RemovePrerequisiteResponse\x12`\n" +
 	"\x11ListPrerequisites\x12$.subject.v1.ListPrerequisitesRequest\x1a%.subject.v1.ListPrerequisitesResponse\x12N\n" +
 	"\vValidateDAG\x12\x1e.subject.v1.ValidateDAGRequest\x1a\x1f.subject.v1.ValidateDAGResponse\x12Z\n" +
-	"\x0fTopologicalSort\x12\".subject.v1.TopologicalSortRequest\x1a#.subject.v1.TopologicalSortResponseB>Z<github.com/HuynhHoangPhuc/myrmex/gen/go/subject/v1;subjectv1b\x06proto3"
+	"\x0fTopologicalSort\x12\".subject.v1.TopologicalSortRequest\x1a#.subject.v1.TopologicalSortResponse\x12K\n" +
+	"\n" +
+	"GetFullDAG\x12\x1d.subject.v1.GetFullDAGRequest\x1a\x1e.subject.v1.GetFullDAGResponse\x12c\n" +
+	"\x1aCheckPrerequisiteConflicts\x12!.subject.v1.CheckConflictsRequest\x1a\".subject.v1.CheckConflictsResponseB>Z<github.com/HuynhHoangPhuc/myrmex/gen/go/subject/v1;subjectv1b\x06proto3"
 
 var (
 	file_subject_v1_prerequisite_proto_rawDescOnce sync.Once
@@ -567,7 +1084,7 @@ func file_subject_v1_prerequisite_proto_rawDescGZIP() []byte {
 	return file_subject_v1_prerequisite_proto_rawDescData
 }
 
-var file_subject_v1_prerequisite_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_subject_v1_prerequisite_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_subject_v1_prerequisite_proto_goTypes = []any{
 	(*Prerequisite)(nil),               // 0: subject.v1.Prerequisite
 	(*AddPrerequisiteRequest)(nil),     // 1: subject.v1.AddPrerequisiteRequest
@@ -580,25 +1097,41 @@ var file_subject_v1_prerequisite_proto_goTypes = []any{
 	(*ValidateDAGResponse)(nil),        // 8: subject.v1.ValidateDAGResponse
 	(*TopologicalSortRequest)(nil),     // 9: subject.v1.TopologicalSortRequest
 	(*TopologicalSortResponse)(nil),    // 10: subject.v1.TopologicalSortResponse
+	(*GetFullDAGRequest)(nil),          // 11: subject.v1.GetFullDAGRequest
+	(*DAGNode)(nil),                    // 12: subject.v1.DAGNode
+	(*DAGEdge)(nil),                    // 13: subject.v1.DAGEdge
+	(*GetFullDAGResponse)(nil),         // 14: subject.v1.GetFullDAGResponse
+	(*CheckConflictsRequest)(nil),      // 15: subject.v1.CheckConflictsRequest
+	(*MissingPrerequisite)(nil),        // 16: subject.v1.MissingPrerequisite
+	(*ConflictDetail)(nil),             // 17: subject.v1.ConflictDetail
+	(*CheckConflictsResponse)(nil),     // 18: subject.v1.CheckConflictsResponse
 }
 var file_subject_v1_prerequisite_proto_depIdxs = []int32{
 	0,  // 0: subject.v1.AddPrerequisiteResponse.prerequisite:type_name -> subject.v1.Prerequisite
 	0,  // 1: subject.v1.ListPrerequisitesResponse.prerequisites:type_name -> subject.v1.Prerequisite
-	1,  // 2: subject.v1.PrerequisiteService.AddPrerequisite:input_type -> subject.v1.AddPrerequisiteRequest
-	3,  // 3: subject.v1.PrerequisiteService.RemovePrerequisite:input_type -> subject.v1.RemovePrerequisiteRequest
-	5,  // 4: subject.v1.PrerequisiteService.ListPrerequisites:input_type -> subject.v1.ListPrerequisitesRequest
-	7,  // 5: subject.v1.PrerequisiteService.ValidateDAG:input_type -> subject.v1.ValidateDAGRequest
-	9,  // 6: subject.v1.PrerequisiteService.TopologicalSort:input_type -> subject.v1.TopologicalSortRequest
-	2,  // 7: subject.v1.PrerequisiteService.AddPrerequisite:output_type -> subject.v1.AddPrerequisiteResponse
-	4,  // 8: subject.v1.PrerequisiteService.RemovePrerequisite:output_type -> subject.v1.RemovePrerequisiteResponse
-	6,  // 9: subject.v1.PrerequisiteService.ListPrerequisites:output_type -> subject.v1.ListPrerequisitesResponse
-	8,  // 10: subject.v1.PrerequisiteService.ValidateDAG:output_type -> subject.v1.ValidateDAGResponse
-	10, // 11: subject.v1.PrerequisiteService.TopologicalSort:output_type -> subject.v1.TopologicalSortResponse
-	7,  // [7:12] is the sub-list for method output_type
-	2,  // [2:7] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	12, // 2: subject.v1.GetFullDAGResponse.nodes:type_name -> subject.v1.DAGNode
+	13, // 3: subject.v1.GetFullDAGResponse.edges:type_name -> subject.v1.DAGEdge
+	16, // 4: subject.v1.ConflictDetail.missing:type_name -> subject.v1.MissingPrerequisite
+	17, // 5: subject.v1.CheckConflictsResponse.conflicts:type_name -> subject.v1.ConflictDetail
+	1,  // 6: subject.v1.PrerequisiteService.AddPrerequisite:input_type -> subject.v1.AddPrerequisiteRequest
+	3,  // 7: subject.v1.PrerequisiteService.RemovePrerequisite:input_type -> subject.v1.RemovePrerequisiteRequest
+	5,  // 8: subject.v1.PrerequisiteService.ListPrerequisites:input_type -> subject.v1.ListPrerequisitesRequest
+	7,  // 9: subject.v1.PrerequisiteService.ValidateDAG:input_type -> subject.v1.ValidateDAGRequest
+	9,  // 10: subject.v1.PrerequisiteService.TopologicalSort:input_type -> subject.v1.TopologicalSortRequest
+	11, // 11: subject.v1.PrerequisiteService.GetFullDAG:input_type -> subject.v1.GetFullDAGRequest
+	15, // 12: subject.v1.PrerequisiteService.CheckPrerequisiteConflicts:input_type -> subject.v1.CheckConflictsRequest
+	2,  // 13: subject.v1.PrerequisiteService.AddPrerequisite:output_type -> subject.v1.AddPrerequisiteResponse
+	4,  // 14: subject.v1.PrerequisiteService.RemovePrerequisite:output_type -> subject.v1.RemovePrerequisiteResponse
+	6,  // 15: subject.v1.PrerequisiteService.ListPrerequisites:output_type -> subject.v1.ListPrerequisitesResponse
+	8,  // 16: subject.v1.PrerequisiteService.ValidateDAG:output_type -> subject.v1.ValidateDAGResponse
+	10, // 17: subject.v1.PrerequisiteService.TopologicalSort:output_type -> subject.v1.TopologicalSortResponse
+	14, // 18: subject.v1.PrerequisiteService.GetFullDAG:output_type -> subject.v1.GetFullDAGResponse
+	18, // 19: subject.v1.PrerequisiteService.CheckPrerequisiteConflicts:output_type -> subject.v1.CheckConflictsResponse
+	13, // [13:20] is the sub-list for method output_type
+	6,  // [6:13] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_subject_v1_prerequisite_proto_init() }
@@ -612,7 +1145,7 @@ func file_subject_v1_prerequisite_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_subject_v1_prerequisite_proto_rawDesc), len(file_subject_v1_prerequisite_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

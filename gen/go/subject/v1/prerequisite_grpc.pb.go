@@ -19,11 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PrerequisiteService_AddPrerequisite_FullMethodName    = "/subject.v1.PrerequisiteService/AddPrerequisite"
-	PrerequisiteService_RemovePrerequisite_FullMethodName = "/subject.v1.PrerequisiteService/RemovePrerequisite"
-	PrerequisiteService_ListPrerequisites_FullMethodName  = "/subject.v1.PrerequisiteService/ListPrerequisites"
-	PrerequisiteService_ValidateDAG_FullMethodName        = "/subject.v1.PrerequisiteService/ValidateDAG"
-	PrerequisiteService_TopologicalSort_FullMethodName    = "/subject.v1.PrerequisiteService/TopologicalSort"
+	PrerequisiteService_AddPrerequisite_FullMethodName            = "/subject.v1.PrerequisiteService/AddPrerequisite"
+	PrerequisiteService_RemovePrerequisite_FullMethodName         = "/subject.v1.PrerequisiteService/RemovePrerequisite"
+	PrerequisiteService_ListPrerequisites_FullMethodName          = "/subject.v1.PrerequisiteService/ListPrerequisites"
+	PrerequisiteService_ValidateDAG_FullMethodName                = "/subject.v1.PrerequisiteService/ValidateDAG"
+	PrerequisiteService_TopologicalSort_FullMethodName            = "/subject.v1.PrerequisiteService/TopologicalSort"
+	PrerequisiteService_GetFullDAG_FullMethodName                 = "/subject.v1.PrerequisiteService/GetFullDAG"
+	PrerequisiteService_CheckPrerequisiteConflicts_FullMethodName = "/subject.v1.PrerequisiteService/CheckPrerequisiteConflicts"
 )
 
 // PrerequisiteServiceClient is the client API for PrerequisiteService service.
@@ -35,6 +37,8 @@ type PrerequisiteServiceClient interface {
 	ListPrerequisites(ctx context.Context, in *ListPrerequisitesRequest, opts ...grpc.CallOption) (*ListPrerequisitesResponse, error)
 	ValidateDAG(ctx context.Context, in *ValidateDAGRequest, opts ...grpc.CallOption) (*ValidateDAGResponse, error)
 	TopologicalSort(ctx context.Context, in *TopologicalSortRequest, opts ...grpc.CallOption) (*TopologicalSortResponse, error)
+	GetFullDAG(ctx context.Context, in *GetFullDAGRequest, opts ...grpc.CallOption) (*GetFullDAGResponse, error)
+	CheckPrerequisiteConflicts(ctx context.Context, in *CheckConflictsRequest, opts ...grpc.CallOption) (*CheckConflictsResponse, error)
 }
 
 type prerequisiteServiceClient struct {
@@ -95,6 +99,26 @@ func (c *prerequisiteServiceClient) TopologicalSort(ctx context.Context, in *Top
 	return out, nil
 }
 
+func (c *prerequisiteServiceClient) GetFullDAG(ctx context.Context, in *GetFullDAGRequest, opts ...grpc.CallOption) (*GetFullDAGResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetFullDAGResponse)
+	err := c.cc.Invoke(ctx, PrerequisiteService_GetFullDAG_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *prerequisiteServiceClient) CheckPrerequisiteConflicts(ctx context.Context, in *CheckConflictsRequest, opts ...grpc.CallOption) (*CheckConflictsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckConflictsResponse)
+	err := c.cc.Invoke(ctx, PrerequisiteService_CheckPrerequisiteConflicts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PrerequisiteServiceServer is the server API for PrerequisiteService service.
 // All implementations must embed UnimplementedPrerequisiteServiceServer
 // for forward compatibility.
@@ -104,6 +128,8 @@ type PrerequisiteServiceServer interface {
 	ListPrerequisites(context.Context, *ListPrerequisitesRequest) (*ListPrerequisitesResponse, error)
 	ValidateDAG(context.Context, *ValidateDAGRequest) (*ValidateDAGResponse, error)
 	TopologicalSort(context.Context, *TopologicalSortRequest) (*TopologicalSortResponse, error)
+	GetFullDAG(context.Context, *GetFullDAGRequest) (*GetFullDAGResponse, error)
+	CheckPrerequisiteConflicts(context.Context, *CheckConflictsRequest) (*CheckConflictsResponse, error)
 	mustEmbedUnimplementedPrerequisiteServiceServer()
 }
 
@@ -128,6 +154,12 @@ func (UnimplementedPrerequisiteServiceServer) ValidateDAG(context.Context, *Vali
 }
 func (UnimplementedPrerequisiteServiceServer) TopologicalSort(context.Context, *TopologicalSortRequest) (*TopologicalSortResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method TopologicalSort not implemented")
+}
+func (UnimplementedPrerequisiteServiceServer) GetFullDAG(context.Context, *GetFullDAGRequest) (*GetFullDAGResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetFullDAG not implemented")
+}
+func (UnimplementedPrerequisiteServiceServer) CheckPrerequisiteConflicts(context.Context, *CheckConflictsRequest) (*CheckConflictsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckPrerequisiteConflicts not implemented")
 }
 func (UnimplementedPrerequisiteServiceServer) mustEmbedUnimplementedPrerequisiteServiceServer() {}
 func (UnimplementedPrerequisiteServiceServer) testEmbeddedByValue()                             {}
@@ -240,6 +272,42 @@ func _PrerequisiteService_TopologicalSort_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PrerequisiteService_GetFullDAG_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFullDAGRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PrerequisiteServiceServer).GetFullDAG(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PrerequisiteService_GetFullDAG_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PrerequisiteServiceServer).GetFullDAG(ctx, req.(*GetFullDAGRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PrerequisiteService_CheckPrerequisiteConflicts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckConflictsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PrerequisiteServiceServer).CheckPrerequisiteConflicts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PrerequisiteService_CheckPrerequisiteConflicts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PrerequisiteServiceServer).CheckPrerequisiteConflicts(ctx, req.(*CheckConflictsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PrerequisiteService_ServiceDesc is the grpc.ServiceDesc for PrerequisiteService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -266,6 +334,14 @@ var PrerequisiteService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TopologicalSort",
 			Handler:    _PrerequisiteService_TopologicalSort_Handler,
+		},
+		{
+			MethodName: "GetFullDAG",
+			Handler:    _PrerequisiteService_GetFullDAG_Handler,
+		},
+		{
+			MethodName: "CheckPrerequisiteConflicts",
+			Handler:    _PrerequisiteService_CheckPrerequisiteConflicts_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

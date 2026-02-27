@@ -8,11 +8,15 @@ service PrerequisiteService {
   rpc ListPrerequisites(ListPrerequisitesRequest) returns (ListPrerequisitesResponse);
   rpc ValidateDAG(ValidateDAGRequest) returns (ValidateDAGResponse);
   rpc TopologicalSort(TopologicalSortRequest) returns (TopologicalSortResponse);
+  rpc GetFullDAG(GetFullDAGRequest) returns (GetFullDAGResponse);
+  rpc CheckPrerequisiteConflicts(CheckConflictsRequest) returns (CheckConflictsResponse);
 }
 
 message Prerequisite {
   string subject_id = 1;
   string prerequisite_id = 2;
+  string type = 3;      // "hard" or "soft"
+  int32  priority = 4;  // 1-5
 }
 
 message AddPrerequisiteRequest {
@@ -50,4 +54,53 @@ message TopologicalSortRequest {}
 
 message TopologicalSortResponse {
   repeated string subject_ids = 1;
+}
+
+// --- Full DAG ---
+
+message GetFullDAGRequest {}
+
+message DAGNode {
+  string id = 1;
+  string code = 2;
+  string name = 3;
+  int32  credits = 4;
+  string department_id = 5;
+  int32  weekly_hours = 6;
+  bool   is_active = 7;
+}
+
+message DAGEdge {
+  string source_id = 1;  // prerequisite (must be completed first)
+  string target_id = 2;  // subject that depends on source
+  string type = 3;       // "hard" | "soft"
+  int32  priority = 4;
+}
+
+message GetFullDAGResponse {
+  repeated DAGNode nodes = 1;
+  repeated DAGEdge edges = 2;
+}
+
+// --- Conflict detection ---
+
+message CheckConflictsRequest {
+  repeated string subject_ids = 1;
+}
+
+message MissingPrerequisite {
+  string id = 1;
+  string name = 2;
+  string code = 3;
+  string type = 4;  // "hard" | "soft"
+}
+
+message ConflictDetail {
+  string subject_id = 1;
+  string subject_name = 2;
+  repeated MissingPrerequisite missing = 3;
+}
+
+message CheckConflictsResponse {
+  repeated ConflictDetail conflicts = 1;
 }
