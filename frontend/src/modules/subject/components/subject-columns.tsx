@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +11,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import type { Subject } from '../types'
+import type { PrereqInfo } from '../hooks/use-subjects'
+import { PrereqChip } from './prereq-chip'
 
 interface ActionsProps {
   subject: Subject
@@ -44,7 +47,10 @@ function SubjectActions({ subject, onDelete }: ActionsProps) {
   )
 }
 
-export function buildSubjectColumns(onDelete: (id: string) => void): ColumnDef<Subject>[] {
+export function buildSubjectColumns(
+  onDelete: (id: string) => void,
+  prereqMap: Map<string, PrereqInfo[]> = new Map(),
+): ColumnDef<Subject>[] {
   return [
     {
       accessorKey: 'code',
@@ -79,10 +85,19 @@ export function buildSubjectColumns(onDelete: (id: string) => void): ColumnDef<S
       accessorKey: 'prerequisites',
       header: 'Prerequisites',
       cell: ({ row }) => {
-        const count = row.original.prerequisites?.length ?? 0
-        return count === 0
-          ? <span className="text-muted-foreground">None</span>
-          : <Badge variant="outline">{count}</Badge>
+        const prereqs = prereqMap.get(row.original.id) ?? []
+        if (prereqs.length === 0) {
+          return <span className="text-muted-foreground text-xs">None</span>
+        }
+        return (
+          <TooltipProvider delayDuration={300}>
+            <div className="flex flex-wrap gap-1.5">
+              {prereqs.map((p) => (
+                <PrereqChip key={p.id} prereq={p} />
+              ))}
+            </div>
+          </TooltipProvider>
+        )
       },
     },
     {

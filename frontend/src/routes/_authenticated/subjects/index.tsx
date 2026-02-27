@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/shared/page-header'
 import { DataTable } from '@/components/shared/data-table'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
-import { useSubjects, useDeleteSubject } from '@/modules/subject/hooks/use-subjects'
+import { useSubjects, useDeleteSubject, usePrereqMap } from '@/modules/subject/hooks/use-subjects'
 import { buildSubjectColumns } from '@/modules/subject/components/subject-columns'
 
 const searchSchema = z.object({
@@ -29,7 +29,8 @@ function SubjectListPage() {
 
   const { data, isLoading } = useSubjects({ page, pageSize, search })
   const deleteMutation = useDeleteSubject()
-  const columns = React.useMemo(() => buildSubjectColumns(setDeleteId), [])
+  const prereqMap = usePrereqMap()
+  const columns = React.useMemo(() => buildSubjectColumns(setDeleteId, prereqMap), [prereqMap])
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()

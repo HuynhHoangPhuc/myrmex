@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api/client'
 import { ENDPOINTS } from '@/lib/api/endpoints'
@@ -8,9 +9,18 @@ import type {
   UpdateSubjectInput,
   AddPrerequisiteInput,
   Prerequisite,
+  PrerequisiteType,
   FullDAGResponse,
   CheckConflictsResponse,
 } from '../types'
+
+// Flattened prerequisite info derived from the DAG (used in table column).
+export interface PrereqInfo {
+  id: string
+  code: string
+  name: string
+  type: PrerequisiteType
+}
 
 interface SubjectListParams {
   page: number
@@ -155,4 +165,23 @@ export function useRemovePrerequisite(subjectId: string) {
       void qc.invalidateQueries({ queryKey: ['subjects', subjectId] })
     },
   })
+}
+
+// Builds a map of subjectId → prerequisites[] derived from the full DAG.
+// Reuses the already-cached DAG query so no extra network request is needed.
+export function usePrereqMap(): Map<string, PrereqInfo[]> {
+  const { data: dag } = useFullDAG()
+  return useMemo(() => {
+    if (!dag) return new Map()
+    const nodeById = new Map(dag.nodes.map((n) => [n.id, n]))
+    const map = new Map<string, PrereqInfo[]>()
+    for (const edge of dag.edges) {
+      const node = nodeById.get(edge.source_id)
+      if (!node) continue
+      const list = map.get(edge.target_id) ?? []
+      list.push({ id: node.id, code: node.code, name: node.name, type: edge.type })
+      map.set(edge.target_id, list)
+    }
+    return map
+  }, [dag])
 }
