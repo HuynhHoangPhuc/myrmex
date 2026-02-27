@@ -300,7 +300,7 @@ func TestTimetableServer_GenerateSchedule_Success(t *testing.T) {
 	)
 	getHandler := query.NewGetScheduleHandler(scheduleRepo)
 	conn := startTimetableTestServer(t, func(server *grpc.Server) {
-		timetablev1.RegisterTimetableServiceServer(server, NewTimetableServer(generatorHandler, nil, getHandler, nil, nil))
+		timetablev1.RegisterTimetableServiceServer(server, NewTimetableServer(generatorHandler, nil, getHandler, nil, nil, roomRepo))
 	})
 
 	client := timetablev1.NewTimetableServiceClient(conn)

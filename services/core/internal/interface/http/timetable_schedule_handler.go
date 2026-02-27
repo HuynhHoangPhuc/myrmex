@@ -34,13 +34,8 @@ func (h *TimetableHandler) GenerateSchedule(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusAccepted, gin.H{
-		"schedule_id":      resp.Schedule.GetId(),
-		"status":           resp.Schedule.GetStatus(),
-		"is_partial":       resp.IsPartial,
-		"unassigned_count": resp.UnassignedCount,
-		"message":          "Schedule generation completed",
-	})
+	// Return a full Schedule object so the frontend can use data.id for SSE/polling
+	c.JSON(http.StatusAccepted, scheduleToJSON(resp.Schedule))
 }
 
 func (h *TimetableHandler) GetSchedule(c *gin.Context) {

@@ -30,6 +30,7 @@ type semesterReader interface {
 	Count(ctx context.Context) (int64, error)
 	AddOfferedSubject(ctx context.Context, semesterID, subjectID uuid.UUID) (*entity.Semester, error)
 	RemoveOfferedSubject(ctx context.Context, semesterID, subjectID uuid.UUID) (*entity.Semester, error)
+	ListTimeSlots(ctx context.Context, semesterID uuid.UUID) ([]*entity.TimeSlot, error)
 }
 
 func NewSemesterServer(
@@ -143,6 +144,28 @@ func (s *SemesterServer) RemoveOfferedSubject(ctx context.Context, req *timetabl
 		return nil, status.Errorf(codes.Internal, "remove offered subject: %v", err)
 	}
 	return &timetablev1.RemoveOfferedSubjectResponse{Semester: semesterToProto(sem)}, nil
+}
+
+func (s *SemesterServer) ListTimeSlots(ctx context.Context, req *timetablev1.ListTimeSlotsRequest) (*timetablev1.ListTimeSlotsResponse, error) {
+	semesterID, err := uuid.Parse(req.SemesterId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid semester_id")
+	}
+	slots, err := s.semesterRepo.ListTimeSlots(ctx, semesterID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "list time slots: %v", err)
+	}
+	protos := make([]*timetablev1.TimeSlot, len(slots))
+	for i, sl := range slots {
+		protos[i] = &timetablev1.TimeSlot{
+			Id:          sl.ID.String(),
+			SemesterId:  sl.SemesterID.String(),
+			DayOfWeek:   int32(sl.DayOfWeek),
+			StartPeriod: int32(sl.StartPeriod),
+			EndPeriod:   int32(sl.EndPeriod),
+		}
+	}
+	return &timetablev1.ListTimeSlotsResponse{TimeSlots: protos}, nil
 }
 
 // --- proto helpers ---

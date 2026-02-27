@@ -187,7 +187,7 @@ func (q *Queries) ListSchedulesBySemester(ctx context.Context, semesterID pgtype
 func (q *Queries) ListSchedulesPaged(ctx context.Context, semesterID pgtype.UUID, limit, offset int32) ([]TimetableSchedule, error) {
 	rows, err := q.pool.Query(ctx, `
 		SELECT * FROM timetable.schedules
-		WHERE ($1::uuid IS NULL OR NOT $1::uuid = '00000000-0000-0000-0000-000000000000'::uuid AND semester_id = $1)
+		WHERE ($1 = '00000000-0000-0000-0000-000000000000'::uuid OR semester_id = $1)
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3`,
 		semesterID, limit, offset)
@@ -205,7 +205,7 @@ func (q *Queries) CountSchedulesPaged(ctx context.Context, semesterID pgtype.UUI
 	var n int64
 	err := q.pool.QueryRow(ctx, `
 		SELECT COUNT(*) FROM timetable.schedules
-		WHERE ($1::uuid IS NULL OR NOT $1::uuid = '00000000-0000-0000-0000-000000000000'::uuid AND semester_id = $1)`,
+		WHERE ($1 = '00000000-0000-0000-0000-000000000000'::uuid OR semester_id = $1)`,
 		semesterID).Scan(&n)
 	return n, err
 }

@@ -4,6 +4,12 @@ package valueobject
 type ScheduleStatus string
 
 const (
+	// Generation workflow states (used by CSP solver and frontend)
+	ScheduleStatusGenerating ScheduleStatus = "generating"
+	ScheduleStatusCompleted  ScheduleStatus = "completed"
+	ScheduleStatusFailed     ScheduleStatus = "failed"
+
+	// Manual publish workflow states (used by publish/archive operations)
 	ScheduleStatusDraft     ScheduleStatus = "draft"
 	ScheduleStatusPublished ScheduleStatus = "published"
 	ScheduleStatusArchived  ScheduleStatus = "archived"
@@ -11,7 +17,8 @@ const (
 
 func (s ScheduleStatus) IsValid() bool {
 	switch s {
-	case ScheduleStatusDraft, ScheduleStatusPublished, ScheduleStatusArchived:
+	case ScheduleStatusGenerating, ScheduleStatusCompleted, ScheduleStatusFailed,
+		ScheduleStatusDraft, ScheduleStatusPublished, ScheduleStatusArchived:
 		return true
 	}
 	return false

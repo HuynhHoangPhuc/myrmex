@@ -69,11 +69,11 @@ func (h *GenerateScheduleHandler) Handle(ctx context.Context, cmd GenerateSchedu
 		return uuid.Nil, fmt.Errorf("get semester: %w", err)
 	}
 
-	// 2. Create a draft schedule row immediately so callers can track it
+	// 2. Create a generating schedule row immediately so callers can track it
 	schedule := &entity.Schedule{
 		SemesterID: semester.ID,
 		Name:       fmt.Sprintf("Auto-%s-%d-%d", semester.Name, semester.Year, semester.Term),
-		Status:     valueobject.ScheduleStatusDraft,
+		Status:     valueobject.ScheduleStatusGenerating,
 	}
 	created, err := h.scheduleRepo.Create(ctx, schedule)
 	if err != nil {
@@ -211,12 +211,10 @@ func (h *GenerateScheduleHandler) runSolver(scheduleID uuid.UUID, semester *enti
 		_, _ = h.scheduleRepo.CreateEntry(context.Background(), entry)
 	}
 
-	// 10. Update schedule with results
+	// 10. Update schedule with results and mark as completed
 	_, _ = h.scheduleRepo.UpdateResult(context.Background(), scheduleID,
 		result.Score, result.HardViolations, result.SoftPenalty)
-
-	status := valueobject.ScheduleStatusDraft
-	_, _ = h.scheduleRepo.UpdateStatus(context.Background(), scheduleID, status)
+	_, _ = h.scheduleRepo.UpdateStatus(context.Background(), scheduleID, valueobject.ScheduleStatusCompleted)
 
 	// 11. Append event + publish (both legacy flat subject and per-schedule SSE subject)
 	completedData := map[string]any{
@@ -232,6 +230,7 @@ func (h *GenerateScheduleHandler) runSolver(scheduleID uuid.UUID, semester *enti
 
 func (h *GenerateScheduleHandler) markFailed(scheduleID uuid.UUID, reason string) {
 	_, _ = h.scheduleRepo.UpdateResult(context.Background(), scheduleID, -1, 0, 0)
+	_, _ = h.scheduleRepo.UpdateStatus(context.Background(), scheduleID, valueobject.ScheduleStatusFailed)
 	failedData := map[string]any{
 		"schedule_id": scheduleID.String(),
 		"error":       reason,

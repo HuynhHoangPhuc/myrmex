@@ -129,14 +129,78 @@ func (h *TimetableHandler) CreateSemester(c *gin.Context) {
 }
 
 func (h *TimetableHandler) GetSemester(c *gin.Context) {
-	resp, err := h.semesters.GetSemester(c.Request.Context(), &timetablev1.GetSemesterRequest{
-		Id: c.Param("id"),
-	})
+	id := c.Param("id")
+	resp, err := h.semesters.GetSemester(c.Request.Context(), &timetablev1.GetSemesterRequest{Id: id})
 	if err != nil {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, semesterToJSON(resp.Semester))
+
+	// Enrich semester with time slots and rooms (best-effort — ignore errors)
+	slotsResp, _ := h.semesters.ListTimeSlots(c.Request.Context(), &timetablev1.ListTimeSlotsRequest{SemesterId: id})
+	roomsResp, _ := h.timetable.ListRooms(c.Request.Context(), &timetablev1.ListRoomsRequest{})
+
+	result := semesterToJSON(resp.Semester)
+	result["time_slots"] = timeSlotsToJSON(slotsResp.GetTimeSlots())
+	result["rooms"] = roomsToJSON(roomsResp.GetRooms())
+	c.JSON(http.StatusOK, result)
+}
+
+func timeSlotsToJSON(slots []*timetablev1.TimeSlot) []gin.H {
+	result := make([]gin.H, len(slots))
+	for i, sl := range slots {
+		result[i] = gin.H{
+			"id":           sl.Id,
+			"semester_id":  sl.SemesterId,
+			"day_of_week":  sl.DayOfWeek,
+			"start_period": sl.StartPeriod,
+			"end_period":   sl.EndPeriod,
+			"start_time":   periodToStartTime(int(sl.StartPeriod)),
+			"end_time":     periodToEndTime(int(sl.EndPeriod)),
+			"slot_index":   i,
+		}
+	}
+	return result
+}
+
+func roomsToJSON(rooms []*timetablev1.Room) []gin.H {
+	result := make([]gin.H, len(rooms))
+	for i, r := range rooms {
+		result[i] = gin.H{
+			"id":        r.Id,
+			"name":      r.Name,
+			"capacity":  r.Capacity,
+			"room_type": r.RoomType,
+		}
+	}
+	return result
+}
+
+// periodStartTime maps period numbers to their standard university start times.
+// Matches the frontend's period-to-time.ts mapping.
+var periodStartTimes = map[int]string{
+	1: "08:00", 2: "09:45", 3: "11:30", 4: "13:15",
+	5: "15:00", 6: "16:45", 7: "18:30", 8: "20:15",
+}
+
+// periodEndTimes maps period numbers to their standard university end times.
+var periodEndTimes = map[int]string{
+	1: "09:30", 2: "11:15", 3: "13:00", 4: "14:45",
+	5: "16:30", 6: "18:15", 7: "20:00", 8: "21:45",
+}
+
+func periodToStartTime(period int) string {
+	if t, ok := periodStartTimes[period]; ok {
+		return t
+	}
+	return fmt.Sprintf("P%d", period)
+}
+
+func periodToEndTime(period int) string {
+	if t, ok := periodEndTimes[period]; ok {
+		return t
+	}
+	return fmt.Sprintf("P%d", period)
 }
 
 func (h *TimetableHandler) AddOfferedSubject(c *gin.Context) {

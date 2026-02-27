@@ -8,6 +8,7 @@ import (
 	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/application/command"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/application/query"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/entity"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/repository"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -22,6 +23,7 @@ type TimetableServer struct {
 	getSchedule      *query.GetScheduleHandler
 	listSchedules    *query.ListSchedulesHandler
 	suggestTeachers  *query.SuggestTeachersHandler
+	roomRepo         repository.RoomRepository
 }
 
 func NewTimetableServer(
@@ -30,6 +32,7 @@ func NewTimetableServer(
 	getSchedule      *query.GetScheduleHandler,
 	listSchedules    *query.ListSchedulesHandler,
 	suggestTeachers  *query.SuggestTeachersHandler,
+	roomRepo         repository.RoomRepository,
 ) *TimetableServer {
 	return &TimetableServer{
 		generateSchedule: generateSchedule,
@@ -37,6 +40,7 @@ func NewTimetableServer(
 		getSchedule:      getSchedule,
 		listSchedules:    listSchedules,
 		suggestTeachers:  suggestTeachers,
+		roomRepo:         roomRepo,
 	}
 }
 
@@ -168,6 +172,23 @@ func (s *TimetableServer) ListSchedules(ctx context.Context, req *timetablev1.Li
 		Page:      result.Page,
 		PageSize:  result.PageSize,
 	}, nil
+}
+
+func (s *TimetableServer) ListRooms(ctx context.Context, _ *timetablev1.ListRoomsRequest) (*timetablev1.ListRoomsResponse, error) {
+	rooms, err := s.roomRepo.List(ctx, 200, 0)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "list rooms: %v", err)
+	}
+	protos := make([]*timetablev1.Room, len(rooms))
+	for i, r := range rooms {
+		protos[i] = &timetablev1.Room{
+			Id:       r.ID.String(),
+			Name:     r.Name,
+			Capacity: int32(r.Capacity),
+			RoomType: r.Type,
+		}
+	}
+	return &timetablev1.ListRoomsResponse{Rooms: protos}, nil
 }
 
 func (s *TimetableServer) UpdateScheduleEntry(ctx context.Context, req *timetablev1.UpdateScheduleEntryRequest) (*timetablev1.UpdateScheduleEntryResponse, error) {

@@ -401,7 +401,7 @@ FROM
 ON CONFLICT (id) DO NOTHING;
 
 -- =====================================================================
--- 10. Timetable: Pre-generated schedule for Spring 2026 (draft)
+-- 10. Timetable: Pre-generated schedule for Spring 2026 (completed)
 --     18 entries — teacher assignments follow specializations
 -- =====================================================================
 INSERT INTO timetable.schedules (id, semester_id, name, status, score, hard_violations, soft_penalty, generated_at, created_at)
@@ -409,7 +409,7 @@ VALUES (
   '00000000-0000-0007-0000-000000000001',
   '00000000-0000-0004-0000-000000000002',
   'Spring 2026 — Auto-generated',
-  'draft',
+  'completed',
   85.5,
   0,
   14.5,

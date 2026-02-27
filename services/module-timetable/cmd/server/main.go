@@ -118,6 +118,7 @@ func main() {
 		getScheduleHandler,
 		listSchedulesHandler,
 		suggestTeachersHandler,
+		roomRepo,
 	)
 	semesterServer := grpcif.NewSemesterServer(
 		createSemesterHandler,
