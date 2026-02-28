@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -22,11 +21,12 @@ type CreateSemesterCommand struct {
 
 // CreateSemesterHandler executes the CreateSemester use case.
 type CreateSemesterHandler struct {
-	repo repository.SemesterRepository
+	repo      repository.SemesterRepository
+	publisher EventPublisher
 }
 
-func NewCreateSemesterHandler(repo repository.SemesterRepository) *CreateSemesterHandler {
-	return &CreateSemesterHandler{repo: repo}
+func NewCreateSemesterHandler(repo repository.SemesterRepository, publisher EventPublisher) *CreateSemesterHandler {
+	return &CreateSemesterHandler{repo: repo, publisher: publisher}
 }
 
 func (h *CreateSemesterHandler) Handle(ctx context.Context, cmd CreateSemesterCommand) (*entity.Semester, error) {
@@ -45,6 +45,17 @@ func (h *CreateSemesterHandler) Handle(ctx context.Context, cmd CreateSemesterCo
 	if err != nil {
 		return nil, fmt.Errorf("persist semester: %w", err)
 	}
+
+	// Publish semester created event for analytics consumer
+	_ = h.publisher.Publish(ctx, "timetable.semester.created", semesterEventPayload{
+		SemesterID: created.ID.String(),
+		Name:       created.Name,
+		Year:       created.Year,
+		Term:       created.Term,
+		StartDate:  created.StartDate.Format(time.DateOnly),
+		EndDate:    created.EndDate.Format(time.DateOnly),
+	})
+
 	return created, nil
 }
 
@@ -54,14 +65,6 @@ type semesterEventPayload struct {
 	Name       string `json:"name"`
 	Year       int    `json:"year"`
 	Term       int    `json:"term"`
-}
-
-func semesterCreatedPayload(s *entity.Semester) json.RawMessage {
-	b, _ := json.Marshal(semesterEventPayload{
-		SemesterID: s.ID.String(),
-		Name:       s.Name,
-		Year:       s.Year,
-		Term:       s.Term,
-	})
-	return b
+	StartDate  string `json:"start_date"`
+	EndDate    string `json:"end_date"`
 }

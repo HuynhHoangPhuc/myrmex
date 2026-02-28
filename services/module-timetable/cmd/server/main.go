@@ -96,7 +96,7 @@ func main() {
 	ranker := service.NewTeacherRanker(emptyChecker)
 
 	// 7. Command handlers
-	createSemesterHandler := command.NewCreateSemesterHandler(semesterRepo)
+	createSemesterHandler := command.NewCreateSemesterHandler(semesterRepo, publisher)
 	createRoomHandler := command.NewCreateRoomHandler(roomRepo)
 	generateScheduleHandler := command.NewGenerateScheduleHandler(
 		semesterRepo, scheduleRepo, roomRepo, hrClient, subjectClient, publisher,
