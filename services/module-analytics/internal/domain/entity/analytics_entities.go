@@ -72,13 +72,15 @@ type FactScheduleEntry struct {
 
 // WorkloadStat is the query result for teacher workload.
 type WorkloadStat struct {
-	TeacherID    uuid.UUID `json:"teacher_id"`
-	TeacherName  string    `json:"teacher_name"`
-	DepartmentID uuid.UUID `json:"department_id"`
-	SemesterID   uuid.UUID `json:"semester_id"`
-	SubjectID    uuid.UUID `json:"subject_id"`
-	HoursPerWeek float64   `json:"hours_per_week"`
-	TotalHours   float64   `json:"total_hours"`
+	TeacherID      uuid.UUID `json:"teacher_id"`
+	TeacherName    string    `json:"teacher_name"`
+	DepartmentID   uuid.UUID `json:"department_id"`
+	DepartmentName string    `json:"department_name"`
+	SemesterID     uuid.UUID `json:"semester_id"`
+	SubjectID      uuid.UUID `json:"subject_id"`
+	SubjectCode    string    `json:"subject_code"`
+	HoursPerWeek   float64   `json:"hours_per_week"`
+	TotalHours     float64   `json:"total_hours"`
 }
 
 // UtilizationStat is the query result for room/department utilization.
