@@ -203,6 +203,75 @@ func periodToEndTime(period int) string {
 	return fmt.Sprintf("P%d", period)
 }
 
+func (h *TimetableHandler) CreateTimeSlot(c *gin.Context) {
+	var body struct {
+		DayOfWeek   int32 `json:"day_of_week" binding:"min=0,max=5"`
+		StartPeriod int32 `json:"start_period" binding:"required,min=1,max=8"`
+		EndPeriod   int32 `json:"end_period" binding:"required,min=1,max=8"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if body.EndPeriod <= body.StartPeriod {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "end_period must be greater than start_period"})
+		return
+	}
+	resp, err := h.semesters.CreateTimeSlot(c.Request.Context(), &timetablev1.CreateTimeSlotRequest{
+		SemesterId:  c.Param("id"),
+		DayOfWeek:   body.DayOfWeek,
+		StartPeriod: body.StartPeriod,
+		EndPeriod:   body.EndPeriod,
+	})
+	if err != nil {
+		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
+		return
+	}
+	sl := resp.TimeSlot
+	slotsResp, _ := h.semesters.ListTimeSlots(c.Request.Context(), &timetablev1.ListTimeSlotsRequest{SemesterId: c.Param("id")})
+	slotIndex := len(slotsResp.GetTimeSlots()) - 1
+	c.JSON(http.StatusCreated, gin.H{
+		"id":           sl.Id,
+		"semester_id":  sl.SemesterId,
+		"day_of_week":  sl.DayOfWeek,
+		"start_period": sl.StartPeriod,
+		"end_period":   sl.EndPeriod,
+		"start_time":   periodToStartTime(int(sl.StartPeriod)),
+		"end_time":     periodToEndTime(int(sl.EndPeriod)),
+		"slot_index":   slotIndex,
+	})
+}
+
+func (h *TimetableHandler) DeleteTimeSlot(c *gin.Context) {
+	_, err := h.semesters.DeleteTimeSlot(c.Request.Context(), &timetablev1.DeleteTimeSlotRequest{
+		Id: c.Param("slotId"),
+	})
+	if err != nil {
+		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *TimetableHandler) ApplyTimeSlotPreset(c *gin.Context) {
+	var body struct {
+		Preset string `json:"preset" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	resp, err := h.semesters.ApplyTimeSlotPreset(c.Request.Context(), &timetablev1.ApplyTimeSlotPresetRequest{
+		SemesterId: c.Param("id"),
+		Preset:     body.Preset,
+	})
+	if err != nil {
+		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"time_slots": timeSlotsToJSON(resp.TimeSlots)})
+}
+
 func (h *TimetableHandler) AddOfferedSubject(c *gin.Context) {
 	var body struct {
 		SubjectID string `json:"subject_id" binding:"required"`

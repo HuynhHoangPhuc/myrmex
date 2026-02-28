@@ -114,6 +114,16 @@ func (q *Queries) ListTimeSlotsBySemester(ctx context.Context, semesterID pgtype
 	})
 }
 
+func (q *Queries) DeleteTimeSlot(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.pool.Exec(ctx, `DELETE FROM timetable.time_slots WHERE id=$1`, id)
+	return err
+}
+
+func (q *Queries) DeleteTimeSlotsBySemester(ctx context.Context, semesterID pgtype.UUID) error {
+	_, err := q.pool.Exec(ctx, `DELETE FROM timetable.time_slots WHERE semester_id=$1`, semesterID)
+	return err
+}
+
 // --- Room queries ---
 
 type CreateRoomParams struct {

@@ -31,6 +31,9 @@ type semesterReader interface {
 	AddOfferedSubject(ctx context.Context, semesterID, subjectID uuid.UUID) (*entity.Semester, error)
 	RemoveOfferedSubject(ctx context.Context, semesterID, subjectID uuid.UUID) (*entity.Semester, error)
 	ListTimeSlots(ctx context.Context, semesterID uuid.UUID) ([]*entity.TimeSlot, error)
+	CreateTimeSlot(ctx context.Context, ts *entity.TimeSlot) (*entity.TimeSlot, error)
+	DeleteTimeSlot(ctx context.Context, slotID uuid.UUID) error
+	DeleteTimeSlotsBySemester(ctx context.Context, semesterID uuid.UUID) error
 }
 
 func NewSemesterServer(
@@ -166,6 +169,114 @@ func (s *SemesterServer) ListTimeSlots(ctx context.Context, req *timetablev1.Lis
 		}
 	}
 	return &timetablev1.ListTimeSlotsResponse{TimeSlots: protos}, nil
+}
+
+func (s *SemesterServer) CreateTimeSlot(ctx context.Context, req *timetablev1.CreateTimeSlotRequest) (*timetablev1.CreateTimeSlotResponse, error) {
+	semesterID, err := uuid.Parse(req.SemesterId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid semester_id")
+	}
+	ts := &entity.TimeSlot{
+		SemesterID:  semesterID,
+		DayOfWeek:   int(req.DayOfWeek),
+		StartPeriod: int(req.StartPeriod),
+		EndPeriod:   int(req.EndPeriod),
+	}
+	if err := ts.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid time slot: %v", err)
+	}
+	created, err := s.semesterRepo.CreateTimeSlot(ctx, ts)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "create time slot: %v", err)
+	}
+	return &timetablev1.CreateTimeSlotResponse{
+		TimeSlot: &timetablev1.TimeSlot{
+			Id:          created.ID.String(),
+			SemesterId:  created.SemesterID.String(),
+			DayOfWeek:   int32(created.DayOfWeek),
+			StartPeriod: int32(created.StartPeriod),
+			EndPeriod:   int32(created.EndPeriod),
+		},
+	}, nil
+}
+
+func (s *SemesterServer) DeleteTimeSlot(ctx context.Context, req *timetablev1.DeleteTimeSlotRequest) (*timetablev1.DeleteTimeSlotResponse, error) {
+	slotID, err := uuid.Parse(req.Id)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid id")
+	}
+	if err := s.semesterRepo.DeleteTimeSlot(ctx, slotID); err != nil {
+		return nil, status.Errorf(codes.Internal, "delete time slot: %v", err)
+	}
+	return &timetablev1.DeleteTimeSlotResponse{}, nil
+}
+
+// standardPresetSlots returns the standard Mon-Sat × 3 periods preset (18 slots).
+var standardPresetSlots = []struct{ day, start, end int }{
+	{0, 1, 2}, {0, 3, 4}, {0, 5, 6},
+	{1, 1, 2}, {1, 3, 4}, {1, 5, 6},
+	{2, 1, 2}, {2, 3, 4}, {2, 5, 6},
+	{3, 1, 2}, {3, 3, 4}, {3, 5, 6},
+	{4, 1, 2}, {4, 3, 4}, {4, 5, 6},
+	{5, 1, 2}, {5, 3, 4}, {5, 5, 6},
+}
+
+// mwfPresetSlots returns Mon/Wed/Fri × 4 periods preset.
+var mwfPresetSlots = []struct{ day, start, end int }{
+	{0, 1, 2}, {0, 3, 4}, {0, 5, 6}, {0, 7, 8},
+	{2, 1, 2}, {2, 3, 4}, {2, 5, 6}, {2, 7, 8},
+	{4, 1, 2}, {4, 3, 4}, {4, 5, 6}, {4, 7, 8},
+}
+
+// tuthPresetSlots returns Tue/Thu × 4 periods preset.
+var tuthPresetSlots = []struct{ day, start, end int }{
+	{1, 1, 2}, {1, 3, 4}, {1, 5, 6}, {1, 7, 8},
+	{3, 1, 2}, {3, 3, 4}, {3, 5, 6}, {3, 7, 8},
+}
+
+func (s *SemesterServer) ApplyTimeSlotPreset(ctx context.Context, req *timetablev1.ApplyTimeSlotPresetRequest) (*timetablev1.ApplyTimeSlotPresetResponse, error) {
+	semesterID, err := uuid.Parse(req.SemesterId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid semester_id")
+	}
+
+	var preset []struct{ day, start, end int }
+	switch req.Preset {
+	case "standard":
+		preset = standardPresetSlots
+	case "mwf":
+		preset = mwfPresetSlots
+	case "tuth":
+		preset = tuthPresetSlots
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unknown preset %q; use standard|mwf|tuth", req.Preset)
+	}
+
+	// Clear existing slots first
+	if err := s.semesterRepo.DeleteTimeSlotsBySemester(ctx, semesterID); err != nil {
+		return nil, status.Errorf(codes.Internal, "clear existing slots: %v", err)
+	}
+
+	created := make([]*timetablev1.TimeSlot, 0, len(preset))
+	for _, p := range preset {
+		ts, err := s.semesterRepo.CreateTimeSlot(ctx, &entity.TimeSlot{
+			SemesterID:  semesterID,
+			DayOfWeek:   p.day,
+			StartPeriod: p.start,
+			EndPeriod:   p.end,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "create preset slot: %v", err)
+		}
+		created = append(created, &timetablev1.TimeSlot{
+			Id:          ts.ID.String(),
+			SemesterId:  ts.SemesterID.String(),
+			DayOfWeek:   int32(ts.DayOfWeek),
+			StartPeriod: int32(ts.StartPeriod),
+			EndPeriod:   int32(ts.EndPeriod),
+		})
+	}
+	return &timetablev1.ApplyTimeSlotPresetResponse{TimeSlots: created}, nil
 }
 
 // --- proto helpers ---

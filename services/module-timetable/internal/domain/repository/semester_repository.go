@@ -17,4 +17,6 @@ type SemesterRepository interface {
 	RemoveOfferedSubject(ctx context.Context, semesterID, subjectID uuid.UUID) (*entity.Semester, error)
 	CreateTimeSlot(ctx context.Context, ts *entity.TimeSlot) (*entity.TimeSlot, error)
 	ListTimeSlots(ctx context.Context, semesterID uuid.UUID) ([]*entity.TimeSlot, error)
+	DeleteTimeSlot(ctx context.Context, slotID uuid.UUID) error
+	DeleteTimeSlotsBySemester(ctx context.Context, semesterID uuid.UUID) error
 }

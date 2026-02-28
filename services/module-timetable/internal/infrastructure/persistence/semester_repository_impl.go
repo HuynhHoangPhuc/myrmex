@@ -101,6 +101,20 @@ func (r *SemesterRepositoryImpl) ListTimeSlots(ctx context.Context, semesterID u
 	return result, nil
 }
 
+func (r *SemesterRepositoryImpl) DeleteTimeSlot(ctx context.Context, slotID uuid.UUID) error {
+	if err := r.q.DeleteTimeSlot(ctx, uuidToPg(slotID)); err != nil {
+		return fmt.Errorf("delete time slot: %w", err)
+	}
+	return nil
+}
+
+func (r *SemesterRepositoryImpl) DeleteTimeSlotsBySemester(ctx context.Context, semesterID uuid.UUID) error {
+	if err := r.q.DeleteTimeSlotsBySemester(ctx, uuidToPg(semesterID)); err != nil {
+		return fmt.Errorf("delete time slots by semester: %w", err)
+	}
+	return nil
+}
+
 // --- mapping helpers ---
 
 func semesterToEntity(r sqlc.TimetableSemester) *entity.Semester {
