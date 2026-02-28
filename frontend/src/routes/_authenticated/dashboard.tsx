@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Users, BookOpen, Calendar, Building2, Sparkles, Clock3 } from 'lucide-react'
+import { Users, BookOpen, Calendar, Building2, CalendarDays, Clock3 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -100,7 +100,7 @@ function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="h-4 w-4 text-primary" />
+              <CalendarDays className="h-4 w-4 text-primary" />
               Recent semesters
             </CardTitle>
           </CardHeader>
@@ -173,7 +173,7 @@ function DashboardPage() {
               />
             ) : (
               <div className="space-y-3">
-                {pendingSchedules.map((schedule) => (
+                {pendingSchedules.map((schedule, index) => (
                   <div
                     key={schedule.id}
                     className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
@@ -184,14 +184,14 @@ function DashboardPage() {
                         params={{ id: schedule.id }}
                         className="font-medium text-primary hover:underline"
                       >
-                        Schedule {schedule.id.slice(0, 8)}
+                        Schedule #{index + 1}
                       </Link>
                       <p className="text-sm text-muted-foreground">
                         Created {new Date(schedule.created_at).toLocaleString()}
                       </p>
                     </div>
                     <Badge variant={schedule.status === 'generating' ? 'secondary' : 'outline'}>
-                      {schedule.status}
+                      {schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)}
                     </Badge>
                   </div>
                 ))}
