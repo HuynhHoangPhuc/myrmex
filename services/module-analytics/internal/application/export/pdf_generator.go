@@ -22,7 +22,7 @@ func NewPDFGenerator(repo *persistence.AnalyticsRepository) *PDFGenerator {
 }
 
 // GenerateWorkloadReport returns a PDF with teacher workload data for the given semester.
-// Table columns: Teacher | Department | Hours/Week | Total Hours
+// Columns: Teacher | Department | Subject | Hours/Week | Total Hours
 func (g *PDFGenerator) GenerateWorkloadReport(ctx context.Context, semesterID string) ([]byte, error) {
 	sid, err := parseSemID(semesterID)
 	if err != nil {
@@ -34,27 +34,28 @@ func (g *PDFGenerator) GenerateWorkloadReport(ctx context.Context, semesterID st
 		return nil, fmt.Errorf("fetch workload stats: %w", err)
 	}
 
-	pdf := newPDF("Teacher Workload Report")
-	headers := []string{"Teacher", "Department ID", "Hours/Week", "Total Hours"}
-	widths := []float64{60, 60, 35, 35}
-
-	addTableHeader(pdf, headers, widths)
+	title := "Teacher Workload Report - " + g.semesterLabel(ctx, sid)
+	pdf := newPDF(title)
+	headers := []string{"Teacher", "Department", "Subject", "Hours/Week", "Total Hours"}
+	widths := []float64{60, 55, 40, 32, 33}
+	tbl := newTableRenderer(pdf, widths)
+	tbl.header(headers)
 
 	for _, s := range stats {
-		row := []string{
+		tbl.row([]string{
 			s.TeacherName,
-			s.DepartmentID.String(),
+			s.DepartmentName,
+			s.SubjectCode,
 			fmt.Sprintf("%.1f", s.HoursPerWeek),
 			fmt.Sprintf("%.1f", s.TotalHours),
-		}
-		addTableRow(pdf, row, widths)
+		})
 	}
 
 	return pdfBytes(pdf)
 }
 
 // GenerateUtilizationReport returns a PDF with department utilization data for the given semester.
-// Table columns: Department | Assigned Slots | Total Slots | Utilization %
+// Columns: Department | Assigned Slots | Total Slots | Utilization %
 func (g *PDFGenerator) GenerateUtilizationReport(ctx context.Context, semesterID string) ([]byte, error) {
 	sid, err := parseSemID(semesterID)
 	if err != nil {
@@ -66,27 +67,27 @@ func (g *PDFGenerator) GenerateUtilizationReport(ctx context.Context, semesterID
 		return nil, fmt.Errorf("fetch utilization stats: %w", err)
 	}
 
-	pdf := newPDF("Department Utilization Report")
+	title := "Department Utilization Report - " + g.semesterLabel(ctx, sid)
+	pdf := newPDF(title)
 	headers := []string{"Department", "Assigned Slots", "Total Slots", "Utilization %"}
-	widths := []float64{70, 40, 35, 45}
-
-	addTableHeader(pdf, headers, widths)
+	widths := []float64{80, 45, 40, 50}
+	tbl := newTableRenderer(pdf, widths)
+	tbl.header(headers)
 
 	for _, s := range stats {
-		row := []string{
+		tbl.row([]string{
 			s.DepartmentName,
 			fmt.Sprintf("%d", s.AssignedSlots),
 			fmt.Sprintf("%d", s.TotalSlots),
 			fmt.Sprintf("%.1f%%", s.UtilizationPct),
-		}
-		addTableRow(pdf, row, widths)
+		})
 	}
 
 	return pdfBytes(pdf)
 }
 
 // GenerateScheduleReport returns a PDF with schedule metrics for the given semester.
-// Table columns: Semester | Assigned Slots | Total Slots | Fill Rate %
+// Columns: Semester | Assigned Slots | Total Slots | Fill Rate %
 func (g *PDFGenerator) GenerateScheduleReport(ctx context.Context, semesterID string) ([]byte, error) {
 	sid, err := parseSemID(semesterID)
 	if err != nil {
@@ -98,72 +99,104 @@ func (g *PDFGenerator) GenerateScheduleReport(ctx context.Context, semesterID st
 		return nil, fmt.Errorf("fetch schedule metrics: %w", err)
 	}
 
-	pdf := newPDF("Schedule Metrics Report")
+	title := "Schedule Metrics Report - " + g.semesterLabel(ctx, sid)
+	pdf := newPDF(title)
 	headers := []string{"Semester", "Assigned Slots", "Total Slots", "Fill Rate %"}
-	widths := []float64{70, 40, 35, 45}
-
-	addTableHeader(pdf, headers, widths)
+	widths := []float64{80, 45, 40, 50}
+	tbl := newTableRenderer(pdf, widths)
+	tbl.header(headers)
 
 	for _, m := range metrics {
 		fillRate := 0.0
 		if m.TotalSlots > 0 {
 			fillRate = float64(m.AssignedSlots) / float64(m.TotalSlots) * 100
 		}
-		row := []string{
+		tbl.row([]string{
 			m.SemesterName,
 			fmt.Sprintf("%d", m.AssignedSlots),
 			fmt.Sprintf("%d", m.TotalSlots),
 			fmt.Sprintf("%.1f%%", fillRate),
-		}
-		addTableRow(pdf, row, widths)
+		})
 	}
 
 	return pdfBytes(pdf)
 }
 
-// newPDF creates a new PDF document with standard layout and title.
+// semesterLabel returns the semester name for the title, or "All Semesters" when no filter is set.
+func (g *PDFGenerator) semesterLabel(ctx context.Context, sid uuid.UUID) string {
+	if sid == uuid.Nil {
+		return "All Semesters"
+	}
+	name, _ := g.repo.GetSemesterName(ctx, sid)
+	if name == "" {
+		return "Unknown Semester"
+	}
+	return name
+}
+
+// tableRenderer draws a centered, alternating-row PDF table.
+type tableRenderer struct {
+	pdf    *gofpdf.Fpdf
+	startX float64
+	widths []float64
+	rowIdx int
+}
+
+// newTableRenderer creates a renderer that horizontally centers the table on the page.
+func newTableRenderer(pdf *gofpdf.Fpdf, widths []float64) *tableRenderer {
+	pageW, _ := pdf.GetPageSize()
+	total := 0.0
+	for _, w := range widths {
+		total += w
+	}
+	return &tableRenderer{
+		pdf:    pdf,
+		startX: (pageW - total) / 2,
+		widths: widths,
+	}
+}
+
+// header writes a bold blue header row.
+func (t *tableRenderer) header(headers []string) {
+	t.pdf.SetFont("Arial", "B", 10)
+	t.pdf.SetFillColor(66, 135, 245)
+	t.pdf.SetTextColor(255, 255, 255)
+	t.pdf.SetX(t.startX)
+	for i, h := range headers {
+		t.pdf.CellFormat(t.widths[i], 8, h, "1", 0, "C", true, 0, "")
+	}
+	t.pdf.Ln(-1)
+	t.pdf.SetTextColor(0, 0, 0)
+}
+
+// row writes a data row with alternating background colors.
+func (t *tableRenderer) row(cells []string) {
+	t.pdf.SetFont("Arial", "", 9)
+	if t.rowIdx%2 == 0 {
+		t.pdf.SetFillColor(245, 248, 255)
+	} else {
+		t.pdf.SetFillColor(255, 255, 255)
+	}
+	t.rowIdx++
+	t.pdf.SetX(t.startX)
+	for i, cell := range cells {
+		t.pdf.CellFormat(t.widths[i], 7, cell, "1", 0, "L", true, 0, "")
+	}
+	t.pdf.Ln(-1)
+}
+
+// newPDF creates a new landscape A4 PDF with a centred title.
 func newPDF(title string) *gofpdf.Fpdf {
 	pdf := gofpdf.New("L", "mm", "A4", "")
 	pdf.SetTitle(title, false)
 	pdf.SetAuthor("Myrmex ERP", false)
 	pdf.AddPage()
 
-	// Title
 	pdf.SetFont("Arial", "B", 16)
 	pdf.CellFormat(0, 10, title, "", 1, "C", false, 0, "")
 	pdf.Ln(4)
 
 	return pdf
-}
-
-// addTableHeader writes a bold header row to the PDF table.
-func addTableHeader(pdf *gofpdf.Fpdf, headers []string, widths []float64) {
-	pdf.SetFont("Arial", "B", 10)
-	pdf.SetFillColor(66, 135, 245)
-	pdf.SetTextColor(255, 255, 255)
-
-	for i, h := range headers {
-		pdf.CellFormat(widths[i], 8, h, "1", 0, "C", true, 0, "")
-	}
-	pdf.Ln(-1)
-
-	// Reset text color for rows
-	pdf.SetTextColor(0, 0, 0)
-}
-
-// addTableRow writes a single data row to the PDF table with alternating row color.
-func addTableRow(pdf *gofpdf.Fpdf, row []string, widths []float64) {
-	pdf.SetFont("Arial", "", 9)
-
-	// Alternate row background
-	if pdf.GetY() > 0 {
-		pdf.SetFillColor(245, 245, 245)
-	}
-
-	for i, cell := range row {
-		pdf.CellFormat(widths[i], 7, cell, "1", 0, "L", false, 0, "")
-	}
-	pdf.Ln(-1)
 }
 
 // pdfBytes finalises the PDF and returns its bytes.

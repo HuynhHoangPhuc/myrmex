@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/xuri/excelize/v2"
 
 	"github.com/HuynhHoangPhuc/myrmex/services/module-analytics/internal/infrastructure/persistence"
@@ -21,7 +22,7 @@ func NewExcelGenerator(repo *persistence.AnalyticsRepository) *ExcelGenerator {
 }
 
 // GenerateWorkloadReport returns an Excel workbook with teacher workload data.
-// Columns: Teacher | Department ID | Hours/Week | Total Hours
+// Columns: Teacher | Department | Subject | Hours/Week | Total Hours
 func (g *ExcelGenerator) GenerateWorkloadReport(ctx context.Context, semesterID string) ([]byte, error) {
 	sid, err := parseSemID(semesterID)
 	if err != nil {
@@ -36,10 +37,10 @@ func (g *ExcelGenerator) GenerateWorkloadReport(ctx context.Context, semesterID 
 	f := excelize.NewFile()
 	defer f.Close() //nolint:errcheck
 
-	sheet := "Workload"
+	sheet := "Workload - " + g.semesterLabel(ctx, sid)
 	f.SetSheetName("Sheet1", sheet)
 
-	headers := []string{"Teacher", "Department ID", "Hours/Week", "Total Hours"}
+	headers := []string{"Teacher", "Department", "Subject", "Hours/Week", "Total Hours"}
 	if err := writeExcelHeader(f, sheet, headers); err != nil {
 		return nil, err
 	}
@@ -48,7 +49,8 @@ func (g *ExcelGenerator) GenerateWorkloadReport(ctx context.Context, semesterID 
 		row := i + 2
 		values := []any{
 			s.TeacherName,
-			s.DepartmentID.String(),
+			s.DepartmentName,
+			s.SubjectCode,
 			s.HoursPerWeek,
 			s.TotalHours,
 		}
@@ -57,7 +59,7 @@ func (g *ExcelGenerator) GenerateWorkloadReport(ctx context.Context, semesterID 
 		}
 	}
 
-	setColumnWidths(f, sheet, []float64{30, 38, 14, 14})
+	setColumnWidths(f, sheet, []float64{30, 26, 14, 14, 14})
 
 	return excelBytes(f)
 }
@@ -78,7 +80,7 @@ func (g *ExcelGenerator) GenerateUtilizationReport(ctx context.Context, semester
 	f := excelize.NewFile()
 	defer f.Close() //nolint:errcheck
 
-	sheet := "Utilization"
+	sheet := "Utilization - " + g.semesterLabel(ctx, sid)
 	f.SetSheetName("Sheet1", sheet)
 
 	headers := []string{"Department", "Assigned Slots", "Total Slots", "Utilization %"}
@@ -120,7 +122,7 @@ func (g *ExcelGenerator) GenerateScheduleReport(ctx context.Context, semesterID 
 	f := excelize.NewFile()
 	defer f.Close() //nolint:errcheck
 
-	sheet := "Schedule"
+	sheet := "Schedule - " + g.semesterLabel(ctx, sid)
 	f.SetSheetName("Sheet1", sheet)
 
 	headers := []string{"Semester", "Assigned Slots", "Total Slots", "Fill Rate %"}
@@ -148,6 +150,18 @@ func (g *ExcelGenerator) GenerateScheduleReport(ctx context.Context, semesterID 
 	setColumnWidths(f, sheet, []float64{30, 16, 14, 14})
 
 	return excelBytes(f)
+}
+
+// semesterLabel returns the semester name, or "All Semesters" for no filter.
+func (g *ExcelGenerator) semesterLabel(ctx context.Context, sid uuid.UUID) string {
+	if sid == uuid.Nil {
+		return "All Semesters"
+	}
+	name, _ := g.repo.GetSemesterName(ctx, sid)
+	if name == "" {
+		return "Unknown Semester"
+	}
+	return name
 }
 
 // writeExcelHeader writes bold header row to row 1 of the sheet.
