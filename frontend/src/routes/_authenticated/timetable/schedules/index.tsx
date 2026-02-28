@@ -37,16 +37,12 @@ function ScheduleListPage() {
   const columns = React.useMemo<ColumnDef<Schedule>[]>(
     () => [
       {
-        accessorKey: 'id',
-        header: 'Schedule ID',
+        id: 'index',
+        header: '#',
         cell: ({ row }) => (
-          <Link
-            to="/timetable/schedules/$id"
-            params={{ id: row.original.id }}
-            className="font-mono text-xs text-primary hover:underline"
-          >
-            {row.original.id.slice(0, 8)}…
-          </Link>
+          <span className="text-muted-foreground text-sm">
+            {(page - 1) * pageSize + row.index + 1}
+          </span>
         ),
       },
       {
@@ -54,7 +50,8 @@ function ScheduleListPage() {
         header: 'Status',
         cell: ({ row }) => {
           const status = row.getValue<ScheduleStatus>('status')
-          return <Badge variant={STATUS_VARIANT[status]}>{status}</Badge>
+          const label = status.charAt(0).toUpperCase() + status.slice(1)
+          return <Badge variant={STATUS_VARIANT[status]}>{label}</Badge>
         },
       },
       {
@@ -89,7 +86,7 @@ function ScheduleListPage() {
         ),
       },
     ],
-    [],
+    [page, pageSize],
   )
 
   return (
