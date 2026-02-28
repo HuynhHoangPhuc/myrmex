@@ -183,6 +183,15 @@ func (c *Consumer) handleSubjectMessage(ctx context.Context, msg *nats.Msg) {
 
 // --- Timetable events ---
 
+type semesterEvent struct {
+	SemesterID string `json:"semester_id"`
+	Name       string `json:"name"`
+	Year       int    `json:"year"`
+	Term       string `json:"term"`
+	StartDate  string `json:"start_date"`
+	EndDate    string `json:"end_date"`
+}
+
 type scheduleEntryEvent struct {
 	ScheduleID string `json:"schedule_id"`
 	SemesterID string `json:"semester_id"`
@@ -211,7 +220,13 @@ func (c *Consumer) subscribeTimetable(ctx context.Context) {
 }
 
 func (c *Consumer) handleTimetableMessage(ctx context.Context, msg *nats.Msg) {
-	if msg.Subject != "timetable.schedule.generated" {
+	switch msg.Subject {
+	case "timetable.semester.created":
+		c.handleSemesterCreated(ctx, msg)
+		return
+	case "timetable.schedule.generated":
+		// handled below
+	default:
 		return
 	}
 	var ev scheduleGeneratedEvent
@@ -234,6 +249,28 @@ func (c *Consumer) handleTimetableMessage(ctx context.Context, msg *nats.Msg) {
 		if err := c.repo.UpsertScheduleEntry(ctx, entry); err != nil {
 			c.log.Error("upsert schedule entry", zap.Error(err), zap.String("schedule_id", e.ScheduleID))
 		}
+	}
+}
+
+func (c *Consumer) handleSemesterCreated(ctx context.Context, msg *nats.Msg) {
+	var ev semesterEvent
+	if err := json.Unmarshal(msg.Data, &ev); err != nil {
+		c.log.Error("unmarshal timetable semester event", zap.Error(err))
+		return
+	}
+	startDate, _ := time.Parse(time.DateOnly, ev.StartDate)
+	endDate, _ := time.Parse(time.DateOnly, ev.EndDate)
+	s := entity.DimSemester{
+		SemesterID: mustParseUUID(ev.SemesterID),
+		Name:       ev.Name,
+		Year:       ev.Year,
+		Term:       ev.Term,
+		StartDate:  startDate,
+		EndDate:    endDate,
+		UpdatedAt:  time.Now(),
+	}
+	if err := c.repo.UpsertSemester(ctx, s); err != nil {
+		c.log.Error("upsert semester", zap.Error(err))
 	}
 }
 
