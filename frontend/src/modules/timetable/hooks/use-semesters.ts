@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api/client'
 import { ENDPOINTS } from '@/lib/api/endpoints'
 import type { ListResponse } from '@/lib/api/types'
-import type { Semester, CreateSemesterInput } from '../types'
+import type { Semester, TimeSlot, CreateSemesterInput, CreateTimeSlotInput, TimeSlotPreset } from '../types'
 
 interface SemesterListParams {
   page: number
@@ -70,6 +70,47 @@ export function useDeleteSemester() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['semesters'] })
+    },
+  })
+}
+
+export function useCreateTimeSlot(semesterId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: CreateTimeSlotInput) => {
+      const { data } = await apiClient.post<TimeSlot>(ENDPOINTS.timetable.slots(semesterId), input)
+      return data
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['semesters', semesterId] })
+    },
+  })
+}
+
+export function useDeleteTimeSlot(semesterId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (slotId: string) => {
+      await apiClient.delete(ENDPOINTS.timetable.slot(semesterId, slotId))
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['semesters', semesterId] })
+    },
+  })
+}
+
+export function useApplyTimeSlotPreset(semesterId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (preset: TimeSlotPreset) => {
+      const { data } = await apiClient.post<{ time_slots: TimeSlot[] }>(
+        ENDPOINTS.timetable.slotsPreset(semesterId),
+        { preset },
+      )
+      return data
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['semesters', semesterId] })
     },
   })
 }

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/shared/page-header'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { useSemester } from '@/modules/timetable/hooks/use-semesters'
+import { TimeSlotManager } from '@/modules/timetable/components/time-slot-manager'
 
 export const Route = createFileRoute('/_authenticated/timetable/semesters/$id')({
   component: SemesterDetailPage,
@@ -47,26 +48,7 @@ function SemesterDetailPage() {
       </div>
 
       {/* Time slots */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">Time Slots ({semester.time_slots?.length ?? 0})</h2>
-        {!semester.time_slots?.length ? (
-          <p className="text-sm text-muted-foreground">No time slots defined.</p>
-        ) : (
-          <div className="rounded-md border divide-y">
-            {semester.time_slots.map((slot) => (
-              <div key={slot.id} className="flex items-center gap-4 px-4 py-2.5 text-sm">
-                <span className="w-24 font-medium">
-                  {['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][slot.day_of_week]}
-                </span>
-                <span className="text-muted-foreground">
-                  {slot.start_time} – {slot.end_time}
-                </span>
-                <Badge variant="outline" className="ml-auto text-xs">Slot {slot.slot_index + 1}</Badge>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <TimeSlotManager semesterId={id} slots={semester.time_slots ?? []} />
 
       {/* Rooms */}
       <div>

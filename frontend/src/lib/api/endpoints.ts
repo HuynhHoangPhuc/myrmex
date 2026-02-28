@@ -26,6 +26,8 @@ export const ENDPOINTS = {
     semester: (id: string) => `/timetable/semesters/${id}`,
     generate: (semesterId: string) => `/timetable/semesters/${semesterId}/generate`,
     slots: (semesterId: string) => `/timetable/semesters/${semesterId}/slots`,
+    slot: (semesterId: string, slotId: string) => `/timetable/semesters/${semesterId}/slots/${slotId}`,
+    slotsPreset: (semesterId: string) => `/timetable/semesters/${semesterId}/slots/preset`,
     schedules: '/timetable/schedules',
     schedule: (id: string) => `/timetable/schedules/${id}`,
     scheduleStream: (id: string) => `/timetable/schedules/${id}/stream`,

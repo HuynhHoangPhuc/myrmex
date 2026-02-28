@@ -40,6 +40,14 @@ export interface CreateSemesterInput {
   end_date: string    // RFC3339 format
 }
 
+export interface CreateTimeSlotInput {
+  day_of_week: number  // 0=Mon..5=Sat
+  start_period: number // 1-8
+  end_period: number   // 1-8, must be > start_period
+}
+
+export type TimeSlotPreset = 'standard' | 'mwf' | 'tuth'
+
 export type ScheduleStatus = 'pending' | 'generating' | 'completed' | 'failed'
 
 export interface ScheduleEntry {
