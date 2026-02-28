@@ -9,7 +9,7 @@ done
 echo "Postgres is ready."
 
 # Run migrations for each service schema (separate version tables to avoid conflicts)
-for svc in core module-hr module-subject module-timetable; do
+for svc in core module-hr module-subject module-timetable module-analytics; do
   echo "Migrating $svc..."
   table="goose_db_version_$(echo $svc | tr '-' '_')"
   goose -dir /migrations/$svc -table "$table" postgres "$DATABASE_URL" up

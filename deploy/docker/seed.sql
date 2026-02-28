@@ -531,4 +531,73 @@ VALUES
    true, 'Capstone Project', 'CS499', 'Jack Mai', '00000000-0000-0000-0000-000000000001')
 ON CONFLICT (id) DO NOTHING;
 
+-- =====================================================================
+-- Analytics: Backfill dimension tables from source-of-truth schemas
+-- Must run after all other inserts so FK data exists
+-- =====================================================================
+INSERT INTO analytics.dim_department (department_id, name, code, updated_at)
+SELECT id, name, code, updated_at FROM hr.departments
+ON CONFLICT (department_id) DO NOTHING;
+
+INSERT INTO analytics.dim_teacher (teacher_id, full_name, department_id, department_name, specializations, updated_at)
+SELECT
+    t.id,
+    t.full_name,
+    t.department_id,
+    COALESCE(d.name, ''),
+    COALESCE(ARRAY_AGG(ts.specialization) FILTER (WHERE ts.specialization IS NOT NULL), '{}'),
+    t.updated_at
+FROM hr.teachers t
+LEFT JOIN hr.departments d ON d.id = t.department_id
+LEFT JOIN hr.teacher_specializations ts ON ts.teacher_id = t.id
+GROUP BY t.id, t.full_name, t.department_id, d.name, t.updated_at
+ON CONFLICT (teacher_id) DO NOTHING;
+
+INSERT INTO analytics.dim_subject (subject_id, name, code, credits, department_id, updated_at)
+SELECT id, name, code, credits, department_id::UUID, updated_at
+FROM subject.subjects
+WHERE department_id IS NOT NULL AND department_id != ''
+ON CONFLICT (subject_id) DO NOTHING;
+
+INSERT INTO analytics.dim_semester (semester_id, name, year, term, start_date, end_date, updated_at)
+SELECT id, name, year, term::VARCHAR, start_date, end_date, created_at
+FROM timetable.semesters
+ON CONFLICT (semester_id) DO NOTHING;
+
+-- Backfill fact_schedule_entry from timetable schedule entries
+INSERT INTO analytics.fact_schedule_entry
+    (schedule_id, semester_id, teacher_id, subject_id, room_id, day_of_week, period, is_assigned, created_at)
+SELECT
+    se.schedule_id,
+    sch.semester_id,
+    se.teacher_id,
+    se.subject_id,
+    se.room_id,
+    ts.day_of_week,
+    ts.start_period,
+    se.teacher_id IS NOT NULL,
+    se.created_at
+FROM timetable.schedule_entries se
+JOIN timetable.schedules sch ON sch.id = se.schedule_id
+JOIN timetable.time_slots ts  ON ts.id = se.time_slot_id
+ON CONFLICT (schedule_id, day_of_week, period, room_id) DO NOTHING;
+
+-- Backfill fact_workload: hours from subject.weekly_hours × semester weeks
+INSERT INTO analytics.fact_workload
+    (teacher_id, semester_id, subject_id, hours_per_week, total_hours, created_at)
+SELECT
+    se.teacher_id,
+    sch.semester_id,
+    se.subject_id,
+    COALESCE(subj.weekly_hours, 0),
+    COALESCE(subj.weekly_hours, 0) * ((sem.end_date::date - sem.start_date::date) / 7),
+    NOW()
+FROM timetable.schedule_entries se
+JOIN timetable.schedules   sch  ON sch.id = se.schedule_id
+JOIN timetable.semesters   sem  ON sem.id = sch.semester_id
+LEFT JOIN subject.subjects subj ON subj.id = se.subject_id
+WHERE se.teacher_id IS NOT NULL
+GROUP BY se.teacher_id, sch.semester_id, se.subject_id, subj.weekly_hours, sem.end_date, sem.start_date
+ON CONFLICT (teacher_id, semester_id, subject_id) DO NOTHING;
+
 COMMIT;

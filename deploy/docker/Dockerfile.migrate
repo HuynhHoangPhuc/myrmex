@@ -7,6 +7,7 @@ COPY services/core/migrations/ /migrations/core/
 COPY services/module-hr/migrations/ /migrations/module-hr/
 COPY services/module-subject/migrations/ /migrations/module-subject/
 COPY services/module-timetable/migrations/ /migrations/module-timetable/
+COPY services/module-analytics/migrations/ /migrations/module-analytics/
 
 COPY deploy/docker/seed.sql /seed/seed.sql
 COPY deploy/docker/migrate-and-seed.sh /migrate-and-seed.sh
