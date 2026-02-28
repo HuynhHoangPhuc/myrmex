@@ -2,6 +2,27 @@
 
 All notable changes to the Myrmex project are documented here.
 
+## [2026-02-28] — Frontend UX Polish
+
+**Status**: Complete
+
+### Summary
+Applied a focused frontend UX polish pass: responsive authenticated app shell, mobile navigation drawer, global command palette, persisted dark mode theme handling, improved schedule calendar interactions, a multi-step semester setup flow, and a refreshed dashboard experience.
+
+### Frontend Implementation
+- **Responsive app shell**: Added a mobile nav drawer for authenticated navigation and improved small-screen layout behavior.
+- **Command palette**: Added a global command palette for faster navigation and entity lookup.
+- **Dark mode**: Persisted theme selection in localStorage and aligned UI tokens with light/dark theme switching.
+- **Schedule calendar UX**: Added filtering controls, mobile card layout, and desktop drag-drop teacher swap interactions.
+- **Semester setup UX**: Added a step-based semester setup wizard and streamlined semester list actions into setup-oriented flows.
+- **Dashboard refresh**: Refined dashboard presentation and actions for a cleaner default landing experience.
+
+### Notes
+- Scope was limited to frontend UX polish; no new backend APIs were documented here.
+- This is a documentation-only changelog update for completed UI work.
+
+---
+
 ## [2026-02-27] — UI Enhancements & Chat Panel Redesign
 
 **Status**: Complete

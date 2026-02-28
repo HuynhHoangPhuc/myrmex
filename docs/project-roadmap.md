@@ -109,7 +109,7 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 
 ## Phase 3: Advanced Features (IN PROGRESS)
 
-**Timeline**: Q3 2026 (4-5 weeks) | **Status**: ~35% Complete (Advanced Prerequisites sub-phase done, Feb 27)
+**Timeline**: Q3 2026 (4-5 weeks) | **Status**: ~45% Complete (Advanced Prerequisites + frontend UX polish done, Feb 28)
 
 ### Goals
 - Implement advanced prerequisite conflict detection (DONE)
@@ -137,9 +137,13 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 - [ ] Prerequisite validation: Prevent enrollment if prerequisites not met
 
 #### Mobile & UX Enhancements
+- [x] Responsive web app shell: Mobile nav drawer + small-screen layout polish
+- [x] Command palette: Global navigation and quick access workflow
+- [x] Dark mode polish: Theme persistence and token alignment
+- [x] Schedule UX: Calendar filtering, mobile layout, drag-drop teacher swap
+- [x] Semester setup UX: Step-based wizard and clearer semester list actions
+- [x] Dashboard UX refresh: Cleaner landing page layout and actions
 - [ ] Mobile app: React Native (iOS + Android)
-- [ ] Drag-drop scheduling: Reassign teachers/rooms via drag-drop
-- [ ] Hamburger menu: Mobile navigation (sidebar collapse)
 - [ ] Offline mode: Cache schedules for offline access
 - [ ] Push notifications: Schedule changes, new messages
 
@@ -340,6 +344,14 @@ Phase 4: Enterprise
 ---
 
 ## Change Log
+
+### 2026-02-28 (Frontend UX Polish)
+- Added responsive authenticated app shell improvements with mobile navigation drawer
+- Added global command palette for faster navigation and entity lookup
+- Added persisted dark mode theme handling and token alignment
+- Improved schedule calendar with filters, mobile layout, and drag-drop teacher swap
+- Added step-based semester setup wizard and streamlined semester list action flow
+- Refreshed dashboard layout and action presentation
 
 ### 2026-02-27 (UI Enhancements & Chat Panel Redesign)
 - Tooltip component: New Radix UI-based tooltip for interactive hints

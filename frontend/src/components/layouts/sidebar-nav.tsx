@@ -9,14 +9,14 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
-interface NavItem {
+export interface NavItem {
   label: string
   to: string
   icon: React.ElementType
   children?: { label: string; to: string }[]
 }
 
-const NAV_ITEMS: NavItem[] = [
+export const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
   {
     label: 'HR',
@@ -51,8 +51,12 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Analytics', to: '/analytics', icon: BarChart3 },
 ]
 
+interface SidebarNavProps {
+  onNavigate?: () => void
+}
+
 // Sidebar navigation with active-state highlighting and nested items
-export function SidebarNav() {
+export function SidebarNav({ onNavigate }: SidebarNavProps) {
   const router = useRouterState()
   const pathname = router.location.pathname
 
@@ -71,6 +75,7 @@ export function SidebarNav() {
           <div key={item.to}>
             <Link
               to={item.to}
+              onClick={onNavigate}
               className={cn(
                 'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 isActive
@@ -82,13 +87,13 @@ export function SidebarNav() {
               {item.label}
             </Link>
 
-            {/* Nested items — shown when parent is active */}
             {item.children && isActive && (
               <div className="ml-7 mt-1 flex flex-col gap-1">
                 {item.children.map((child) => (
                   <Link
                     key={child.to}
                     to={child.to}
+                    onClick={onNavigate}
                     className={cn(
                       'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
                       pathname === child.to

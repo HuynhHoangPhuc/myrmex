@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { EmptyState } from '@/components/shared/empty-state'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 
 interface PaginationInfo {
@@ -62,61 +63,61 @@ export function DataTable<T>({
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    // Pagination is managed server-side
     manualPagination: true,
     manualSorting: true,
   })
 
   return (
     <div className="space-y-4">
-      {toolbar && <div className="flex items-center justify-between">{toolbar}</div>}
+      {toolbar && <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">{toolbar}</div>}
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              // Loading skeleton rows
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  {columns.map((_, j) => (
-                    <TableCell key={j}>
-                      <div className="h-4 w-full animate-pulse rounded bg-muted" />
-                    </TableCell>
+      <div className="overflow-hidden rounded-md border">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : table.getRowModel().rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                  {emptyMessage}
-                </TableCell>
-              </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() ? 'selected' : undefined}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+              ))}
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, rowIndex) => (
+                  <TableRow key={rowIndex}>
+                    {columns.map((_, cellIndex) => (
+                      <TableCell key={cellIndex}>
+                        <div className="h-4 w-full animate-pulse rounded bg-muted" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : table.getRowModel().rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="p-0">
+                    <EmptyState title={emptyMessage} className="py-10" />
+                  </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id} data-state={row.getIsSelected() ? 'selected' : undefined}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {pagination && (
@@ -139,13 +140,13 @@ function DataTablePagination({ pagination, onPageChange, isLoading }: DataTableP
   const end = Math.min(page * pageSize, total)
 
   return (
-    <div className="flex items-center justify-between px-2">
+    <div className="flex flex-col gap-3 px-2 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm text-muted-foreground">
         {total === 0 ? 'No results' : `Showing ${start}–${end} of ${total}`}
       </p>
       <div className="flex items-center gap-2">
         <button
-          className="rounded border px-3 py-1 text-sm disabled:opacity-50"
+          className="rounded border px-3 py-1.5 text-sm disabled:opacity-50"
           onClick={() => onPageChange?.(page - 1)}
           disabled={page <= 1 || isLoading}
         >
@@ -155,7 +156,7 @@ function DataTablePagination({ pagination, onPageChange, isLoading }: DataTableP
           {isLoading ? <LoadingSpinner size="sm" /> : `Page ${page} of ${totalPages}`}
         </span>
         <button
-          className="rounded border px-3 py-1 text-sm disabled:opacity-50"
+          className="rounded border px-3 py-1.5 text-sm disabled:opacity-50"
           onClick={() => onPageChange?.(page + 1)}
           disabled={page >= totalPages || isLoading}
         >
