@@ -25,6 +25,9 @@ const (
 	SemesterService_AddOfferedSubject_FullMethodName    = "/timetable.v1.SemesterService/AddOfferedSubject"
 	SemesterService_RemoveOfferedSubject_FullMethodName = "/timetable.v1.SemesterService/RemoveOfferedSubject"
 	SemesterService_ListTimeSlots_FullMethodName        = "/timetable.v1.SemesterService/ListTimeSlots"
+	SemesterService_CreateTimeSlot_FullMethodName       = "/timetable.v1.SemesterService/CreateTimeSlot"
+	SemesterService_DeleteTimeSlot_FullMethodName       = "/timetable.v1.SemesterService/DeleteTimeSlot"
+	SemesterService_ApplyTimeSlotPreset_FullMethodName  = "/timetable.v1.SemesterService/ApplyTimeSlotPreset"
 )
 
 // SemesterServiceClient is the client API for SemesterService service.
@@ -37,6 +40,9 @@ type SemesterServiceClient interface {
 	AddOfferedSubject(ctx context.Context, in *AddOfferedSubjectRequest, opts ...grpc.CallOption) (*AddOfferedSubjectResponse, error)
 	RemoveOfferedSubject(ctx context.Context, in *RemoveOfferedSubjectRequest, opts ...grpc.CallOption) (*RemoveOfferedSubjectResponse, error)
 	ListTimeSlots(ctx context.Context, in *ListTimeSlotsRequest, opts ...grpc.CallOption) (*ListTimeSlotsResponse, error)
+	CreateTimeSlot(ctx context.Context, in *CreateTimeSlotRequest, opts ...grpc.CallOption) (*CreateTimeSlotResponse, error)
+	DeleteTimeSlot(ctx context.Context, in *DeleteTimeSlotRequest, opts ...grpc.CallOption) (*DeleteTimeSlotResponse, error)
+	ApplyTimeSlotPreset(ctx context.Context, in *ApplyTimeSlotPresetRequest, opts ...grpc.CallOption) (*ApplyTimeSlotPresetResponse, error)
 }
 
 type semesterServiceClient struct {
@@ -107,6 +113,36 @@ func (c *semesterServiceClient) ListTimeSlots(ctx context.Context, in *ListTimeS
 	return out, nil
 }
 
+func (c *semesterServiceClient) CreateTimeSlot(ctx context.Context, in *CreateTimeSlotRequest, opts ...grpc.CallOption) (*CreateTimeSlotResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateTimeSlotResponse)
+	err := c.cc.Invoke(ctx, SemesterService_CreateTimeSlot_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *semesterServiceClient) DeleteTimeSlot(ctx context.Context, in *DeleteTimeSlotRequest, opts ...grpc.CallOption) (*DeleteTimeSlotResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteTimeSlotResponse)
+	err := c.cc.Invoke(ctx, SemesterService_DeleteTimeSlot_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *semesterServiceClient) ApplyTimeSlotPreset(ctx context.Context, in *ApplyTimeSlotPresetRequest, opts ...grpc.CallOption) (*ApplyTimeSlotPresetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ApplyTimeSlotPresetResponse)
+	err := c.cc.Invoke(ctx, SemesterService_ApplyTimeSlotPreset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SemesterServiceServer is the server API for SemesterService service.
 // All implementations must embed UnimplementedSemesterServiceServer
 // for forward compatibility.
@@ -117,6 +153,9 @@ type SemesterServiceServer interface {
 	AddOfferedSubject(context.Context, *AddOfferedSubjectRequest) (*AddOfferedSubjectResponse, error)
 	RemoveOfferedSubject(context.Context, *RemoveOfferedSubjectRequest) (*RemoveOfferedSubjectResponse, error)
 	ListTimeSlots(context.Context, *ListTimeSlotsRequest) (*ListTimeSlotsResponse, error)
+	CreateTimeSlot(context.Context, *CreateTimeSlotRequest) (*CreateTimeSlotResponse, error)
+	DeleteTimeSlot(context.Context, *DeleteTimeSlotRequest) (*DeleteTimeSlotResponse, error)
+	ApplyTimeSlotPreset(context.Context, *ApplyTimeSlotPresetRequest) (*ApplyTimeSlotPresetResponse, error)
 	mustEmbedUnimplementedSemesterServiceServer()
 }
 
@@ -144,6 +183,15 @@ func (UnimplementedSemesterServiceServer) RemoveOfferedSubject(context.Context, 
 }
 func (UnimplementedSemesterServiceServer) ListTimeSlots(context.Context, *ListTimeSlotsRequest) (*ListTimeSlotsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListTimeSlots not implemented")
+}
+func (UnimplementedSemesterServiceServer) CreateTimeSlot(context.Context, *CreateTimeSlotRequest) (*CreateTimeSlotResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateTimeSlot not implemented")
+}
+func (UnimplementedSemesterServiceServer) DeleteTimeSlot(context.Context, *DeleteTimeSlotRequest) (*DeleteTimeSlotResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteTimeSlot not implemented")
+}
+func (UnimplementedSemesterServiceServer) ApplyTimeSlotPreset(context.Context, *ApplyTimeSlotPresetRequest) (*ApplyTimeSlotPresetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ApplyTimeSlotPreset not implemented")
 }
 func (UnimplementedSemesterServiceServer) mustEmbedUnimplementedSemesterServiceServer() {}
 func (UnimplementedSemesterServiceServer) testEmbeddedByValue()                         {}
@@ -274,6 +322,60 @@ func _SemesterService_ListTimeSlots_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SemesterService_CreateTimeSlot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTimeSlotRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SemesterServiceServer).CreateTimeSlot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SemesterService_CreateTimeSlot_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SemesterServiceServer).CreateTimeSlot(ctx, req.(*CreateTimeSlotRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SemesterService_DeleteTimeSlot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteTimeSlotRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SemesterServiceServer).DeleteTimeSlot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SemesterService_DeleteTimeSlot_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SemesterServiceServer).DeleteTimeSlot(ctx, req.(*DeleteTimeSlotRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SemesterService_ApplyTimeSlotPreset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApplyTimeSlotPresetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SemesterServiceServer).ApplyTimeSlotPreset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SemesterService_ApplyTimeSlotPreset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SemesterServiceServer).ApplyTimeSlotPreset(ctx, req.(*ApplyTimeSlotPresetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SemesterService_ServiceDesc is the grpc.ServiceDesc for SemesterService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -304,6 +406,18 @@ var SemesterService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListTimeSlots",
 			Handler:    _SemesterService_ListTimeSlots_Handler,
+		},
+		{
+			MethodName: "CreateTimeSlot",
+			Handler:    _SemesterService_CreateTimeSlot_Handler,
+		},
+		{
+			MethodName: "DeleteTimeSlot",
+			Handler:    _SemesterService_DeleteTimeSlot_Handler,
+		},
+		{
+			MethodName: "ApplyTimeSlotPreset",
+			Handler:    _SemesterService_ApplyTimeSlotPreset_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

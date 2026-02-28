@@ -12,6 +12,9 @@ service SemesterService {
   rpc AddOfferedSubject(AddOfferedSubjectRequest) returns (AddOfferedSubjectResponse);
   rpc RemoveOfferedSubject(RemoveOfferedSubjectRequest) returns (RemoveOfferedSubjectResponse);
   rpc ListTimeSlots(ListTimeSlotsRequest) returns (ListTimeSlotsResponse);
+  rpc CreateTimeSlot(CreateTimeSlotRequest) returns (CreateTimeSlotResponse);
+  rpc DeleteTimeSlot(DeleteTimeSlotRequest) returns (DeleteTimeSlotResponse);
+  rpc ApplyTimeSlotPreset(ApplyTimeSlotPresetRequest) returns (ApplyTimeSlotPresetResponse);
 }
 
 message Semester {
@@ -85,5 +88,31 @@ message ListTimeSlotsRequest {
 }
 
 message ListTimeSlotsResponse {
+  repeated TimeSlot time_slots = 1;
+}
+
+message CreateTimeSlotRequest {
+  string semester_id = 1;
+  int32 day_of_week = 2;
+  int32 start_period = 3;
+  int32 end_period = 4;
+}
+
+message CreateTimeSlotResponse {
+  TimeSlot time_slot = 1;
+}
+
+message DeleteTimeSlotRequest {
+  string id = 1;
+}
+
+message DeleteTimeSlotResponse {}
+
+message ApplyTimeSlotPresetRequest {
+  string semester_id = 1;
+  string preset = 2; // "standard" | "mwf" | "tuth"
+}
+
+message ApplyTimeSlotPresetResponse {
   repeated TimeSlot time_slots = 1;
 }
