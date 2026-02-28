@@ -80,6 +80,23 @@ func (r *AnalyticsRepository) DeleteSubject(ctx context.Context, subjectID uuid.
 	return err
 }
 
+// UpsertSemester inserts or updates a semester dimension record.
+func (r *AnalyticsRepository) UpsertSemester(ctx context.Context, s entity.DimSemester) error {
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO analytics.dim_semester (semester_id, name, year, term, start_date, end_date, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7)
+		ON CONFLICT (semester_id) DO UPDATE SET
+			name       = EXCLUDED.name,
+			year       = EXCLUDED.year,
+			term       = EXCLUDED.term,
+			start_date = EXCLUDED.start_date,
+			end_date   = EXCLUDED.end_date,
+			updated_at = EXCLUDED.updated_at`,
+		s.SemesterID, s.Name, s.Year, s.Term, s.StartDate, s.EndDate, s.UpdatedAt,
+	)
+	return err
+}
+
 // UpsertScheduleEntry inserts or updates a schedule entry fact record.
 func (r *AnalyticsRepository) UpsertScheduleEntry(ctx context.Context, e entity.FactScheduleEntry) error {
 	_, err := r.pool.Exec(ctx, `
@@ -104,12 +121,15 @@ func (r *AnalyticsRepository) GetWorkloadStats(ctx context.Context, semesterID u
 			w.teacher_id,
 			COALESCE(t.full_name, ''),
 			COALESCE(t.department_id, '00000000-0000-0000-0000-000000000000'::uuid),
+			COALESCE(t.department_name, ''),
 			w.semester_id,
 			w.subject_id,
+			COALESCE(s.code, ''),
 			w.hours_per_week,
 			w.total_hours
 		FROM analytics.fact_workload w
 		LEFT JOIN analytics.dim_teacher t ON t.teacher_id = w.teacher_id
+		LEFT JOIN analytics.dim_subject s ON s.subject_id = w.subject_id
 		WHERE ($1::uuid IS NULL OR w.semester_id = $1)
 		ORDER BY w.total_hours DESC`,
 		semesterID,
@@ -123,8 +143,8 @@ func (r *AnalyticsRepository) GetWorkloadStats(ctx context.Context, semesterID u
 	for rows.Next() {
 		var s entity.WorkloadStat
 		if err := rows.Scan(
-			&s.TeacherID, &s.TeacherName, &s.DepartmentID,
-			&s.SemesterID, &s.SubjectID, &s.HoursPerWeek, &s.TotalHours,
+			&s.TeacherID, &s.TeacherName, &s.DepartmentID, &s.DepartmentName,
+			&s.SemesterID, &s.SubjectID, &s.SubjectCode, &s.HoursPerWeek, &s.TotalHours,
 		); err != nil {
 			return nil, fmt.Errorf("scan workload row: %w", err)
 		}
@@ -172,6 +192,20 @@ func (r *AnalyticsRepository) GetUtilizationStats(ctx context.Context, semesterI
 }
 
 // GetDashboardSummary returns aggregate counts from dimension tables.
+// GetSemesterName returns the display name of a semester by ID.
+// Returns empty string if not found (caller should fall back to "All Semesters").
+func (r *AnalyticsRepository) GetSemesterName(ctx context.Context, semesterID uuid.UUID) (string, error) {
+	var name string
+	err := r.pool.QueryRow(ctx,
+		`SELECT name FROM analytics.dim_semester WHERE semester_id = $1`,
+		semesterID,
+	).Scan(&name)
+	if err != nil {
+		return "", nil // not found → caller uses fallback
+	}
+	return name, nil
+}
+
 func (r *AnalyticsRepository) GetDashboardSummary(ctx context.Context) (entity.DashboardSummary, error) {
 	var s entity.DashboardSummary
 	err := r.pool.QueryRow(ctx, `
