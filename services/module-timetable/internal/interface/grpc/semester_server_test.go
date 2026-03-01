@@ -102,6 +102,10 @@ func (m *mockSemesterRepository) RemoveOfferedSubject(_ context.Context, _, _ uu
 	return nil, nil
 }
 
+func (m *mockSemesterRepository) SetRoomIDs(_ context.Context, _ uuid.UUID, _ []uuid.UUID) (*entity.Semester, error) {
+	return nil, nil
+}
+
 func (m *mockSemesterRepository) CreateTimeSlot(_ context.Context, _ *entity.TimeSlot) (*entity.TimeSlot, error) {
 	return nil, nil
 }
@@ -111,6 +115,14 @@ func (m *mockSemesterRepository) ListTimeSlots(_ context.Context, _ uuid.UUID) (
 		return m.slots, nil
 	}
 	return nil, nil
+}
+
+func (m *mockSemesterRepository) DeleteTimeSlot(_ context.Context, _ uuid.UUID) error {
+	return nil
+}
+
+func (m *mockSemesterRepository) DeleteTimeSlotsBySemester(_ context.Context, _ uuid.UUID) error {
+	return nil
 }
 
 type mockScheduleRepository struct {
@@ -204,7 +216,7 @@ func TestSemesterServer_CreateSemester_Success(t *testing.T) {
 		EndDate:   now.Add(24 * time.Hour),
 		CreatedAt: now,
 	}}
-	createHandler := command.NewCreateSemesterHandler(repo)
+	createHandler := command.NewCreateSemesterHandler(repo, &mockEventPublisher{})
 	conn := startTimetableTestServer(t, func(server *grpc.Server) {
 		timetablev1.RegisterSemesterServiceServer(server, NewSemesterServer(createHandler, nil, repo))
 	})
@@ -226,7 +238,7 @@ func TestSemesterServer_CreateSemester_Success(t *testing.T) {
 }
 
 func TestSemesterServer_CreateSemester_InvalidArgument(t *testing.T) {
-	createHandler := command.NewCreateSemesterHandler(&mockSemesterRepository{})
+	createHandler := command.NewCreateSemesterHandler(&mockSemesterRepository{}, &mockEventPublisher{})
 	conn := startTimetableTestServer(t, func(server *grpc.Server) {
 		timetablev1.RegisterSemesterServiceServer(server, NewSemesterServer(createHandler, nil, &mockSemesterRepository{}))
 	})
@@ -489,6 +501,14 @@ func (m *mockPrerequisiteServiceClient) ValidateDAG(context.Context, *subjectv1.
 
 func (m *mockPrerequisiteServiceClient) TopologicalSort(context.Context, *subjectv1.TopologicalSortRequest, ...grpc.CallOption) (*subjectv1.TopologicalSortResponse, error) {
 	return &subjectv1.TopologicalSortResponse{}, nil
+}
+
+func (m *mockPrerequisiteServiceClient) GetFullDAG(context.Context, *subjectv1.GetFullDAGRequest, ...grpc.CallOption) (*subjectv1.GetFullDAGResponse, error) {
+	return &subjectv1.GetFullDAGResponse{}, nil
+}
+
+func (m *mockPrerequisiteServiceClient) CheckPrerequisiteConflicts(context.Context, *subjectv1.CheckConflictsRequest, ...grpc.CallOption) (*subjectv1.CheckConflictsResponse, error) {
+	return &subjectv1.CheckConflictsResponse{}, nil
 }
 
 func (m *mockEventPublisher) Publish(_ context.Context, _ string, _ any) error {
