@@ -10,6 +10,7 @@ interface FormFieldProps {
   required?: boolean
   className?: string
   children?: React.ReactNode
+  htmlFor?: string
 }
 
 // Wrapper that adds label, description, and error message to any form control
@@ -20,10 +21,11 @@ export function FormField({
   required,
   className,
   children,
+  htmlFor,
 }: FormFieldProps) {
   return (
     <div className={cn('space-y-1.5', className)}>
-      <Label className={cn(required && "after:ml-0.5 after:text-destructive after:content-['*']")}>
+      <Label htmlFor={htmlFor} className={cn(required && "after:ml-0.5 after:text-destructive after:content-['*']")}>
         {label}
       </Label>
       {children}
@@ -42,10 +44,13 @@ interface TextInputFieldProps extends React.InputHTMLAttributes<HTMLInputElement
 }
 
 // Convenience wrapper: FormField + Input in one
-export function TextInputField({ label, error, description, className, ...inputProps }: TextInputFieldProps) {
+export function TextInputField({ label, error, description, className, id, ...inputProps }: TextInputFieldProps) {
+  const generatedId = React.useId()
+  const inputId = id ?? generatedId
   return (
-    <FormField label={label} error={error} description={description} required={inputProps.required}>
+    <FormField label={label} error={error} description={description} required={inputProps.required} htmlFor={inputId}>
       <Input
+        id={inputId}
         className={cn(error && 'border-destructive focus-visible:ring-destructive', className)}
         aria-invalid={Boolean(error)}
         {...inputProps}
