@@ -15,6 +15,7 @@ type SemesterRepository interface {
 	Count(ctx context.Context) (int64, error)
 	AddOfferedSubject(ctx context.Context, semesterID, subjectID uuid.UUID) (*entity.Semester, error)
 	RemoveOfferedSubject(ctx context.Context, semesterID, subjectID uuid.UUID) (*entity.Semester, error)
+	SetRoomIDs(ctx context.Context, semesterID uuid.UUID, roomIDs []uuid.UUID) (*entity.Semester, error)
 	CreateTimeSlot(ctx context.Context, ts *entity.TimeSlot) (*entity.TimeSlot, error)
 	ListTimeSlots(ctx context.Context, semesterID uuid.UUID) ([]*entity.TimeSlot, error)
 	DeleteTimeSlot(ctx context.Context, slotID uuid.UUID) error
