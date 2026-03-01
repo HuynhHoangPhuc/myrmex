@@ -3,9 +3,9 @@
 
 import { useMemo, useCallback, useState, createContext } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useTheme } from '@/lib/hooks/use-theme'
 import {
   ReactFlow,
-  MiniMap,
   Controls,
   Background,
   BackgroundVariant,
@@ -18,7 +18,6 @@ import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { useFullDAG } from '../hooks/use-subjects'
 import { DagSubjectNode } from './dag-subject-node'
 import { layoutDAG } from '../utils/dag-layout'
-import { getDeptColor } from '../utils/dept-color'
 
 const nodeTypes = { subject: DagSubjectNode }
 
@@ -68,6 +67,7 @@ function buildAncestorMap(edges: Edge[]): Map<string, Set<string>> {
 export function PrerequisiteDAG({ focusSubjectId, conflicts }: PrerequisiteDAGProps) {
   const { data: dag, isLoading } = useFullDAG()
   const navigate = useNavigate()
+  const { theme } = useTheme()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
 
   // Convert raw DAG edges to React Flow edges (before layout, for ancestor map).
@@ -156,9 +156,10 @@ export function PrerequisiteDAG({ focusSubjectId, conflicts }: PrerequisiteDAGPr
           fitView
           minZoom={0.2}
           maxZoom={2}
+          proOptions={{ hideAttribution: true }}
+          colorMode={theme}
         >
           <Controls />
-          <MiniMap nodeColor={(n) => getDeptColor((n.data as { departmentId?: string }).departmentId ?? '')} />
           <Background variant={BackgroundVariant.Dots} />
         </ReactFlow>
       </DagHoverContext.Provider>

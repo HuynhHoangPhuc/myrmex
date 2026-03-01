@@ -115,7 +115,9 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
                     onClick={onNavigate}
                     className={cn(
                       'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-                      matchesPath(pathname, child.to)
+                      // Child items use exact match to prevent e.g. "All Subjects" (/subjects)
+                      // from matching when on /subjects/prerequisites
+                      pathname === child.to || pathname === child.to + '/'
                         ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                         : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                     )}
