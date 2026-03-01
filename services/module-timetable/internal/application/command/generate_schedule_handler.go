@@ -111,11 +111,22 @@ func (h *GenerateScheduleHandler) runSolver(scheduleID uuid.UUID, semester *enti
 		return
 	}
 
-	// 4b. Fetch available rooms
-	rooms, err := h.roomRepo.List(ctx, 200, 0)
-	if err != nil {
-		h.markFailed(scheduleID, fmt.Sprintf("fetch rooms: %v", err))
-		return
+	// 4b. Fetch available rooms — use semester-specific rooms if configured, else all active rooms
+	var rooms []*entity.Room
+	if len(semester.RoomIDs) > 0 {
+		for _, rid := range semester.RoomIDs {
+			r, err := h.roomRepo.GetByID(ctx, rid)
+			if err != nil {
+				continue // skip missing/inactive rooms
+			}
+			rooms = append(rooms, r)
+		}
+	} else {
+		rooms, err = h.roomRepo.List(ctx, 200, 0)
+		if err != nil {
+			h.markFailed(scheduleID, fmt.Sprintf("fetch rooms: %v", err))
+			return
+		}
 	}
 
 	// 4c. Fetch time slots for the semester
