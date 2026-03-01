@@ -13,6 +13,7 @@ import {
   type ScheduleFilters,
 } from '@/modules/timetable/components/schedule-filter-bar'
 import { TeacherAssignmentDialog } from '@/modules/timetable/components/teacher-assignment'
+import { RoomAssignmentDialog } from '@/modules/timetable/components/room-assignment-dialog'
 import { useSchedule } from '@/modules/timetable/hooks/use-schedules'
 import type { ScheduleEntry } from '@/modules/timetable/types'
 
@@ -33,11 +34,17 @@ function ScheduleDetailPage() {
   const navigate = Route.useNavigate()
   const { data: schedule, isLoading } = useSchedule(id)
   const [selectedEntry, setSelectedEntry] = React.useState<ScheduleEntry | null>(null)
-  const [assignOpen, setAssignOpen] = React.useState(false)
+  const [assignTeacherOpen, setAssignTeacherOpen] = React.useState(false)
+  const [assignRoomOpen, setAssignRoomOpen] = React.useState(false)
 
-  function handleEntryAction(entry: ScheduleEntry) {
+  function handleChangeTeacher(entry: ScheduleEntry) {
     setSelectedEntry(entry)
-    setAssignOpen(true)
+    setAssignTeacherOpen(true)
+  }
+
+  function handleChangeRoom(entry: ScheduleEntry) {
+    setSelectedEntry(entry)
+    setAssignRoomOpen(true)
   }
 
   function handleFilterChange(nextFilters: ScheduleFilters) {
@@ -113,15 +120,26 @@ function ScheduleDetailPage() {
       <ScheduleCalendar
         schedule={schedule}
         filters={filters}
-        onChangeTeacher={handleEntryAction}
+        onChangeTeacher={handleChangeTeacher}
+        onChangeRoom={handleChangeRoom}
       />
 
       <TeacherAssignmentDialog
         scheduleId={id}
         entry={selectedEntry}
-        open={assignOpen}
+        open={assignTeacherOpen}
         onOpenChange={(open) => {
-          setAssignOpen(open)
+          setAssignTeacherOpen(open)
+          if (!open) setSelectedEntry(null)
+        }}
+      />
+
+      <RoomAssignmentDialog
+        scheduleId={id}
+        entry={selectedEntry}
+        open={assignRoomOpen}
+        onOpenChange={(open) => {
+          setAssignRoomOpen(open)
           if (!open) setSelectedEntry(null)
         }}
       />
