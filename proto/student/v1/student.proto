@@ -11,6 +11,8 @@ service StudentService {
   rpc ListStudents(ListStudentsRequest) returns (ListStudentsResponse);
   rpc UpdateStudent(UpdateStudentRequest) returns (UpdateStudentResponse);
   rpc DeleteStudent(DeleteStudentRequest) returns (DeleteStudentResponse);
+  rpc GetStudentByUserID(GetStudentByUserIDRequest) returns (GetStudentByUserIDResponse);
+  rpc LinkUserToStudent(LinkUserToStudentRequest) returns (LinkUserToStudentResponse);
   rpc RequestEnrollment(RequestEnrollmentRequest) returns (RequestEnrollmentResponse);
   rpc ReviewEnrollment(ReviewEnrollmentRequest) returns (ReviewEnrollmentResponse);
   rpc ListEnrollmentRequests(ListEnrollmentRequestsRequest) returns (ListEnrollmentRequestsResponse);
@@ -86,6 +88,15 @@ message DeleteStudentRequest {
 message DeleteStudentResponse {
   bool success = 1;
 }
+
+message GetStudentByUserIDRequest { string user_id = 1; }
+message GetStudentByUserIDResponse { Student student = 1; }
+
+message LinkUserToStudentRequest {
+  string student_id = 1;
+  string user_id = 2;
+}
+message LinkUserToStudentResponse { Student student = 1; }
 
 message EnrollmentRequest {
   string id = 1;

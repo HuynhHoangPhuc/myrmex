@@ -24,6 +24,8 @@ const (
 	StudentService_ListStudents_FullMethodName           = "/student.v1.StudentService/ListStudents"
 	StudentService_UpdateStudent_FullMethodName          = "/student.v1.StudentService/UpdateStudent"
 	StudentService_DeleteStudent_FullMethodName          = "/student.v1.StudentService/DeleteStudent"
+	StudentService_GetStudentByUserID_FullMethodName     = "/student.v1.StudentService/GetStudentByUserID"
+	StudentService_LinkUserToStudent_FullMethodName      = "/student.v1.StudentService/LinkUserToStudent"
 	StudentService_RequestEnrollment_FullMethodName      = "/student.v1.StudentService/RequestEnrollment"
 	StudentService_ReviewEnrollment_FullMethodName       = "/student.v1.StudentService/ReviewEnrollment"
 	StudentService_ListEnrollmentRequests_FullMethodName = "/student.v1.StudentService/ListEnrollmentRequests"
@@ -43,6 +45,8 @@ type StudentServiceClient interface {
 	ListStudents(ctx context.Context, in *ListStudentsRequest, opts ...grpc.CallOption) (*ListStudentsResponse, error)
 	UpdateStudent(ctx context.Context, in *UpdateStudentRequest, opts ...grpc.CallOption) (*UpdateStudentResponse, error)
 	DeleteStudent(ctx context.Context, in *DeleteStudentRequest, opts ...grpc.CallOption) (*DeleteStudentResponse, error)
+	GetStudentByUserID(ctx context.Context, in *GetStudentByUserIDRequest, opts ...grpc.CallOption) (*GetStudentByUserIDResponse, error)
+	LinkUserToStudent(ctx context.Context, in *LinkUserToStudentRequest, opts ...grpc.CallOption) (*LinkUserToStudentResponse, error)
 	RequestEnrollment(ctx context.Context, in *RequestEnrollmentRequest, opts ...grpc.CallOption) (*RequestEnrollmentResponse, error)
 	ReviewEnrollment(ctx context.Context, in *ReviewEnrollmentRequest, opts ...grpc.CallOption) (*ReviewEnrollmentResponse, error)
 	ListEnrollmentRequests(ctx context.Context, in *ListEnrollmentRequestsRequest, opts ...grpc.CallOption) (*ListEnrollmentRequestsResponse, error)
@@ -105,6 +109,26 @@ func (c *studentServiceClient) DeleteStudent(ctx context.Context, in *DeleteStud
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteStudentResponse)
 	err := c.cc.Invoke(ctx, StudentService_DeleteStudent_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *studentServiceClient) GetStudentByUserID(ctx context.Context, in *GetStudentByUserIDRequest, opts ...grpc.CallOption) (*GetStudentByUserIDResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetStudentByUserIDResponse)
+	err := c.cc.Invoke(ctx, StudentService_GetStudentByUserID_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *studentServiceClient) LinkUserToStudent(ctx context.Context, in *LinkUserToStudentRequest, opts ...grpc.CallOption) (*LinkUserToStudentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LinkUserToStudentResponse)
+	err := c.cc.Invoke(ctx, StudentService_LinkUserToStudent_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -200,6 +224,8 @@ type StudentServiceServer interface {
 	ListStudents(context.Context, *ListStudentsRequest) (*ListStudentsResponse, error)
 	UpdateStudent(context.Context, *UpdateStudentRequest) (*UpdateStudentResponse, error)
 	DeleteStudent(context.Context, *DeleteStudentRequest) (*DeleteStudentResponse, error)
+	GetStudentByUserID(context.Context, *GetStudentByUserIDRequest) (*GetStudentByUserIDResponse, error)
+	LinkUserToStudent(context.Context, *LinkUserToStudentRequest) (*LinkUserToStudentResponse, error)
 	RequestEnrollment(context.Context, *RequestEnrollmentRequest) (*RequestEnrollmentResponse, error)
 	ReviewEnrollment(context.Context, *ReviewEnrollmentRequest) (*ReviewEnrollmentResponse, error)
 	ListEnrollmentRequests(context.Context, *ListEnrollmentRequestsRequest) (*ListEnrollmentRequestsResponse, error)
@@ -232,6 +258,12 @@ func (UnimplementedStudentServiceServer) UpdateStudent(context.Context, *UpdateS
 }
 func (UnimplementedStudentServiceServer) DeleteStudent(context.Context, *DeleteStudentRequest) (*DeleteStudentResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteStudent not implemented")
+}
+func (UnimplementedStudentServiceServer) GetStudentByUserID(context.Context, *GetStudentByUserIDRequest) (*GetStudentByUserIDResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetStudentByUserID not implemented")
+}
+func (UnimplementedStudentServiceServer) LinkUserToStudent(context.Context, *LinkUserToStudentRequest) (*LinkUserToStudentResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LinkUserToStudent not implemented")
 }
 func (UnimplementedStudentServiceServer) RequestEnrollment(context.Context, *RequestEnrollmentRequest) (*RequestEnrollmentResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RequestEnrollment not implemented")
@@ -364,6 +396,42 @@ func _StudentService_DeleteStudent_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StudentServiceServer).DeleteStudent(ctx, req.(*DeleteStudentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StudentService_GetStudentByUserID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetStudentByUserIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StudentServiceServer).GetStudentByUserID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StudentService_GetStudentByUserID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StudentServiceServer).GetStudentByUserID(ctx, req.(*GetStudentByUserIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StudentService_LinkUserToStudent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LinkUserToStudentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StudentServiceServer).LinkUserToStudent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StudentService_LinkUserToStudent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StudentServiceServer).LinkUserToStudent(ctx, req.(*LinkUserToStudentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -538,6 +606,14 @@ var StudentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteStudent",
 			Handler:    _StudentService_DeleteStudent_Handler,
+		},
+		{
+			MethodName: "GetStudentByUserID",
+			Handler:    _StudentService_GetStudentByUserID_Handler,
+		},
+		{
+			MethodName: "LinkUserToStudent",
+			Handler:    _StudentService_LinkUserToStudent_Handler,
 		},
 		{
 			MethodName: "RequestEnrollment",
