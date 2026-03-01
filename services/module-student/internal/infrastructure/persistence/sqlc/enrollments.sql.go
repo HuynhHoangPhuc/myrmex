@@ -232,7 +232,7 @@ const listPassedEnrollmentSubjectIDs = `-- name: ListPassedEnrollmentSubjectIDs 
 SELECT subject_id
 FROM student.enrollment_requests
 WHERE student_id = $1
-  AND status IN ('approved', 'completed')
+  AND status = 'completed'
 ORDER BY requested_at DESC
 `
 

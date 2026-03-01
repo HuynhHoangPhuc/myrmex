@@ -49,3 +49,9 @@ SET is_active = false,
     updated_at = NOW()
 WHERE id = $1 AND is_active = true
 RETURNING id;
+
+-- name: GetStudentByUserID :one
+SELECT * FROM student.students WHERE user_id = $1 AND is_active = true;
+
+-- name: LinkUserToStudent :one
+UPDATE student.students SET user_id = $2, updated_at = NOW() WHERE id = $1 RETURNING *;

@@ -121,6 +121,57 @@ func (q *Queries) GetStudentByID(ctx context.Context, id pgtype.UUID) (StudentSt
 	return i, err
 }
 
+const getStudentByUserID = `-- name: GetStudentByUserID :one
+SELECT id, student_code, user_id, full_name, email, department_id, enrollment_year, status, is_active, created_at, updated_at FROM student.students WHERE user_id = $1 AND is_active = true
+`
+
+func (q *Queries) GetStudentByUserID(ctx context.Context, userID pgtype.UUID) (StudentStudent, error) {
+	row := q.db.QueryRow(ctx, getStudentByUserID, userID)
+	var i StudentStudent
+	err := row.Scan(
+		&i.ID,
+		&i.StudentCode,
+		&i.UserID,
+		&i.FullName,
+		&i.Email,
+		&i.DepartmentID,
+		&i.EnrollmentYear,
+		&i.Status,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const linkUserToStudent = `-- name: LinkUserToStudent :one
+UPDATE student.students SET user_id = $2, updated_at = NOW() WHERE id = $1 RETURNING id, student_code, user_id, full_name, email, department_id, enrollment_year, status, is_active, created_at, updated_at
+`
+
+type LinkUserToStudentParams struct {
+	ID     pgtype.UUID `json:"id"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) LinkUserToStudent(ctx context.Context, arg LinkUserToStudentParams) (StudentStudent, error) {
+	row := q.db.QueryRow(ctx, linkUserToStudent, arg.ID, arg.UserID)
+	var i StudentStudent
+	err := row.Scan(
+		&i.ID,
+		&i.StudentCode,
+		&i.UserID,
+		&i.FullName,
+		&i.Email,
+		&i.DepartmentID,
+		&i.EnrollmentYear,
+		&i.Status,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listStudents = `-- name: ListStudents :many
 SELECT id, student_code, user_id, full_name, email, department_id, enrollment_year, status, is_active, created_at, updated_at
 FROM student.students
