@@ -8,11 +8,12 @@ const (
 	RoleAdmin   Role = "admin"
 	RoleManager Role = "manager"
 	RoleViewer  Role = "viewer"
+	RoleStudent Role = "student"
 )
 
 func (r Role) IsValid() bool {
 	switch r {
-	case RoleAdmin, RoleManager, RoleViewer:
+	case RoleAdmin, RoleManager, RoleViewer, RoleStudent:
 		return true
 	}
 	return false

@@ -33,11 +33,12 @@ func NewConsumer(url string, repo *persistence.AnalyticsRepository, log *zap.Log
 	return &Consumer{js: js, repo: repo, log: log}, nil
 }
 
-// Start subscribes to all three streams. It is non-blocking; each handler runs in its own goroutine.
+// Start subscribes to all four streams. It is non-blocking; each handler runs in its own goroutine.
 func (c *Consumer) Start(ctx context.Context) {
 	c.subscribeHR(ctx)
 	c.subscribeSubject(ctx)
 	c.subscribeTimetable(ctx)
+	c.subscribeStudent(ctx)
 }
 
 // --- HR events ---
@@ -271,6 +272,109 @@ func (c *Consumer) handleSemesterCreated(ctx context.Context, msg *nats.Msg) {
 	}
 	if err := c.repo.UpsertSemester(ctx, s); err != nil {
 		c.log.Error("upsert semester", zap.Error(err))
+	}
+}
+
+// --- Student events ---
+
+type studentEnrollmentApprovedEvent struct {
+	EnrollmentID    string  `json:"enrollment_id"`
+	StudentID       string  `json:"student_id"`
+	StudentCode     string  `json:"student_code"`
+	StudentFullName string  `json:"student_full_name"`
+	DepartmentID    string  `json:"department_id"`
+	EnrollmentYear  int     `json:"enrollment_year"`
+	SubjectID       string  `json:"subject_id"`
+	SemesterID      string  `json:"semester_id"`
+	EnrolledAt      string  `json:"enrolled_at"`
+}
+
+type studentGradeAssignedEvent struct {
+	EnrollmentID string   `json:"enrollment_id"`
+	StudentID    string   `json:"student_id"`
+	SubjectID    string   `json:"subject_id"`
+	SemesterID   string   `json:"semester_id"`
+	GradeNumeric float64  `json:"grade_numeric"`
+	GradeLetter  string   `json:"grade_letter"`
+	GradedAt     string   `json:"graded_at"`
+}
+
+func (c *Consumer) subscribeStudent(ctx context.Context) {
+	sub, err := c.js.PullSubscribe("student.>", "analytics-student",
+		nats.BindStream("STUDENT_EVENTS"),
+		nats.MaxDeliver(5),
+	)
+	if err != nil {
+		c.log.Warn("subscribe STUDENT_EVENTS failed", zap.Error(err))
+		return
+	}
+	go c.pullLoop(ctx, sub, c.handleStudentMessage)
+}
+
+func (c *Consumer) handleStudentMessage(ctx context.Context, msg *nats.Msg) {
+	switch msg.Subject {
+	case "student.enrollment_approved":
+		var ev studentEnrollmentApprovedEvent
+		if err := json.Unmarshal(msg.Data, &ev); err != nil {
+			c.log.Error("unmarshal student enrollment_approved event", zap.Error(err))
+			return
+		}
+		// Upsert dim_student
+		did, _ := uuid.Parse(ev.DepartmentID)
+		sid, _ := uuid.Parse(ev.StudentID)
+		_ = c.repo.UpsertStudent(ctx, entity.DimStudent{
+			StudentID:      sid,
+			StudentCode:    ev.StudentCode,
+			FullName:       ev.StudentFullName,
+			DepartmentID:   did,
+			EnrollmentYear: ev.EnrollmentYear,
+			UpdatedAt:      time.Now(),
+		})
+		// Insert fact_enrollment (no grade yet)
+		enrolledAt, _ := time.Parse(time.RFC3339, ev.EnrolledAt)
+		if enrolledAt.IsZero() {
+			enrolledAt = time.Now()
+		}
+		eid, _ := uuid.Parse(ev.EnrollmentID)
+		subjectID, _ := uuid.Parse(ev.SubjectID)
+		semesterID, _ := uuid.Parse(ev.SemesterID)
+		if err := c.repo.UpsertEnrollment(ctx, entity.FactEnrollment{
+			EnrollmentID: eid,
+			StudentID:    sid,
+			SubjectID:    subjectID,
+			SemesterID:   semesterID,
+			Status:       "approved",
+			EnrolledAt:   enrolledAt,
+		}); err != nil {
+			c.log.Error("upsert enrollment", zap.Error(err))
+		}
+
+	case "student.grade_assigned":
+		var ev studentGradeAssignedEvent
+		if err := json.Unmarshal(msg.Data, &ev); err != nil {
+			c.log.Error("unmarshal student grade_assigned event", zap.Error(err))
+			return
+		}
+		gradedAt, _ := time.Parse(time.RFC3339, ev.GradedAt)
+		if gradedAt.IsZero() {
+			gradedAt = time.Now()
+		}
+		eid, _ := uuid.Parse(ev.EnrollmentID)
+		sid, _ := uuid.Parse(ev.StudentID)
+		subjectID, _ := uuid.Parse(ev.SubjectID)
+		semesterID, _ := uuid.Parse(ev.SemesterID)
+		if err := c.repo.UpsertEnrollment(ctx, entity.FactEnrollment{
+			EnrollmentID: eid,
+			StudentID:    sid,
+			SubjectID:    subjectID,
+			SemesterID:   semesterID,
+			Status:       "completed",
+			GradeNumeric: &ev.GradeNumeric,
+			GradeLetter:  &ev.GradeLetter,
+			GradedAt:     &gradedAt,
+		}); err != nil {
+			c.log.Error("update enrollment grade", zap.Error(err))
+		}
 	}
 }
 

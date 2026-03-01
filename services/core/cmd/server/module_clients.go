@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	hrv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/hr/v1"
+	studentv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/student/v1"
 	subjectv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/subject/v1"
 	timetablev1 "github.com/HuynhHoangPhuc/myrmex/gen/go/timetable/v1"
 	httpif "github.com/HuynhHoangPhuc/myrmex/services/core/internal/interface/http"
@@ -18,6 +19,7 @@ type moduleHandlers struct {
 	HR        *httpif.HRHandler
 	Subject   *httpif.SubjectHandler
 	Timetable *httpif.TimetableHandler
+	Student   *httpif.StudentHandler
 	Dashboard *httpif.DashboardHandler
 	conns     []*grpc.ClientConn
 }
@@ -84,6 +86,17 @@ func buildModuleHandlers(v *viper.Viper, js jetstream.JetStream, log *zap.Logger
 				js,
 			)
 			log.Info("timetable handler ready", zap.String("addr", addr))
+		}
+	}
+
+	if addr := v.GetString("student.grpc_addr"); addr != "" {
+		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Warn("student grpc client failed", zap.Error(err))
+		} else {
+			h.conns = append(h.conns, conn)
+			h.Student = httpif.NewStudentHandler(studentv1.NewStudentServiceClient(conn))
+			log.Info("student handler ready", zap.String("addr", addr))
 		}
 	}
 

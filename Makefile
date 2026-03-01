@@ -1,6 +1,6 @@
 .PHONY: proto build test lint up down migrate seed reset-db demo demo-down demo-logs demo-reset
 
-SERVICES := core module-hr module-subject module-timetable module-analytics
+SERVICES := core module-hr module-student module-subject module-timetable module-analytics
 export PATH := $(HOME)/go/bin:$(PATH)
 
 # Pass root .env to docker compose (compose file lives in a subdirectory)

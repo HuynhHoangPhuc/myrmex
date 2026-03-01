@@ -1,0 +1,16 @@
+name: student
+version: 1.0.0
+description: Student management - CRUD foundation for student records
+depends:
+  - core: ">=1.0.0"
+  - hr: ">=1.0.0"
+grpc_services:
+  - StudentService
+events:
+  publishes:
+    - student.created
+    - student.updated
+    - student.deleted
+  subscribes:
+    - core.user.created
+db_schema: student

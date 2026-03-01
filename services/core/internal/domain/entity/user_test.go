@@ -42,6 +42,11 @@ func TestUser_Validate(t *testing.T) {
 			user:    User{Email: "carol@example.com", FullName: "Carol", Role: valueobject.RoleViewer},
 			wantErr: false,
 		},
+		{
+			name:    "role student valid",
+			user:    User{Email: "dave@example.com", FullName: "Dave", Role: valueobject.RoleStudent},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {

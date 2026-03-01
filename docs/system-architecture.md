@@ -17,7 +17,7 @@ Myrmex is a microservice architecture with modular services communicating via gR
               │
 ┌─────────────▼──────────────────────────────────────────────────────────┐
 │                      API Gateway Layer                                  │
-│                    Core Service (port 8000)                             │
+│                    Core Service (port 8080)                             │
 │  ┌────────────────────────────────────────────────────────────────┐   │
 │  │  Gin HTTP Router                                               │   │
 │  │  ├─ POST /api/auth/register        → AuthService gRPC         │   │
@@ -28,6 +28,7 @@ Myrmex is a microservice architecture with modular services communicating via gR
 │  │  ├─ ANY  /api/hr/*                 → Module-HR gRPC (proxy)   │   │
 │  │  ├─ ANY  /api/subjects/*           → Module-Subject gRPC      │   │
 │  │  ├─ ANY  /api/timetable/*          → Module-Timetable gRPC    │   │
+│  │  ├─ ANY  /api/students/*           → Module-Student gRPC (admin CRUD + enrollment + grades) │   │
 │  │  ├─ ANY  /api/analytics/*          → Module-Analytics HTTP    │   │
 │  │  └─ WebSocket /ws/chat?token=X    → ChatGateway (Streaming)   │   │
 │  │                                                                │   │
@@ -49,34 +50,29 @@ Myrmex is a microservice architecture with modular services communicating via gR
 │  ├─ Tool registry (dynamic registration)                               │
 │  └─ Event streaming to frontend                                        │
 └─────────────────────────────────────────────────────────────────────────┘
-              │          │           │              │              │
-              │ gRPC     │ gRPC      │ gRPC         │ gRPC         │ HTTP
-              │          │           │              │              │
-┌─────────────▼──┐  ┌────▼──────┐  ┌─▼──────────┐  ┌┴──────────────┐  ┌──────────────┐
-│  Module-HR     │  │  Module-  │  │ Module-    │  │ User/Auth     │  │ Module-      │
-│  Service       │  │ Subject   │  │ Timetable  │  │ (in Core)     │  │ Analytics    │
-│  (port 50052)  │  │ (50053)   │  │ (50054)    │  │ (50051)       │  │ (8080 HTTP)  │
+              │          │           │              │             │              │
+              │ gRPC     │ gRPC      │ gRPC         │ gRPC        │ gRPC         │ HTTP
+              │          │           │              │             │              │
+┌─────────────▼──┐  ┌────▼──────┐  ┌─▼──────────┐  ┌▼───────────┐  ┌┴──────────────┐  ┌──────────────┐
+│  Module-HR     │  │  Module-  │  │ Module-    │  │ Module-    │  │ User/Auth     │  │ Module-      │
+│  Service       │  │ Subject   │  │ Timetable  │  │ Student    │  │ (in Core)     │  │ Analytics    │
+│  (port 50052)  │  │ (50053)   │  │ (50054)    │  │ (50055)    │  │ (50051)       │  │ (8055 HTTP)  │
 │                │  │           │  │            │  │               │  │              │
-│ Department     │  │ Subject   │  │ Semester   │  │ User Mgmt     │  │ Star Schema  │
-│ Teacher CRUD   │  │ DAG       │  │ Room       │  │ JWT Auth      │  │ Dashboard KPIs
-│ Availability   │  │ Prereq    │  │ Schedule   │  │ Refresh Token │  │ Workload     │
-│                │  │ Service   │  │ CSP Solver │  │               │  │ Utilization  │
-│ Domain:        │  │ Service   │  │ Service    │  │ Domain:       │  │ Export PDF/XL│
-│ ├─ Department  │  │           │  │            │  │ ├─ User       │  │              │
-│ ├─ Teacher     │  │ Domain:   │  │ Domain:    │  │ └─ Session    │  │ Dimensions:  │
-│ ├─ Availability│  │ ├─ Subject│  │ ├─ Semester│  │               │  │ ├─ Teacher   │
-│ └─ Specialization│ │ ├─ Prereq│  │ ├─ Schedule│  │               │  │ ├─ Subject   │
-└────────┬───────┘  │ └─ DAG    │  │ ├─ Room    │  └───────────────┘  │ ├─ Department│
-         │          │           │  │ └─ TimeSlot│                     │ ├─ Semester  │
-         │          └─────┬──────┘  │            │                     │ └─ Facts     │
-         │                │         └─────┬──────┘                     │ (schedules)  │
-         │                │               │                           │              │
-         └────────────────┼───────────────┼───────────────────────────┘
-         │          │           │  │ └─ TimeSlot│
-         │          └─────┬──────┘  │            │
-         │                │         └─────┬──────┘
-         │                │               │
-         └────────────────┼───────────────┘
+│ Department     │  │ Subject   │  │ Semester   │  │ Student          │  │ User Mgmt     │  │ Star Schema  │
+│ Teacher CRUD   │  │ DAG       │  │ Room       │  │ Enrollment       │  │ JWT Auth      │  │ Dashboard KPIs
+│ Availability   │  │ Prereq    │  │ Schedule   │  │ Grade            │  │ Refresh Token │  │ Workload     │
+│                │  │ Service   │  │ CSP Solver │  │ Transcript       │  │               │  │ Utilization  │
+│ Domain:        │  │ Service   │  │ Service    │  │ Domain:          │  │ Domain:       │  │ Export PDF/XL│
+│ ├─ Department  │  │           │  │            │  │ ├─ Student       │  │ ├─ User       │  │              │
+│ ├─ Teacher     │  │ Domain:   │  │ Domain:    │  │ ├─ Enrollment    │  │ └─ Session    │  │ Dimensions:  │
+│ ├─ Availability│  │ ├─ Subject│  │ ├─ Semester│  │ └─ Grade         │  │               │  │ ├─ Teacher   │
+│ └─ Specialization│ │ ├─ Prereq│  │ ├─ Schedule│  │                  │  │               │  │ ├─ Subject   │
+└────────┬───────┘  │ └─ DAG    │  │ ├─ Room    │                   └───────────────┘  │ ├─ Department│
+         │          │           │  │ └─ TimeSlot│                                      │ ├─ Semester  │
+         │          └─────┬──────┘  │            │                                      │ └─ Facts     │
+         │                │         └─────┬──────┘                                      │ (schedules)  │
+         │                │               │                                            │              │
+         └────────────────┼───────────────┼────────────────────────────────────────────┘
                           │
          NATS JetStream (Event Bus, port 4222)
                           │
@@ -97,7 +93,8 @@ Myrmex is a microservice architecture with modular services communicating via gR
 │ │  ├─ users, module_registry, conversations, event_store        │
 │ ├─ hr (departments, teachers, availability, specializations)    │
 │ ├─ subject (subjects, prerequisites, event_store)               │
-│ └─ timetable (semesters, offerings, rooms, schedules, events)   │
+│ ├─ timetable (semesters, offerings, rooms, schedules, events)   │
+│ └─ student (students, event_store)                              │
 │                                                                   │
 │ Analytics Schema:                                                │
 │ └─ analytics                                                     │
@@ -110,7 +107,7 @@ Myrmex is a microservice architecture with modular services communicating via gR
          │
     ┌────▼───┐  ┌─────────┐
     │ Redis  │  │ Backup  │
-    │ (spare)│  │ Storage │
+    │ (cache)│  │ Storage │
     └────────┘  └─────────┘
 ```
 
@@ -141,6 +138,7 @@ Myrmex is a microservice architecture with modular services communicating via gR
 - Module-HR (gRPC)
 - Module-Subject (gRPC)
 - Module-Timetable (gRPC)
+- Module-Student (gRPC)
 
 ### Module-HR (Department & Teacher Management)
 
@@ -211,11 +209,46 @@ Myrmex is a microservice architecture with modular services communicating via gR
 - PostgreSQL (subject schema)
 - NATS JetStream (publish events)
 
+### Module-Student (Student Management + Enrollment + Grades)
+
+**Purpose**: Complete student lifecycle: registration, enrollment request/approval, grade assignment, transcript generation.
+
+**Port**: gRPC `:50055`
+
+**Key Entities**:
+- **Student**: id, student_code, user_id, full_name, email, department_id, enrollment_year, status, is_active
+- **Enrollment**: id, student_id, offered_subject_id, semester_id, status (requested/approved/rejected/completed)
+- **Grade**: id, enrollment_id, grade_numeric (0-10), grade_letter (auto-derived A-F)
+
+**Key Operations**:
+- **Student CRUD**: Create, get, list (paginated), update, soft-delete
+- **RequestEnrollment**: Student requests subject enrollment (subject_id, semester_id)
+- **ApproveEnrollment**: Admin approves with prerequisite validation (Redis-cached)
+- **RejectEnrollment**: Admin rejects request
+- **AssignGrade**: Teacher/admin assigns numeric grade → letter auto-derived
+- **GetTranscript**: Student's full academic history + GPA calculation
+
+**Domain Services**:
+- **PrerequisiteValidator**: Checks student has completed prerequisites (Redis-cached from module-subject)
+- **GradeComputer**: Auto-derives letter grade (A≥8.5, B≥7, C≥5.5, D≥4, F<4)
+- **TranscriptBuilder**: Aggregates approved enrollments + grades
+
+**Event Types**:
+- `student.created`, `student.updated`, `student.deleted`
+- `student.enrollment_requested`, `student.enrollment_approved`, `student.enrollment_rejected`
+- `student.grade_assigned`
+
+**Outbound**:
+- PostgreSQL (student schema: students, enrollments, grades tables)
+- NATS JetStream (publish enrollment/grade events)
+- Module-Subject (gRPC): GetSubject, ListPrerequisites (for prerequisite validation)
+- Redis (pkg/cache): Cache prerequisites graph (TTL 1h)
+
 ### Module-Analytics (Analytics & Reporting)
 
 **Purpose**: Business intelligence and reporting on resource utilization.
 
-**Port**: HTTP `:8080` (reverse-proxied via Core gateway at `/api/analytics/`)
+**Port**: HTTP `:8055` (reverse-proxied via Core gateway at `/api/analytics/`)
 
 **Key Entities**:
 - **Dimensions**: Teacher, Subject, Department, Semester (denormalized)
@@ -225,8 +258,8 @@ Myrmex is a microservice architecture with modular services communicating via gR
 - GetDashboardSummary: KPI aggregates (teachers count, avg workload, schedule completion %)
 - GetWorkloadAnalytics: Per-teacher workload summary with weekly breakdown
 - GetUtilizationAnalytics: Resource utilization metrics (rooms, teachers, semesters)
-- ExportSchedulePDF: PDF export of semester schedule
-- ExportScheduleExcel: Excel export with multi-sheet layout
+- GetDepartmentMetrics / GetScheduleMetrics / GetScheduleHeatmap: Additional dashboard data slices
+- Export routes are reserved in the core gateway and documented in the changelog, but the current analytics HTTP server exposes dashboard/query endpoints only
 
 **Domain Services**:
 - **AnalyticsRepository**: Query dimension & fact tables
@@ -469,15 +502,20 @@ Note: maxToolIterations=10 enables complex workflows requiring multiple tool cal
 | PUT | `/api/timetable/schedules/:id/entries/:entryId` | Module-Timetable | Manual teacher assignment (body: teacher_id) |
 | GET | `/api/timetable/suggest-teachers` | Module-Timetable | Query: subject_id, day_of_week, start_period, end_period; returns array |
 | GET | `/api/timetable/schedules/:id/stream` | Module-Timetable | SSE stream of schedule generation progress |
+| **Student Module** | | | |
+| GET | `/api/students` | Module-Student | Admin-only paginated list; optional `department_id`, `status` filters |
+| POST | `/api/students` | Module-Student | Admin-only create student |
+| GET | `/api/students/:id` | Module-Student | Admin-only single active student |
+| PATCH | `/api/students/:id` | Module-Student | Admin-only partial update |
+| DELETE | `/api/students/:id` | Module-Student | Admin-only soft delete |
 | **Analytics** | | | |
-| GET | `/api/analytics/dashboard-summary` | Module-Analytics | KPI cards: teacher count, avg workload, schedule completion % |
+| GET | `/api/analytics/dashboard` | Module-Analytics | KPI cards: teacher count, avg workload, schedule completion % |
 | GET | `/api/analytics/workload` | Module-Analytics | Workload analytics per teacher with period breakdown |
 | GET | `/api/analytics/utilization` | Module-Analytics | Resource utilization metrics (rooms, teachers, semesters) |
 | GET | `/api/analytics/department-metrics` | Module-Analytics | Department-level metrics (teachers per dept, specialization coverage) |
 | GET | `/api/analytics/schedule-metrics` | Module-Analytics | Schedule metrics (completion rate, conflicts, constraints) |
 | GET | `/api/analytics/schedule-heatmap` | Module-Analytics | Schedule density heatmap (day/period utilization) |
-| GET | `/api/analytics/export/pdf?semester_id=:id` | Module-Analytics | PDF schedule export |
-| GET | `/api/analytics/export/excel?semester_id=:id` | Module-Analytics | Excel schedule export |
+| GET | `/api/analytics/export` | Core proxy route reserved for future analytics export surface |
 | **Chat** | | | |
 | WebSocket | `/ws/chat?token=ACCESS_TOKEN` | Core | Streaming chat interface |
 
@@ -489,7 +527,7 @@ users (
   id: uuid primary key,
   email: string unique,
   password_hash: string,
-  role: enum(admin, faculty_coordinator, academician, scheduler),
+  role: enum(admin, manager, viewer, student),
   created_at: timestamp,
   deleted_at: timestamp nullable
 )
@@ -578,6 +616,25 @@ prerequisites (
   prerequisite_type: enum(strict, recommended, corequisite),
   priority: int [1..5], -- soft: -2 to +2 hard
   created_at: timestamp
+)
+
+event_store (same pattern)
+```
+
+### Student Schema
+```sql
+students (
+  id: uuid primary key,
+  student_code: string unique,
+  user_id: uuid nullable,
+  full_name: string,
+  email: string unique,
+  department_id: uuid fk hr.departments,
+  enrollment_year: int,
+  status: string,
+  is_active: bool,
+  created_at: timestamp,
+  updated_at: timestamp
 )
 
 event_store (same pattern)
@@ -699,7 +756,7 @@ event_store (same pattern)
 - **Refresh Flow**: Client sends refresh token → Core issues new access token
 
 ### Authorization (RBAC)
-- **Roles**: admin, faculty_coordinator, academician, scheduler
+- **Roles**: admin, manager, viewer, student
 - **Enforcement**: Per gRPC method in interceptor (future: fine-grained)
 - **Admin-Only**: Module management, user deletion
 
@@ -745,6 +802,6 @@ event_store (same pattern)
 2. **HA Setup**: PostgreSQL replication, NATS clustering, Core redundancy (Phase 2)
 3. **Distributed Tracing**: OpenTelemetry integration (Phase 3)
 4. **Service Mesh**: Istio for advanced traffic management (Phase 4)
-5. **Caching Layer**: Redis cache-aside pattern for frequently accessed data (Phase 2)
+5. **Caching Layer**: Expand current `pkg/cache` Redis abstraction into cache-aside usage for frequently accessed data
 6. **Search**: Elasticsearch for full-text search (Phase 3)
 7. **Analytics**: Data warehouse + BI tools (Phase 4)

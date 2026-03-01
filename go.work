@@ -6,6 +6,7 @@ use (
 	./services/core
 	./services/module-analytics
 	./services/module-hr
+	./services/module-student
 	./services/module-subject
 	./services/module-timetable
 )

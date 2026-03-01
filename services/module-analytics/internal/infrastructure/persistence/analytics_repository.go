@@ -114,6 +114,40 @@ func (r *AnalyticsRepository) UpsertScheduleEntry(ctx context.Context, e entity.
 	return err
 }
 
+// UpsertStudent inserts or updates a student dimension record.
+func (r *AnalyticsRepository) UpsertStudent(ctx context.Context, s entity.DimStudent) error {
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO analytics.dim_student
+			(student_id, student_code, full_name, department_id, enrollment_year, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6)
+		ON CONFLICT (student_id) DO UPDATE SET
+			student_code    = EXCLUDED.student_code,
+			full_name       = EXCLUDED.full_name,
+			department_id   = EXCLUDED.department_id,
+			enrollment_year = EXCLUDED.enrollment_year,
+			updated_at      = EXCLUDED.updated_at`,
+		s.StudentID, s.StudentCode, s.FullName, s.DepartmentID, s.EnrollmentYear, s.UpdatedAt,
+	)
+	return err
+}
+
+// UpsertEnrollment inserts or updates an enrollment fact record (status=approved, no grade yet).
+func (r *AnalyticsRepository) UpsertEnrollment(ctx context.Context, e entity.FactEnrollment) error {
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO analytics.fact_enrollment
+			(enrollment_id, student_id, subject_id, semester_id, status, grade_numeric, grade_letter, enrolled_at, graded_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+		ON CONFLICT (enrollment_id) DO UPDATE SET
+			status        = EXCLUDED.status,
+			grade_numeric = EXCLUDED.grade_numeric,
+			grade_letter  = EXCLUDED.grade_letter,
+			graded_at     = EXCLUDED.graded_at`,
+		e.EnrollmentID, e.StudentID, e.SubjectID, e.SemesterID,
+		e.Status, e.GradeNumeric, e.GradeLetter, e.EnrolledAt, e.GradedAt,
+	)
+	return err
+}
+
 // GetWorkloadStats returns workload stats filtered by semester.
 func (r *AnalyticsRepository) GetWorkloadStats(ctx context.Context, semesterID uuid.UUID) ([]entity.WorkloadStat, error) {
 	rows, err := r.pool.Query(ctx, `

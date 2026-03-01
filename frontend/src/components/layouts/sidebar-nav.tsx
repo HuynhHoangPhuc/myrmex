@@ -6,6 +6,7 @@ import {
   Calendar,
   Building2,
   BarChart3,
+  GraduationCap,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
@@ -46,6 +47,16 @@ export const NAV_ITEMS: NavItem[] = [
       { label: 'Schedules', to: '/timetable/schedules' },
       { label: 'Generate', to: '/timetable/generate' },
       { label: 'Assign Teachers', to: '/timetable/assign' },
+    ],
+  },
+  {
+    label: 'Students',
+    to: '/students',
+    icon: GraduationCap,
+    children: [
+      { label: 'Students', to: '/students' },
+      { label: 'Enrollments', to: '/enrollments' },
+      { label: 'Grades', to: '/grades' },
     ],
   },
   { label: 'Analytics', to: '/analytics', icon: BarChart3 },

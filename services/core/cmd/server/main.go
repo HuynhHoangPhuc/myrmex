@@ -145,6 +145,7 @@ func main() {
 		HRHandler:         modHandlers.HR,
 		SubjectHandler:    modHandlers.Subject,
 		TimetableHandler:  modHandlers.Timetable,
+		StudentHandler:    modHandlers.Student,
 		DashboardHandler:  modHandlers.Dashboard,
 		AnalyticsHTTPAddr: v.GetString("analytics.http_addr"),
 		JWTService:        jwtSvc,

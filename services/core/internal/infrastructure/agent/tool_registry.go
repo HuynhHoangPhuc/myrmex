@@ -173,5 +173,54 @@ var TimetableTools = []RegisteredTool{
 	},
 }
 
+// StudentTools defines the tools exposed by the Student module.
+var StudentTools = []RegisteredTool{
+	{
+		Definition: llm.Tool{
+			Name:        "student.list",
+			Description: "List students with optional filters by department or status.",
+			Parameters: rawSchema(`{
+				"type": "object",
+				"properties": {
+					"department_id": {"type": "string", "description": "Filter by department UUID"},
+					"status":        {"type": "string", "description": "Filter by status: active | graduated | suspended"}
+				}
+			}`),
+		},
+		ModuleName: "student",
+		MethodName: "list",
+	},
+	{
+		Definition: llm.Tool{
+			Name:        "student.get",
+			Description: "Get student details by ID.",
+			Parameters: rawSchema(`{
+				"type": "object",
+				"properties": {
+					"id": {"type": "string", "description": "UUID of the student"}
+				},
+				"required": ["id"]
+			}`),
+		},
+		ModuleName: "student",
+		MethodName: "get",
+	},
+	{
+		Definition: llm.Tool{
+			Name:        "student.transcript",
+			Description: "Get a student's academic transcript including grades and GPA.",
+			Parameters: rawSchema(`{
+				"type": "object",
+				"properties": {
+					"student_id": {"type": "string", "description": "UUID of the student"}
+				},
+				"required": ["student_id"]
+			}`),
+		},
+		ModuleName: "student",
+		MethodName: "transcript",
+	},
+}
+
 // DefaultTools is the full set of tools registered on startup.
-var DefaultTools = append(append(HRTools, SubjectTools...), TimetableTools...)
+var DefaultTools = append(append(append(HRTools, SubjectTools...), TimetableTools...), StudentTools...)

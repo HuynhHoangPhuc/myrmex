@@ -39,6 +39,26 @@ export const ENDPOINTS = {
     offeredSubjects: (semesterId: string) =>
       `/timetable/semesters/${semesterId}/offered-subjects`,
   },
+  students: {
+    list: '/students',
+    detail: (id: string) => `/students/${id}`,
+  },
+  enrollments: {
+    list: '/enrollments',
+    review: (id: string) => `/enrollments/${id}/review`,
+  },
+  grades: {
+    assign: '/grades',
+    update: (id: string) => `/grades/${id}`,
+  },
+  studentPortal: {
+    me: '/student/me',
+    myEnrollments: '/student/enrollments',
+    requestEnrollment: '/student/enrollments',
+    checkPrerequisites: '/student/enrollments/check-prerequisites',
+    myTranscript: '/student/transcript',
+    exportTranscript: '/student/transcript/export',
+  },
   dashboard: {
     stats: '/dashboard/stats',
   },

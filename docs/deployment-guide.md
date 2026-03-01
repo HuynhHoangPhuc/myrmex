@@ -37,7 +37,7 @@ make demo
 # API Gateway: http://localhost:8080
 ```
 
-That's it! All services (core, HR, Subject, Timetable modules), databases (PostgreSQL, NATS, Redis), and frontend start automatically. Migrations run, seed data is loaded.
+That's it! All services (core, HR, Subject, Timetable, Student, Analytics), databases (PostgreSQL, NATS, Redis), and frontend start automatically. Migrations run, seed data is loaded.
 
 ### Common Commands
 
@@ -65,7 +65,8 @@ The `make demo` command starts:
 - **Module-HR**: Department & teacher management (port 50052)
 - **Module-Subject**: Subject & prerequisite management (port 50053)
 - **Module-Timetable**: Schedule generation & management (port 50054)
-- **Module-Analytics**: Analytics dashboard + exports (consumes events)
+- **Module-Student**: Student CRUD foundation (port 50055)
+- **Module-Analytics**: Analytics dashboard + query endpoints (port 8055)
 - **Frontend**: React UI served via nginx (port 3000)
 
 All services communicate via Docker network. Migrations and seed data run automatically. Analytics module subscribes to NATS events for real-time ETL.
@@ -175,8 +176,11 @@ SUBJECT_GRPC_PORT=50053
 # Timetable Service
 TIMETABLE_GRPC_PORT=50054
 
+# Student Service
+STUDENT_GRPC_PORT=50055
+
 # Analytics Service
-ANALYTICS_HTTP_ADDR=":8080"
+ANALYTICS_HTTP_ADDR="http://localhost:8055"
 
 # Frontend
 VITE_API_URL="http://localhost:8080"
@@ -210,7 +214,7 @@ psql $DATABASE_URL -c "\dt"
 
 # Check schema structure
 psql $DATABASE_URL -c "\dn"
-# Should list schemas: public, core, hr, subject, timetable
+# Should list schemas: public, core, hr, subject, timetable, student, analytics
 ```
 
 ### Step 5: Generate Protobuf Code
@@ -235,11 +239,13 @@ cd services/core && go build ./cmd/server && cd ../..
 cd services/module-hr && go build ./cmd/server && cd ../..
 cd services/module-subject && go build ./cmd/server && cd ../..
 cd services/module-timetable && go build ./cmd/server && cd ../..
+cd services/module-student && go build ./cmd/server && cd ../..
+cd services/module-analytics && go build ./cmd/server && cd ../..
 ```
 
 ### Step 7: Run Services
 
-Open 4 separate terminal tabs/windows and start each service:
+Open 6 separate terminal tabs/windows and start each service:
 
 **Terminal 1: Core Service**
 ```bash
@@ -269,11 +275,18 @@ go run ./cmd/server
 # Output: Server listening on :50054 (gRPC)
 ```
 
-**Terminal 5: Analytics Service**
+**Terminal 5: Student Service**
+```bash
+cd services/module-student
+go run ./cmd/server
+# Output: Server listening on :50055 (gRPC)
+```
+
+**Terminal 6: Analytics Service**
 ```bash
 cd services/module-analytics
 go run ./cmd/server
-# Output: Server listening on :8080 (HTTP)
+# Output: Server listening on :8055 (HTTP)
 # Consumes NATS events for ETL
 ```
 
@@ -315,41 +328,43 @@ npm run dev
 server:
   http_port: 8080          # HTTP gateway port
   grpc_port: 50051         # gRPC server port
-  request_timeout: 30s     # Timeout for gRPC calls
+  self_url: "http://localhost:8080"
 
-auth:
-  jwt_secret: "your-secret-key-min-32-chars!!"
-  access_token_ttl: 15m    # Access token lifetime
-  refresh_token_ttl: 7d    # Refresh token lifetime
+database:
+  url: "postgres://myrmex:myrmex_dev@localhost:5432/myrmex?sslmode=disable&search_path=core"
+
+nats:
+  url: "nats://localhost:4222"
+
+jwt:
+  secret: "your-secret-key-min-32-chars!!"
+  access_expiry: "15m"
+  refresh_expiry: "168h"
+
+log:
+  level: "development"
+
+hr:
+  grpc_addr: "localhost:50052"
+subject:
+  grpc_addr: "localhost:50053"
+timetable:
+  grpc_addr: "localhost:50054"
+student:
+  grpc_addr: "localhost:50055"
 
 llm:
   provider: "${LLM_PROVIDER}"                          # "openai" | "claude" | "gemini"
   model: "${LLM_MODEL}"                                # Provider-specific model name
   api_key: "${LLM_API_KEY}"                            # From env var
-  timeout: 30s                                         # Request timeout
-  # Examples:
-  # OpenAI:  provider: "openai"  model: "gpt-4o-mini"
-  # Claude:  provider: "claude"  model: "claude-haiku-4-5-20251001"
-  # Gemini:  provider: "gemini"  model: "gemini-3-flash-preview"
-
-database:
-  url: "postgres://myrmex:myrmex_dev@localhost:5432/myrmex?sslmode=disable"
-  max_connections: 25
-
-nats:
-  url: "nats://localhost:4222"
-  connection_timeout: 5s
-
-logging:
-  level: "info"            # "debug", "info", "warn", "error"
-  format: "json"           # "json" or "console"
+  base_url: "https://api.openai.com/v1"
 ```
 
 ### Module-Analytics Service
 
 ```yaml
 server:
-  http_port: 8080         # HTTP server port
+  http_port: 8055         # HTTP server port
 
 database:
   url: "postgres://myrmex:myrmex_dev@localhost:5432/myrmex?sslmode=disable"
@@ -367,7 +382,7 @@ logging:
 - Processes events → Updates analytics schema (dim_teacher, fact_schedule_entry, etc.)
 - Real-time ETL: Events processed immediately upon receipt
 
-### Module Services (HR, Subject, Timetable)
+### Module Services (HR, Subject, Timetable, Student)
 
 Similar structure:
 
@@ -463,6 +478,8 @@ docker build -t myrmex-core:latest ./services/core
 docker build -t myrmex-hr:latest ./services/module-hr
 docker build -t myrmex-subject:latest ./services/module-subject
 docker build -t myrmex-timetable:latest ./services/module-timetable
+docker build -t myrmex-student:latest ./services/module-student
+docker build -t myrmex-analytics:latest ./services/module-analytics
 ```
 
 ### Cross-Platform Build
@@ -481,6 +498,14 @@ GOOS=windows GOARCH=amd64 go build -o server.exe ./cmd/server
 ---
 
 ## Running Services
+
+### Student Gateway Wiring
+
+The core service now expects a student gRPC address in both local and Docker setups:
+
+- Local config key: `student.grpc_addr` (default `localhost:50055`)
+- Docker env override: `STUDENT_GRPC_ADDR=module-student:50055`
+- Exposed gateway surface: admin-only `/api/students` CRUD routes proxied from core to module-student
 
 ### Development Mode (Hot Reload)
 
@@ -511,6 +536,12 @@ air
 
 # Terminal 4: Timetable
 ./services/module-timetable/server &
+
+# Terminal 5: Student
+./services/module-student/server &
+
+# Terminal 6: Analytics
+./services/module-analytics/server &
 
 # Check if running
 ps aux | grep server
@@ -586,7 +617,7 @@ services:
     volumes: nats_data
 
   redis:7-alpine
-    # Cache (reserved for future use)
+    # Shared cache infrastructure (used by pkg/cache)
     ports: 6379:6379
 
 volumes:
@@ -607,8 +638,12 @@ services:
       dockerfile: services/core/Dockerfile
     ports: 8080:8080, 50051:50051
     environment:
-      DATABASE_URL: postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable
+      DATABASE_URL: postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable&search_path=core
       NATS_URL: nats://nats:4222
+      HR_GRPC_ADDR: module-hr:50052
+      SUBJECT_GRPC_ADDR: module-subject:50053
+      TIMETABLE_GRPC_ADDR: module-timetable:50054
+      STUDENT_GRPC_ADDR: module-student:50055
     depends_on:
       postgres:
         condition: service_healthy
@@ -621,11 +656,21 @@ services:
       dockerfile: services/module-hr/Dockerfile
     ports: 50052:50052
     environment:
-      DATABASE_URL: postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable
+      DATABASE_URL: postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable&search_path=hr
       NATS_URL: nats://nats:4222
     depends_on: [postgres, nats]
 
-  # Similar for module-subject, module-timetable
+  module-student:
+    build:
+      context: .
+      dockerfile: services/module-student/Dockerfile
+    ports: 50055:50055
+    environment:
+      DATABASE_URL: postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable&search_path=student
+      NATS_URL: nats://nats:4222
+    depends_on: [postgres, nats]
+
+  # Similar for module-subject, module-timetable, module-analytics
 
   frontend:
     build:

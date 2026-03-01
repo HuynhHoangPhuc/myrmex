@@ -70,6 +70,29 @@ type FactScheduleEntry struct {
 	CreatedAt  time.Time
 }
 
+// DimStudent is the student dimension table record.
+type DimStudent struct {
+	StudentID      uuid.UUID
+	StudentCode    string
+	FullName       string
+	DepartmentID   uuid.UUID
+	EnrollmentYear int
+	UpdatedAt      time.Time
+}
+
+// FactEnrollment is a denormalized enrollment record per student per subject per semester.
+type FactEnrollment struct {
+	EnrollmentID uuid.UUID
+	StudentID    uuid.UUID
+	SubjectID    uuid.UUID
+	SemesterID   uuid.UUID
+	Status       string
+	GradeNumeric *float64
+	GradeLetter  *string
+	EnrolledAt   time.Time
+	GradedAt     *time.Time
+}
+
 // WorkloadStat is the query result for teacher workload.
 type WorkloadStat struct {
 	TeacherID      uuid.UUID `json:"teacher_id"`

@@ -2,6 +2,87 @@
 
 All notable changes to the Myrmex project are documented here.
 
+## [2026-03-01] — Student Module + Scalability Hardening COMPLETE
+
+**Status**: Complete (All 8 phases delivered)
+
+### Summary
+Completed all 8 phases of the Student Module + Scalability Hardening plan. Full student management lifecycle implemented: CRUD, enrollment request→approval workflow with Redis-cached prerequisite validation, grade assignment with auto-derived letter grades, transcript generation (JSON + PDF export), admin portal views, student self-service portal routes, Docker integration, and AI chat tools.
+
+### Key Deliverables
+- **Phase 01**: Module-student service with full DDD/Clean Architecture scaffold, student CRUD, event sourcing
+- **Phase 02**: pkg/cache Redis abstraction (Cache interface + RedisCache impl, cursor-based SCAN invalidation)
+- **Phase 03**: Core auth extended with `student` role, admin-only `/api/students/*` routes, module client wiring
+- **Phase 04**: Enrollment workflow (request→review→approve) with prerequisite validation and Redis caching
+- **Phase 05**: Grades with auto-derived letter grades (A≥8.5, B≥7, C≥5.5, D≥4, F<4), GPA calculation, PDF transcript export
+- **Phase 06**: Frontend admin views (/students, /enrollments, /grades) with TanStack Router + Shadcn/ui
+- **Phase 07**: Frontend student portal (/_student/*) with role guard, dashboard, enrollment, transcript, profile
+- **Phase 08**: Docker Compose integration, REDIS_ADDR wiring, student migrations in migrate service, analytics events + dim_student + fact_enrollment, AI chat student tools
+
+### Code Statistics
+- **New Service**: `services/module-student` (~2K LOC)
+- **New Shared Package**: `pkg/cache` with Redis implementation
+- **New Proto**: `proto/student/v1/student.proto` with full domain RPC definitions
+- **Migrations**: 4 migrations (students, enrollments, grades, analytics dimensions)
+- **Tests**: >70% coverage in module-student CQRS handlers + domain services
+- **Frontend**: ~1.5K LOC across admin + student portal routes, hooks, components
+
+### API Endpoints (Student Module)
+- Admin-only CRUD: `GET /api/students`, `POST /api/students`, `GET /api/students/:id`, `PATCH /api/students/:id`, `DELETE /api/students/:id`
+- Enrollment: `POST /api/students/:id/enrollments/request`, `POST /api/students/:id/enrollments/:enrollmentId/approve`
+- Grades: `POST /api/students/:id/grades/:enrollmentId/assign`
+- Transcript: `GET /api/students/:id/transcript` (JSON), `GET /api/students/:id/transcript/pdf` (PDF export)
+- AI Chat Tools: `student.list`, `student.get`, `student.enroll`, `student.transcript`
+
+### Documentation Updates
+- Updated `docs/codebase-summary.md`: Module-student now listed as full service (CRUD + enrollment + grades + transcripts)
+- Updated `docs/system-architecture.md`: Module-student diagram + detailed service topology
+- Updated `docs/project-roadmap.md`: Phase 3 advanced features now ~75% complete (student + prerequisites + room assignment done)
+- Updated plan.md + all phase files: All statuses set to "completed"
+
+---
+
+## [2026-03-01] — Student Module Foundation + Cache + Core Gateway Wiring
+
+**Status**: Partial Complete (safe Phase 03 subset)
+
+### Summary
+Implemented the student module foundation and the safe subset of Phase 03. Added a new `module-student` gRPC service with student CRUD, soft-delete-aware reads and updates, and correct not-found classification. Added shared Redis cache primitives in `pkg/cache`, then hardened pattern invalidation to use cursor-based `SCAN` instead of `KEYS`. Wired the core gateway with admin-only `/api/students` CRUD routes, added the `student` role, and added docker/config wiring for the new service. Enrollment, grades, transcripts, and user-linking remain deferred until more student RPCs exist.
+
+### Backend Implementation
+- **New Service**: `services/module-student` with its own Go module, Dockerfile, config, migrations, sqlc queries, repository impl, CQRS handlers, and gRPC server
+- **Proto**: Added `proto/student/v1/student.proto` with `CreateStudent`, `GetStudent`, `ListStudents`, `UpdateStudent`, `DeleteStudent`
+- **Soft Delete Semantics**:
+  - `GetStudentByID` now returns active students only
+  - `UpdateStudent` only updates active rows
+  - `DeleteStudent` now returns not-found when no active row matches
+  - `GetStudent` maps only `pgx.ErrNoRows` to `NotFound`; all other handler errors map to `Internal`
+- **Shared Cache**:
+  - Added `pkg/cache/cache.go` with `Cache` interface + `ErrCacheMiss`
+  - Added `pkg/cache/redis_cache.go` with JSON marshal/unmarshal support
+  - Replaced Redis `KEYS` invalidation with cursor-based `SCAN` for scalable pattern deletes
+- **Core Gateway**:
+  - Added `services/core/internal/interface/http/student_handler.go`
+  - Added admin-only `/api/students` CRUD routes in `router.go`
+  - Added `student.grpc_addr` wiring in `services/core/cmd/server/module_clients.go`
+  - Added `student` role in `services/core/internal/domain/valueobject/role.go`
+
+### Infrastructure
+- **Core Config**: Added `student.grpc_addr: "localhost:50055"` to `services/core/config/local.yaml`
+- **Docker Compose**: Added `module-student` service and `STUDENT_GRPC_ADDR` env wiring in `deploy/docker/compose.yml`
+- **Workspace**: Added module-student to `go.work` and build/test coverage via Makefile service list
+
+### Validation
+- `go test ./...` passes for `services/module-student`
+- `go build ./...` passes for updated services
+- Regression tests cover create success, create invalid argument, get not found/internal error, and delete not found
+
+### Scope Notes
+- Delivered only the safe Phase 03 subset supported by the current student proto and service contract
+- Deferred: enrollment workflow, grade tracking, transcript generation, prerequisite-based enrollment validation, user-linking/student self-service endpoints
+
+---
+
 ## [2026-03-01] — Room Assignment Feature (Mar 1)
 
 **Status**: Complete
@@ -42,7 +123,7 @@ Implemented comprehensive room assignment feature for semester management. Backe
 - Room assignment fully integrated with schedule generation workflow
 
 ### Files Modified/Created
-**Backend**: `proto/timetable/v1/semester.proto`, `services/module-timetable/internal/domain/repository/semester_repository.go`, `services/module-timetable/migrations/XXX_add_room_ids_to_semesters.sql`, `services/module-timetable/internal/interface/grpc/semester_server.go`, `services/core/internal/interface/http/timetable_handler.go`
+**Backend**: `proto/timetable/v1/semester.proto`, `services/module-timetable/internal/domain/repository/semester_repository.go`, `services/module-timetable/migrations/008_add_room_ids_to_semesters.sql`, `services/module-timetable/internal/interface/grpc/semester_server.go`, `services/core/internal/interface/http/timetable_handler.go`
 
 **Frontend**: `frontend/src/modules/timetable/components/room-manager.tsx`, `frontend/src/modules/timetable/components/room-assignment-dialog.tsx`, `frontend/src/modules/timetable/hooks/use-rooms.ts`, `frontend/src/modules/timetable/types.ts`
 

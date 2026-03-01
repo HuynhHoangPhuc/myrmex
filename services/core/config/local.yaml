@@ -23,6 +23,8 @@ subject:
   grpc_addr: "localhost:50053"
 timetable:
   grpc_addr: "localhost:50054"
+student:
+  grpc_addr: "localhost:50055"
 
 llm:
   provider: "openai"          # "openai" or "claude"

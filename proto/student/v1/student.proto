@@ -1,0 +1,220 @@
+syntax = "proto3";
+package student.v1;
+option go_package = "github.com/HuynhHoangPhuc/myrmex/gen/go/student/v1;studentv1";
+
+import "core/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+service StudentService {
+  rpc CreateStudent(CreateStudentRequest) returns (CreateStudentResponse);
+  rpc GetStudent(GetStudentRequest) returns (GetStudentResponse);
+  rpc ListStudents(ListStudentsRequest) returns (ListStudentsResponse);
+  rpc UpdateStudent(UpdateStudentRequest) returns (UpdateStudentResponse);
+  rpc DeleteStudent(DeleteStudentRequest) returns (DeleteStudentResponse);
+  rpc RequestEnrollment(RequestEnrollmentRequest) returns (RequestEnrollmentResponse);
+  rpc ReviewEnrollment(ReviewEnrollmentRequest) returns (ReviewEnrollmentResponse);
+  rpc ListEnrollmentRequests(ListEnrollmentRequestsRequest) returns (ListEnrollmentRequestsResponse);
+  rpc GetStudentEnrollments(GetStudentEnrollmentsRequest) returns (GetStudentEnrollmentsResponse);
+  rpc CheckPrerequisites(CheckPrerequisitesRequest) returns (CheckPrerequisitesResponse);
+  rpc AssignGrade(AssignGradeRequest) returns (AssignGradeResponse);
+  rpc UpdateGrade(UpdateGradeRequest) returns (UpdateGradeResponse);
+  rpc GetStudentTranscript(GetStudentTranscriptRequest) returns (GetStudentTranscriptResponse);
+}
+
+message Student {
+  string id = 1;
+  string student_code = 2;
+  string user_id = 3;
+  string full_name = 4;
+  string email = 5;
+  string department_id = 6;
+  int32 enrollment_year = 7;
+  string status = 8;
+  bool is_active = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+message CreateStudentRequest {
+  string student_code = 1;
+  string full_name = 2;
+  string email = 3;
+  string department_id = 4;
+  int32 enrollment_year = 5;
+}
+
+message CreateStudentResponse {
+  Student student = 1;
+}
+
+message GetStudentRequest {
+  string id = 1;
+}
+
+message GetStudentResponse {
+  Student student = 1;
+}
+
+message ListStudentsRequest {
+  core.v1.PaginationRequest pagination = 1;
+  optional string department_id = 2;
+  optional string status = 3;
+}
+
+message ListStudentsResponse {
+  repeated Student students = 1;
+  core.v1.PaginationResponse pagination = 2;
+}
+
+message UpdateStudentRequest {
+  string id = 1;
+  optional string full_name = 2;
+  optional string email = 3;
+  optional string department_id = 4;
+  optional string status = 5;
+  optional bool is_active = 6;
+}
+
+message UpdateStudentResponse {
+  Student student = 1;
+}
+
+message DeleteStudentRequest {
+  string id = 1;
+}
+
+message DeleteStudentResponse {
+  bool success = 1;
+}
+
+message EnrollmentRequest {
+  string id = 1;
+  string student_id = 2;
+  string semester_id = 3;
+  string offered_subject_id = 4;
+  string subject_id = 5;
+  string status = 6;
+  string request_note = 7;
+  string admin_note = 8;
+  google.protobuf.Timestamp requested_at = 9;
+  google.protobuf.Timestamp reviewed_at = 10;
+  string reviewed_by = 11;
+}
+
+message RequestEnrollmentRequest {
+  string student_id = 1;
+  string semester_id = 2;
+  string offered_subject_id = 3;
+  string subject_id = 4;
+  string request_note = 5;
+}
+
+message RequestEnrollmentResponse {
+  EnrollmentRequest enrollment = 1;
+}
+
+message ReviewEnrollmentRequest {
+  string id = 1;
+  bool approve = 2;
+  string admin_note = 3;
+  string reviewed_by = 4;
+}
+
+message ReviewEnrollmentResponse {
+  EnrollmentRequest enrollment = 1;
+}
+
+message ListEnrollmentRequestsRequest {
+  core.v1.PaginationRequest pagination = 1;
+  optional string student_id = 2;
+  optional string semester_id = 3;
+  optional string status = 4;
+}
+
+message ListEnrollmentRequestsResponse {
+  repeated EnrollmentRequest enrollments = 1;
+  core.v1.PaginationResponse pagination = 2;
+}
+
+message GetStudentEnrollmentsRequest {
+  string student_id = 1;
+  optional string semester_id = 2;
+}
+
+message GetStudentEnrollmentsResponse {
+  repeated EnrollmentRequest enrollments = 1;
+}
+
+message CheckPrerequisitesRequest {
+  string student_id = 1;
+  string subject_id = 2;
+}
+
+message MissingPrerequisite {
+  string subject_id = 1;
+  string subject_code = 2;
+  string subject_name = 3;
+  string type = 4;
+}
+
+message CheckPrerequisitesResponse {
+  bool can_enroll = 1;
+  repeated MissingPrerequisite missing = 2;
+}
+
+message Grade {
+  string id = 1;
+  string enrollment_id = 2;
+  double grade_numeric = 3;
+  string grade_letter = 4;
+  string graded_by = 5;
+  google.protobuf.Timestamp graded_at = 6;
+  string notes = 7;
+}
+
+message TranscriptEntry {
+  string enrollment_id = 1;
+  string semester_id = 2;
+  string subject_id = 3;
+  string subject_code = 4;
+  string subject_name = 5;
+  int32 credits = 6;
+  string status = 7;
+  double grade_numeric = 8;
+  string grade_letter = 9;
+  google.protobuf.Timestamp graded_at = 10;
+}
+
+message AssignGradeRequest {
+  string enrollment_id = 1;
+  double grade_numeric = 2;
+  string graded_by = 3;
+  string notes = 4;
+}
+
+message AssignGradeResponse {
+  Grade grade = 1;
+}
+
+message UpdateGradeRequest {
+  string grade_id = 1;
+  double grade_numeric = 2;
+  string graded_by = 3;
+  string notes = 4;
+}
+
+message UpdateGradeResponse {
+  Grade grade = 1;
+}
+
+message GetStudentTranscriptRequest {
+  string student_id = 1;
+}
+
+message GetStudentTranscriptResponse {
+  Student student = 1;
+  repeated TranscriptEntry entries = 2;
+  double gpa = 3;
+  int32 total_credits = 4;
+  int32 passed_credits = 5;
+}

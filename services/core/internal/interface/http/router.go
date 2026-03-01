@@ -21,6 +21,7 @@ type RouterConfig struct {
 	HRHandler          *HRHandler
 	SubjectHandler     *SubjectHandler
 	TimetableHandler   *TimetableHandler
+	StudentHandler     *StudentHandler
 	DashboardHandler   *DashboardHandler
 	AnalyticsHTTPAddr  string // e.g. "http://module-analytics:8055"
 	JWTService         *auth.JWTService
@@ -143,6 +144,19 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 				tt.PUT("/schedules/:id/entries/:entryId", cfg.TimetableHandler.ManualAssign)
 				tt.GET("/suggest-teachers", cfg.TimetableHandler.SuggestTeachers)
 				tt.GET("/schedules/:id/stream", cfg.TimetableHandler.StreamScheduleStatus)
+			}
+		}
+
+		// Student module routes (safe Phase 03 subset: admin CRUD only)
+		if cfg.StudentHandler != nil {
+			students := protected.Group("/students")
+			students.Use(middleware.RequireRole("admin"))
+			{
+				students.GET("", cfg.StudentHandler.ListStudents)
+				students.POST("", cfg.StudentHandler.CreateStudent)
+				students.GET("/:id", cfg.StudentHandler.GetStudent)
+				students.PATCH("/:id", cfg.StudentHandler.UpdateStudent)
+				students.DELETE("/:id", cfg.StudentHandler.DeleteStudent)
 			}
 		}
 

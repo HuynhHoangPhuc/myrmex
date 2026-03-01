@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-**Myrmex** is an agent-first, modular ERP system designed for educational institutions. Built on Go microservices with AI-powered operations, it enables intelligent scheduling, resource management, and conversational workflows. MVP delivers university faculty management (HR, Subjects, Timetable).
+**Myrmex** is an agent-first, modular ERP system designed for educational institutions. Built on Go microservices with AI-powered operations, it enables intelligent scheduling, resource management, and conversational workflows. MVP delivers university faculty management (HR, Subjects, Timetable) plus a student registry foundation.
 
 ## Vision & Goals
 
@@ -31,7 +31,7 @@ Create an extensible, AI-native ERP that lets institutions operate via conversat
 #### FR-1: Authentication & Authorization
 - User registration & login (email/password, hashed bcrypt)
 - JWT tokens: 15min access + 7day refresh
-- Role-based access control (admin, faculty_coordinator, academician, scheduler)
+- Role-based access control (admin, manager, viewer, student)
 - Token refresh endpoint with automatic logout on 401
 
 #### FR-2: Department Management (HR Module)
@@ -100,7 +100,17 @@ Create an extensible, AI-native ERP that lets institutions operate via conversat
 - Message persistence to PostgreSQL
 - Streaming responses via WebSocket
 
-#### FR-11: Analytics & Reporting (Module-Analytics)
+#### FR-11: Student Registry Foundation (Module-Student)
+- CRUD for students with:
+  - Student code, full name, email
+  - Department affiliation
+  - Enrollment year, status, active flag
+  - Optional future link to a user account
+- Soft delete via `is_active=false`
+- Listing with pagination and department/status filters
+- Admin-only gateway management via `/api/students`
+
+#### FR-12: Analytics & Reporting (Module-Analytics)
 - Workload analytics: hours per teacher, utilization metrics
 - Dashboard KPIs: teacher count, average workload, schedule completion %
 - Export schedules (PDF, Excel) via iText

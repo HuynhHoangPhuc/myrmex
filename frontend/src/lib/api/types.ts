@@ -13,7 +13,7 @@ export interface ApiError {
   details?: Record<string, string[]>
 }
 
-export type UserRole = 'admin' | 'manager' | 'viewer'
+export type UserRole = 'admin' | 'manager' | 'viewer' | 'student'
 
 export interface User {
   id: string

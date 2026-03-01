@@ -30,7 +30,12 @@ export function useLogin() {
       authStore.setTokens(data.access_token, data.refresh_token)
       authStore.setUser(data.user)
       queryClient.setQueryData(['current-user'], data.user)
-      void navigate({ to: '/dashboard' })
+      // Students go to the student portal; all other roles go to the admin dashboard
+      if (data.user.role === 'student') {
+        void navigate({ to: '/student/dashboard' })
+      } else {
+        void navigate({ to: '/dashboard' })
+      }
     },
   })
 }

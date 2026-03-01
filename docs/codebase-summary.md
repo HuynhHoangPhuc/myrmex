@@ -2,13 +2,14 @@
 
 ## Overview
 
-Myrmex is a Go monorepo with 6 modules using `go.work`:
+Myrmex is a Go monorepo with 8 modules using `go.work`:
 - `gen/go` - Generated protobuf code (buf generate)
-- `pkg` - Shared packages (logger, config, eventstore, nats, middleware)
+- `pkg` - Shared packages (logger, config, cache Redis abstraction, eventstore, nats, middleware)
 - `services/core` - HTTP gateway, auth, module registry, AI chat
 - `services/module-hr` - Department & teacher management
 - `services/module-subject` - Subject & prerequisite DAG
 - `services/module-timetable` - Semester, room, schedule management & CSP solver
+- `services/module-student` - Student CRUD, enrollment workflow, grades, transcripts
 - `services/module-analytics` - Analytics dashboard, KPIs, reporting (PDF/Excel export)
 
 **Total Codebase**: ~254K tokens (321 files, 985K chars)
@@ -32,12 +33,14 @@ myrmex/
 ├── gen/go/                 # Generated protobuf code (prod: ignore)
 │   ├── core/v1/
 │   ├── hr/v1/
+│   ├── student/v1/
 │   ├── subject/v1/
 │   └── timetable/v1/
 │
 ├── pkg/                    # Shared packages
 │   ├── logger/             # Zap logger factory (NewLogger)
 │   ├── config/             # Viper config (file + env overlay)
+│   ├── cache/              # Cache interface + RedisCache impl (JSON values, SCAN invalidation)
 │   ├── eventstore/         # PostgreSQL event store (interface + impl)
 │   ├── nats/               # NATS JetStream connect/publish/subscribe
 │   ├── middleware/         # gRPC auth interceptor (ValidateJWT)
@@ -55,6 +58,8 @@ myrmex/
 │   ├── subject/v1/
 │   │   ├── subject.proto   # SubjectService
 │   │   └── prerequisite.proto # PrerequisiteService
+│   ├── student/v1/
+│   │   └── student.proto   # StudentService (CRUD foundation)
 │   └── timetable/v1/
 │       ├── timetable.proto # TimetableService (Generate, Get, UpdateEntry, Suggest)
 │       └── semester.proto  # SemesterService + Room + TimeSlot
@@ -130,6 +135,22 @@ myrmex/
 │   │   │   │   └── messaging/
 │   │   │   ├── interface/grpc/
 │   │   │   ├── migrations/
+│   │   │   ├── sql/queries/
+│   │   │   └── config/
+│   │   ├── go.mod
+│   │   └── Dockerfile
+│   │
+│   ├── module-student/     # Student management: CRUD, enrollment, grades, transcript
+│   │   ├── cmd/server/main.go
+│   │   ├── internal/
+│   │   │   ├── domain/      # Student, Enrollment, Grade aggregates + repositories
+│   │   │   ├── application/ # CQRS handlers (create student, request/approve enrollment, assign grade)
+│   │   │   ├── infrastructure/
+│   │   │   │   ├── persistence/ # sqlc + repository impls
+│   │   │   │   ├── messaging/ # NATS event publishers
+│   │   │   │   └── cache/  # Redis-backed prerequisite caching
+│   │   │   ├── interface/grpc/ # StudentService + EnrollmentService + GradeService gRPC
+│   │   │   ├── migrations/  # Student schema + enrollment + grades tables
 │   │   │   ├── sql/queries/
 │   │   │   └── config/
 │   │   ├── go.mod
@@ -242,7 +263,7 @@ myrmex/
 | **ORM** | sqlc | Latest | Type-safe query generation |
 | **Migration** | goose | Latest | Schema management |
 | **Message Bus** | NATS JetStream | 2.10-alpine | Event streaming + persistence |
-| **Cache** | Redis | 7-alpine | (Reserved, not yet used) |
+| **Cache** | Redis | 7-alpine | Shared cache abstraction in `pkg/cache` (JSON values + SCAN invalidation) |
 | **HTTP Gateway** | Gin | Latest | Core service HTTP API |
 | **Config** | Viper | Latest | YAML + env config |
 | **Logging** | Zap | Latest | Structured JSON logs |
@@ -268,6 +289,11 @@ myrmex/
 - `services/module-hr/cmd/server/main.go` - gRPC (port 50052)
 - `services/module-subject/cmd/server/main.go` - gRPC (port 50053)
 - `services/module-timetable/cmd/server/main.go` - gRPC (port 50054)
+- `services/module-student/cmd/server/main.go` - gRPC (port 50055) — student CRUD, enrollment, grades, transcripts
+
+### Gateway Proxies
+- `services/core/internal/interface/http/student_handler.go` - Admin-only `/api/students` CRUD proxy to module-student
+- `services/core/cmd/server/module_clients.go` - Wires `student.grpc_addr` into the core gateway
 
 ### Critical Domain Logic
 - `services/module-hr/internal/domain/entity/teacher.go` - Teacher aggregate
@@ -277,6 +303,8 @@ myrmex/
 ### Shared Infrastructure
 - `pkg/logger/logger.go` - Zap logger initialization
 - `pkg/config/config.go` - Viper configuration loading
+- `pkg/cache/cache.go` - Cache interface + cache miss sentinel
+- `pkg/cache/redis_cache.go` - Redis JSON cache with cursor-based pattern invalidation
 - `pkg/eventstore/event_store.go` - PostgreSQL event sourcing interface
 - `pkg/nats/nats.go` - JetStream connection + pubsub
 - `pkg/middleware/auth_interceptor.go` - gRPC JWT validation
@@ -284,6 +312,7 @@ myrmex/
 ### Protobuf Definitions
 - `proto/core/v1/auth.proto` - Auth service RPC definitions
 - `proto/hr/v1/teacher.proto` - Teacher CRUD RPC
+- `proto/student/v1/student.proto` - Student CRUD RPC foundation
 - `proto/subject/v1/prerequisite.proto` - Prerequisite DAG RPC
 - `proto/timetable/v1/timetable.proto` - Schedule generation RPC
 
@@ -306,11 +335,11 @@ myrmex/
 | Total Tokens | ~300K+ |
 | Total Characters | ~1.1M+ |
 | Largest Files | Protobuf generated (teacher.pb.go: 9.8K tokens) |
-| Services | 5 (core, hr, subject, timetable, analytics) |
-| Shared Packages | 5 (logger, config, eventstore, nats, middleware) |
-| Go Modules | 6 (gen, pkg, core, hr, subject, timetable, analytics) |
+| Services | 6 (core, hr, subject, timetable, student, analytics) |
+| Shared Packages | 6 (logger, config, cache, eventstore, nats, middleware) |
+| Go Modules | 8 (gen, pkg, core, hr, subject, timetable, student, analytics) |
 | Frontend Components | 11 Shadcn/ui + 5+ custom |
-| Proto Definitions | 10 files across 4 services |
+| Proto Definitions | 11 files across 5 services |
 
 ## Dependencies per Service
 
@@ -319,6 +348,7 @@ Core → (nothing)
 Module-HR → pkg, NATS, PostgreSQL
 Module-Subject → pkg, NATS, PostgreSQL
 Module-Timetable → pkg, Module-Subject (gRPC), NATS, PostgreSQL
+Module-Student → pkg, NATS, PostgreSQL
 Module-Analytics → pkg, NATS, PostgreSQL (consumes events)
 Frontend → Core gRPC gateway (HTTP/JSON)
 ```
@@ -359,6 +389,7 @@ cd services/core && go run ./cmd/server
 cd services/module-hr && go run ./cmd/server
 cd services/module-subject && go run ./cmd/server
 cd services/module-timetable && go run ./cmd/server
+cd services/module-student && go run ./cmd/server
 cd services/module-analytics && go run ./cmd/server
 
 # Start frontend
@@ -401,7 +432,7 @@ make demo
 
 ## Known Gaps & Limitations
 
-1. **Frontend**: No E2E tests, no mobile hamburger menu, no drag-drop yet
+1. **Student Module**: Full implementation complete (CRUD, enrollment, grades, transcripts); deferred: user-linking + student self-service endpoints
 2. **Auth**: No token rotation; no 2FA
 3. **Chat**: Message storage in PostgreSQL (will migrate to MongoDB)
 4. **Monitoring**: Prometheus metrics not yet integrated
@@ -413,7 +444,7 @@ make demo
 ### Module-Analytics Service
 - New service: `services/module-analytics` for business intelligence
 - Star-schema analytics database: `dim_teacher`, `dim_subject`, `dim_department`, `dim_semester`, `fact_schedule_entry`
-- Dashboard APIs: `/api/analytics/dashboard-summary`, `/api/analytics/workload`, `/api/analytics/utilization`, `/api/analytics/department-metrics`, `/api/analytics/schedule-metrics`, `/api/analytics/schedule-heatmap`
+- Dashboard APIs: `/api/analytics/dashboard`, `/api/analytics/workload`, `/api/analytics/utilization`, `/api/analytics/department-metrics`, `/api/analytics/schedule-metrics`, `/api/analytics/schedule-heatmap`
 - Export functionality: PDF/Excel schedule generation via `export_handler.go`
 - NATS event consumer: Processes NATS events (hr.teacher.*, subject.*, schedule.generation_completed) for ETL
 - All operations via HTTP (reverse-proxied by core gateway at `/api/analytics/*`)

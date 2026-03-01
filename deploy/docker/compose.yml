@@ -57,6 +57,7 @@ services:
       HR_GRPC_ADDR: "module-hr:50052"
       SUBJECT_GRPC_ADDR: "module-subject:50053"
       TIMETABLE_GRPC_ADDR: "module-timetable:50054"
+      STUDENT_GRPC_ADDR: "module-student:50055"
       ANALYTICS_HTTP_ADDR: "http://module-analytics:8055"
       LLM_API_KEY: "${LLM_API_KEY:-}"
       LLM_PROVIDER: "${LLM_PROVIDER:-}"
@@ -120,6 +121,23 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+
+  module-student:
+    build:
+      context: ../..
+      dockerfile: services/module-student/Dockerfile
+    ports:
+      - "50055:50055"
+    environment:
+      DATABASE_URL: "postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable&search_path=student"
+      NATS_URL: "nats://nats:4222"
+      REDIS_ADDR: "redis:6379"
+      SUBJECT_GRPC_ADDR: "module-subject:50053"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
 
   # --- Frontend ---
   frontend:

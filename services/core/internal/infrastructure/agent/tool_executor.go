@@ -175,6 +175,21 @@ func buildEndpoint(baseURL, module, method string, args map[string]interface{}) 
 		}
 		return url, http.MethodGet
 
+	case "student.list":
+		url := base + "/api/students"
+		if params := buildQueryParams(args, "department_id", "status"); params != "" {
+			url += "?" + params
+		}
+		return url, http.MethodGet
+
+	case "student.get":
+		id, _ := args["id"].(string)
+		return fmt.Sprintf("%s/api/students/%s", base, id), http.MethodGet
+
+	case "student.transcript":
+		id, _ := args["student_id"].(string)
+		return fmt.Sprintf("%s/api/students/%s/transcript", base, id), http.MethodGet
+
 	default:
 		return fmt.Sprintf("%s/api/%s/%s", base, module, strings.ReplaceAll(method, "_", "/")), http.MethodGet
 	}
