@@ -69,6 +69,11 @@ type LoginResult struct {
 	AccessToken  string
 	RefreshToken string
 	ExpiresIn    int64
+	UserID       string
+	Email        string
+	FullName     string
+	Role         string
+	CreatedAt    string
 }
 
 type LoginHandler struct {
@@ -106,5 +111,10 @@ func (h *LoginHandler) Handle(ctx context.Context, q LoginQuery) (*LoginResult, 
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresIn:    900, // 15 minutes
+		UserID:       user.ID.String(),
+		Email:        user.Email,
+		FullName:     user.FullName,
+		Role:         string(user.Role),
+		CreatedAt:    user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}, nil
 }

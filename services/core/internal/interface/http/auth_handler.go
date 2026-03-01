@@ -58,6 +58,13 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
 		"expires_in":    900,
+		"user": gin.H{
+			"id":         user.ID.String(),
+			"email":      user.Email,
+			"full_name":  user.FullName,
+			"role":       string(user.Role),
+			"created_at": user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		},
 	})
 }
 
@@ -86,6 +93,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		"access_token":  result.AccessToken,
 		"refresh_token": result.RefreshToken,
 		"expires_in":    result.ExpiresIn,
+		"user": gin.H{
+			"id":         result.UserID,
+			"email":      result.Email,
+			"full_name":  result.FullName,
+			"role":       result.Role,
+			"created_at": result.CreatedAt,
+		},
 	})
 }
 
