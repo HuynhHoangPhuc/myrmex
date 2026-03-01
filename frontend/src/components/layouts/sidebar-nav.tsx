@@ -66,6 +66,11 @@ interface SidebarNavProps {
   onNavigate?: () => void
 }
 
+// Returns true if `pathname` matches or is nested under `path`
+function matchesPath(pathname: string, path: string): boolean {
+  return pathname === path || pathname === path + '/' || pathname.startsWith(path + '/')
+}
+
 // Sidebar navigation with active-state highlighting and nested items
 export function SidebarNav({ onNavigate }: SidebarNavProps) {
   const router = useRouterState()
@@ -80,7 +85,10 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
 
       {NAV_ITEMS.map((item) => {
         const Icon = item.icon
-        const isActive = pathname === item.to || pathname.startsWith(item.to + '/')
+        // Section is open when current path matches the parent OR any of its children
+        const isActive =
+          matchesPath(pathname, item.to) ||
+          !!item.children?.some((c) => matchesPath(pathname, c.to))
 
         return (
           <div key={item.to}>
@@ -107,7 +115,7 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
                     onClick={onNavigate}
                     className={cn(
                       'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-                      pathname === child.to
+                      matchesPath(pathname, child.to)
                         ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                         : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                     )}
