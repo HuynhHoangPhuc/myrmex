@@ -15,6 +15,7 @@ type TimetableSemester struct {
 	StartDate          pgtype.Date        `db:"start_date"`
 	EndDate            pgtype.Date        `db:"end_date"`
 	OfferedSubjectIDs  []pgtype.UUID      `db:"offered_subject_ids"`
+	RoomIDs            []pgtype.UUID      `db:"room_ids"`
 	CreatedAt          pgtype.Timestamptz `db:"created_at"`
 }
 

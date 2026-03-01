@@ -36,20 +36,33 @@ type CreateSemesterParams struct {
 func (q *Queries) CreateSemester(ctx context.Context, p CreateSemesterParams) (TimetableSemester, error) {
 	row := q.pool.QueryRow(ctx, `
 		INSERT INTO timetable.semesters (name, year, term, start_date, end_date, offered_subject_ids)
-		VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+		VALUES ($1,$2,$3,$4,$5,$6)
+		RETURNING id, name, year, term, start_date, end_date, offered_subject_ids, created_at, room_ids`,
 		p.Name, p.Year, p.Term, p.StartDate, p.EndDate, p.OfferedSubjectIDs,
 	)
 	return scanSemester(row)
 }
 
+// SetSemesterRooms replaces the room_ids array for a semester.
+func (q *Queries) SetSemesterRooms(ctx context.Context, semesterID pgtype.UUID, roomIDs []pgtype.UUID) (TimetableSemester, error) {
+	row := q.pool.QueryRow(ctx, `
+		UPDATE timetable.semesters SET room_ids=$2 WHERE id=$1
+		RETURNING id, name, year, term, start_date, end_date, offered_subject_ids, created_at, room_ids`,
+		semesterID, roomIDs)
+	return scanSemester(row)
+}
+
 func (q *Queries) GetSemesterByID(ctx context.Context, id pgtype.UUID) (TimetableSemester, error) {
-	row := q.pool.QueryRow(ctx, `SELECT * FROM timetable.semesters WHERE id = $1`, id)
+	row := q.pool.QueryRow(ctx,
+		`SELECT id, name, year, term, start_date, end_date, offered_subject_ids, created_at, room_ids
+		 FROM timetable.semesters WHERE id = $1`, id)
 	return scanSemester(row)
 }
 
 func (q *Queries) ListSemesters(ctx context.Context, limit, offset int32) ([]TimetableSemester, error) {
 	rows, err := q.pool.Query(ctx,
-		`SELECT * FROM timetable.semesters ORDER BY year DESC, term DESC LIMIT $1 OFFSET $2`,
+		`SELECT id, name, year, term, start_date, end_date, offered_subject_ids, created_at, room_ids
+		 FROM timetable.semesters ORDER BY year DESC, term DESC LIMIT $1 OFFSET $2`,
 		limit, offset)
 	if err != nil {
 		return nil, err
@@ -69,14 +82,18 @@ func (q *Queries) CountSemesters(ctx context.Context) (int64, error) {
 func (q *Queries) AddOfferedSubject(ctx context.Context, semesterID, subjectID pgtype.UUID) (TimetableSemester, error) {
 	row := q.pool.QueryRow(ctx, `
 		UPDATE timetable.semesters SET offered_subject_ids = array_append(offered_subject_ids,$2)
-		WHERE id=$1 RETURNING *`, semesterID, subjectID)
+		WHERE id=$1
+		RETURNING id, name, year, term, start_date, end_date, offered_subject_ids, created_at, room_ids`,
+		semesterID, subjectID)
 	return scanSemester(row)
 }
 
 func (q *Queries) RemoveOfferedSubject(ctx context.Context, semesterID, subjectID pgtype.UUID) (TimetableSemester, error) {
 	row := q.pool.QueryRow(ctx, `
 		UPDATE timetable.semesters SET offered_subject_ids = array_remove(offered_subject_ids,$2)
-		WHERE id=$1 RETURNING *`, semesterID, subjectID)
+		WHERE id=$1
+		RETURNING id, name, year, term, start_date, end_date, offered_subject_ids, created_at, room_ids`,
+		semesterID, subjectID)
 	return scanSemester(row)
 }
 
@@ -320,7 +337,7 @@ func (q *Queries) AppendEvent(ctx context.Context, aggregateID pgtype.UUID, aggr
 
 func scanSemester(row pgx.Row) (TimetableSemester, error) {
 	var s TimetableSemester
-	err := row.Scan(&s.ID, &s.Name, &s.Year, &s.Term, &s.StartDate, &s.EndDate, &s.OfferedSubjectIDs, &s.CreatedAt)
+	err := row.Scan(&s.ID, &s.Name, &s.Year, &s.Term, &s.StartDate, &s.EndDate, &s.OfferedSubjectIDs, &s.CreatedAt, &s.RoomIDs)
 	if err != nil {
 		return s, fmt.Errorf("scan semester: %w", err)
 	}
@@ -329,7 +346,7 @@ func scanSemester(row pgx.Row) (TimetableSemester, error) {
 
 func scanSemesterRow(row pgx.CollectableRow) (TimetableSemester, error) {
 	var s TimetableSemester
-	err := row.Scan(&s.ID, &s.Name, &s.Year, &s.Term, &s.StartDate, &s.EndDate, &s.OfferedSubjectIDs, &s.CreatedAt)
+	err := row.Scan(&s.ID, &s.Name, &s.Year, &s.Term, &s.StartDate, &s.EndDate, &s.OfferedSubjectIDs, &s.CreatedAt, &s.RoomIDs)
 	return s, err
 }
 
