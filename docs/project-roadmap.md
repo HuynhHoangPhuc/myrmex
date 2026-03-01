@@ -109,7 +109,7 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 
 ## Phase 3: Advanced Features (IN PROGRESS)
 
-**Timeline**: Q3 2026 (4-5 weeks) | **Status**: ~45% Complete (Advanced Prerequisites + frontend UX polish done, Feb 28)
+**Timeline**: Q3 2026 (4-5 weeks) | **Status**: ~50% Complete (Advanced Prerequisites + frontend UX polish + room assignment done, Mar 1)
 
 ### Goals
 - Implement advanced prerequisite conflict detection (DONE)
@@ -344,6 +344,15 @@ Phase 4: Enterprise
 ---
 
 ## Change Log
+
+### 2026-03-01 (Room Assignment Feature)
+- Added `room_ids` field to Semester proto and database schema
+- Implemented `SetSemesterRooms` RPC handler for room assignment
+- Created `RoomManager` and `RoomAssignmentDialog` frontend components
+- Integrated room selection into semester wizard step 2
+- Added "Change Room" quick action in schedule detail view
+- Updated schedule generation CSP solver to respect semester room constraints
+- Enabled multi-select room configuration for semester-specific room pools
 
 ### 2026-02-28 (Frontend UX Polish)
 - Added responsive authenticated app shell improvements with mobile navigation drawer

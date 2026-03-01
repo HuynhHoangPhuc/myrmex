@@ -190,7 +190,13 @@ myrmex/
 │   │   │   │   │   ├── dag-layout.ts     # Dagre layout helper
 │   │   │   │   │   └── dept-color.ts     # Deterministic dept color mapping
 │   │   │   │   └── hooks/use-subjects.ts # useFullDAG, useCheckConflicts
-│   │   │   ├── timetable/  # Semester + Schedule (CSP trigger, calendar)
+│   │   │   ├── timetable/  # Semester + Schedule (CSP trigger, calendar, room assignment)
+│   │   │   │   ├── components/
+│   │   │   │   │   ├── room-manager.tsx         # Multi-select room UI
+│   │   │   │   │   └── room-assignment-dialog.tsx # Room picker dialog
+│   │   │   │   ├── hooks/
+│   │   │   │   │   └── use-rooms.ts             # Query global room list
+│   │   │   │   └── types.ts                     # AssignRoomInput type
 │   │   │   └── analytics/  # Dashboard KPIs, workload/utilization charts, exports
 │   │   └── routes/         # File-based routing (auto-routed by TanStack)
 │   │       ├── __root.tsx
@@ -258,7 +264,7 @@ myrmex/
 ## Key Files & Their Purposes
 
 ### Backend Entry Points
-- `services/core/cmd/server/main.go` - HTTP gateway + gRPC server (port 8000/50051)
+- `services/core/cmd/server/main.go` - HTTP gateway + gRPC server (port 8080/50051)
 - `services/module-hr/cmd/server/main.go` - gRPC (port 50052)
 - `services/module-subject/cmd/server/main.go` - gRPC (port 50053)
 - `services/module-timetable/cmd/server/main.go` - gRPC (port 50054)
@@ -505,3 +511,20 @@ make demo
 - `GetTeacher` HTTP response includes `availability: [{day_of_week, start_time, end_time}]`
 - `UpdateTeacherAvailability` accepts `{available_slots: [{day_of_week, start_time, end_time}]}`
 - Conversion helpers: `hrSlotStart()`, `hrSlotEnd()`, `hrTimeToSlot()` for seamless backend storage
+
+## Room Assignment Feature (Mar 1)
+
+### Backend Additions
+- **Proto**: `room_ids: []string` field added to Semester message, `SetSemesterRooms` RPC
+- **Database**: Migration adds `room_ids UUID[]` column to timetable.semesters
+- **Repository**: `SetRoomIDs` method in semester repository for persistence
+- **gRPC Handler**: `SetSemesterRooms` RPC handler validates and stores room assignments
+- **HTTP Endpoints**: `GET /api/timetable/rooms` (ListRooms), `POST /api/timetable/semesters/:id/rooms` (SetSemesterRooms)
+- **Schedule Generation**: CSP solver now respects semester `room_ids` constraint
+
+### Frontend Additions
+- **Components**: `room-manager.tsx` (multi-select checkbox UI), `room-assignment-dialog.tsx` (room picker + confirm)
+- **Hooks**: `use-rooms.ts` (query room list), `useSetSemesterRooms()`, `useAssignRoom()` mutations
+- **Types**: `AssignRoomInput` for timetable operations
+- **Integration**: Semester wizard step 2 includes room selection; schedule detail adds "Change Room" action
+- **User Flow**: Select rooms during semester setup → CSP respects constraints → Manual override via dialog

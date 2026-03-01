@@ -389,7 +389,7 @@ logging:
 ### Frontend (`frontend/.env.local`)
 
 ```env
-VITE_API_URL=http://localhost:8000
+VITE_API_URL=http://localhost:8080
 VITE_CHAT_WS_URL=ws://localhost:8080/ws/chat
 ```
 
@@ -633,7 +633,7 @@ services:
       dockerfile: Dockerfile
     ports: 3000:3000
     environment:
-      VITE_API_URL: http://core:8000
+      VITE_API_URL: http://core:8080
     depends_on: [core]
 ```
 
@@ -719,7 +719,7 @@ go run ./cmd/server
 curl http://localhost:8080/api/health
 
 # Check CORS headers
-curl -H "Origin: http://localhost:3000" http://localhost:8000/api/health
+curl -H "Origin: http://localhost:3000" http://localhost:8080/api/health
 
 # Check frontend API_URL
 cat frontend/.env.local | grep VITE_API_URL

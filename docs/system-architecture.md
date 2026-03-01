@@ -247,8 +247,8 @@ Myrmex is a microservice architecture with modular services communicating via gR
 **Port**: gRPC `:50054`
 
 **Key Entities**:
-- **Semester**: id, name, year, term, start_date, end_date, offered_subject_ids[], academic_year (computed), is_active (computed)
-- **Room**: id, code, capacity
+- **Semester**: id, name, year, term, start_date, end_date, offered_subject_ids[], room_ids[], academic_year (computed), is_active (computed)
+- **Room**: id, code, capacity, type (classroom|lab|lecture_hall), features[]
 - **TimeSlot**: day_of_week, period_of_day (reference data)
 - **Schedule**: id, semester_id, status (pending/generating/completed/failed), entries[]
 - **ScheduleEntry**: schedule_id, subject_id, teacher_id, room_id, day, period, week, subject_name, teacher_name, room_name (denormalized)
@@ -457,9 +457,10 @@ Note: maxToolIterations=10 enables complex workflows requiring multiple tool cal
 | **Timetable Module** | | | |
 | GET | `/api/timetable/semesters` | Module-Timetable | Paginated list; tool: `timetable.list_semesters` |
 | POST | `/api/timetable/semesters` | Module-Timetable | Create semester (body: name, year, term, start_date, end_date) |
-| GET | `/api/timetable/semesters/:id` | Module-Timetable | Single semester (includes offered_subject_ids, year, term, academic_year, is_active, time_slots, rooms) |
+| GET | `/api/timetable/semesters/:id` | Module-Timetable | Single semester (includes offered_subject_ids, room_ids, year, term, academic_year, is_active, time_slots, rooms) |
 | POST | `/api/timetable/semesters/:id/offered-subjects` | Module-Timetable | Add subject offering (body: subject_id) |
 | DELETE | `/api/timetable/semesters/:id/offered-subjects/:subjectId` | Module-Timetable | Remove subject offering |
+| POST | `/api/timetable/semesters/:id/rooms` | Module-Timetable | Set semester rooms (body: room_ids[]) — gRPC: SetSemesterRooms |
 | POST | `/api/timetable/semesters/:id/generate` | Module-Timetable | Trigger CSP schedule generation; returns status `generating` → `completed`/`failed` |
 | GET | `/api/timetable/time-slots` | Module-Timetable | Reference time slots (day_of_week, period, start_time, end_time); gRPC: ListTimeSlots |
 | GET | `/api/timetable/rooms` | Module-Timetable | List available rooms; gRPC: ListRooms |
@@ -591,6 +592,7 @@ semesters (
   term: int [1..3],  -- 1=fall, 2=spring, 3=summer (internal enum)
   start_date: date,
   end_date: date,
+  room_ids: uuid[] default '{}',  -- Available rooms for this semester (empty = any room)
   created_at: timestamp,
   deleted_at: timestamp nullable
 )

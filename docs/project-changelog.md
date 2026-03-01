@@ -2,6 +2,52 @@
 
 All notable changes to the Myrmex project are documented here.
 
+## [2026-03-01] — Room Assignment Feature (Mar 1)
+
+**Status**: Complete
+
+### Summary
+Implemented comprehensive room assignment feature for semester management. Backend adds `room_ids` to semesters with gRPC RPC, database migration, and schedule generation integration. Frontend introduces RoomManager component for multi-select room configuration in semester wizard and RoomAssignmentDialog for manual room assignment in schedule detail view.
+
+### Backend Implementation
+- **Proto**: Added `room_ids: []string` field to Semester message, new `SetSemesterRooms` RPC
+- **Migration**: Added `room_ids UUID[]` column to timetable.semesters (default empty array)
+- **Repository**: Implemented `SetRoomIDs` method in semester repository
+- **gRPC Handler**: Added `SetSemesterRooms` RPC handler with validation
+- **HTTP Gateway**: Added `ListRooms` and `SetSemesterRooms` HTTP endpoints (`GET /api/timetable/rooms`, `POST /api/timetable/semesters/:id/rooms`)
+- **Schedule Generation**: Updated CSP solver to respect semester `room_ids` list when assigning rooms
+
+### Frontend Implementation
+- **New Components**:
+  - `room-manager.tsx` — Multi-select checkbox UI for room configuration in semester forms
+  - `room-assignment-dialog.tsx` — Room picker dialog with confirm step for manual assignment
+- **New Hooks**:
+  - `use-rooms.ts` — Fetches global room list via `GET /api/timetable/rooms`
+  - `useSetSemesterRooms()` — Mutation for `POST /api/timetable/semesters/:id/rooms`
+  - `useAssignRoom()` — Mutation for assigning room to schedule entry
+- **New Type**: `AssignRoomInput` — Timetable request/response type for room operations
+- **Integration**:
+  - Semester wizard step 2 now includes room selection alongside time slots
+  - Schedule detail view: Added "Change Room" quick action in schedule entry popover
+  - Updated `use-schedules.ts` hooks for room assignment flow
+
+### Database Changes
+- `timetable.semesters`: Added `room_ids UUID[]` (indexed for query performance)
+- Backward compatible: existing semesters have empty room_ids array
+
+### Quality Metrics
+- All services compile: `go build ./...` ✓
+- TypeScript check: `npx tsc --noEmit` ✓
+- No breaking changes to existing APIs
+- Room assignment fully integrated with schedule generation workflow
+
+### Files Modified/Created
+**Backend**: `proto/timetable/v1/semester.proto`, `services/module-timetable/internal/domain/repository/semester_repository.go`, `services/module-timetable/migrations/XXX_add_room_ids_to_semesters.sql`, `services/module-timetable/internal/interface/grpc/semester_server.go`, `services/core/internal/interface/http/timetable_handler.go`
+
+**Frontend**: `frontend/src/modules/timetable/components/room-manager.tsx`, `frontend/src/modules/timetable/components/room-assignment-dialog.tsx`, `frontend/src/modules/timetable/hooks/use-rooms.ts`, `frontend/src/modules/timetable/types.ts`
+
+---
+
 ## [2026-02-28] — Frontend UX Polish
 
 **Status**: Complete
