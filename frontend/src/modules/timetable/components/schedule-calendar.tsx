@@ -29,10 +29,11 @@ interface ScheduleCalendarProps {
   schedule: Schedule
   filters?: ScheduleFilters
   onChangeTeacher?: (entry: ScheduleEntry) => void
+  onChangeRoom?: (entry: ScheduleEntry) => void
 }
 
 // Weekly calendar with mobile card layout, quick actions, and desktop teacher-swap drag/drop.
-export function ScheduleCalendar({ schedule, filters, onChangeTeacher }: ScheduleCalendarProps) {
+export function ScheduleCalendar({ schedule, filters, onChangeTeacher, onChangeRoom }: ScheduleCalendarProps) {
   const { toast } = useToast()
   const assignTeacher = useAssignTeacher(schedule.id)
   const [draggedEntry, setDraggedEntry] = React.useState<ScheduleEntry | null>(null)
@@ -162,13 +163,22 @@ export function ScheduleCalendar({ schedule, filters, onChangeTeacher }: Schedul
                         <p className="text-sm text-muted-foreground">{entry.teacher_name}</p>
                         <p className="text-xs text-muted-foreground">{entry.room_name}</p>
                       </div>
-                      <button
-                        type="button"
-                        className="rounded-md border px-2 py-1 text-xs font-medium"
-                        onClick={() => onChangeTeacher?.(entry)}
-                      >
-                        Change
-                      </button>
+                      <div className="flex shrink-0 flex-col gap-1">
+                        <button
+                          type="button"
+                          className="rounded-md border px-2 py-1 text-xs font-medium"
+                          onClick={() => onChangeTeacher?.(entry)}
+                        >
+                          Teacher
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-md border px-2 py-1 text-xs font-medium"
+                          onClick={() => onChangeRoom?.(entry)}
+                        >
+                          Room
+                        </button>
+                      </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       P{entry.start_period}–P{entry.end_period} · {periodToTimeLabel(entry.start_period, entry.end_period)}
@@ -237,6 +247,7 @@ export function ScheduleCalendar({ schedule, filters, onChangeTeacher }: Schedul
                                   entry={entry}
                                   colorClassName={deptColor(entry.department_id)}
                                   onChangeTeacher={onChangeTeacher}
+                                  onChangeRoom={onChangeRoom}
                                 />
                               </ScheduleDraggableEntry>
                             ))}

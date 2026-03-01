@@ -1,4 +1,5 @@
-import { MoreHorizontal, UserCog } from 'lucide-react'
+import { DoorOpen, MoreHorizontal, UserCog } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
@@ -8,25 +9,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useAllDepartments } from '@/modules/hr/hooks/use-departments'
 import type { ScheduleEntry } from '../types'
 
 interface ScheduleEntryPopoverProps {
   entry: ScheduleEntry
   colorClassName: string
   onChangeTeacher?: (entry: ScheduleEntry) => void
+  onChangeRoom?: (entry: ScheduleEntry) => void
 }
 
 export function ScheduleEntryPopover({
   entry,
   colorClassName,
   onChangeTeacher,
+  onChangeRoom,
 }: ScheduleEntryPopoverProps) {
+  const { data: departments } = useAllDepartments()
+  const departmentName = departments?.find((d) => d.id === entry.department_id)?.name ?? entry.department_id
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className={`w-full space-y-0.5 rounded border p-1.5 text-left text-xs transition-opacity hover:opacity-85 ${colorClassName} ${entry.is_manual_override ? 'ring-2 ring-yellow-400' : ''}`}
+          className={`w-full space-y-0.5 rounded border p-1.5 text-left text-xs transition-all hover:opacity-85 data-[state=open]:shadow-md data-[state=open]:ring-2 data-[state=open]:ring-primary/60 data-[state=open]:opacity-100 ${colorClassName} ${entry.is_manual_override ? 'ring-2 ring-yellow-400' : ''}`}
         >
           <div className="flex items-start gap-2">
             <div className="min-w-0 flex-1">
@@ -46,25 +53,42 @@ export function ScheduleEntryPopover({
 
       <DropdownMenuContent align="start" className="w-72">
         <DropdownMenuLabel className="space-y-1">
-          <p className="text-sm font-semibold">{entry.subject_code}</p>
+          <Link
+            to="/subjects/$id"
+            params={{ id: entry.subject_id }}
+            className="text-sm font-semibold hover:underline"
+          >
+            {entry.subject_code}
+          </Link>
           <p className="text-xs font-normal text-muted-foreground">{entry.subject_name}</p>
         </DropdownMenuLabel>
         <div className="space-y-1 px-2 py-1 text-xs text-muted-foreground">
-          <p>Teacher: {entry.teacher_name}</p>
-          <p>Room: {entry.room_name}</p>
           <p>
-            Periods: P{entry.start_period}–P{entry.end_period}
+            Teacher:{' '}
+            <Link
+              to="/hr/teachers/$id"
+              params={{ id: entry.teacher_id }}
+              className="font-medium text-foreground hover:underline"
+            >
+              {entry.teacher_name}
+            </Link>
           </p>
-          <p>Department: {entry.department_id}</p>
+          <p>Room: {entry.room_name}</p>
+          <p>Periods: P{entry.start_period}–P{entry.end_period}</p>
+          <p>Department: {departmentName}</p>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => onChangeTeacher?.(entry)}>
           <UserCog className="h-4 w-4" />
           Change teacher
         </DropdownMenuItem>
-        <DropdownMenuItem disabled>
-          {entry.is_manual_override ? 'Manual override active' : 'No remove action available'}
+        <DropdownMenuItem onSelect={() => onChangeRoom?.(entry)}>
+          <DoorOpen className="h-4 w-4" />
+          Change room
         </DropdownMenuItem>
+        {entry.is_manual_override && (
+          <DropdownMenuItem disabled>Manual override active</DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
