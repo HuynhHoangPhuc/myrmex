@@ -1,9 +1,8 @@
 // Interactive prerequisite DAG using React Flow + Dagre layout.
 // Replaces the old flex-layout PrerequisiteGraph with zoom/pan/minimap support.
 
-import { useMemo, useCallback, useState, createContext } from 'react'
+import { useMemo, useCallback, useState, useEffect, createContext } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useTheme } from '@/lib/hooks/use-theme'
 import {
   ReactFlow,
   Controls,
@@ -67,8 +66,20 @@ function buildAncestorMap(edges: Edge[]): Map<string, Set<string>> {
 export function PrerequisiteDAG({ focusSubjectId, conflicts }: PrerequisiteDAGProps) {
   const { data: dag, isLoading } = useFullDAG()
   const navigate = useNavigate()
-  const { theme } = useTheme()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+
+  // Watch document.documentElement class changes so colorMode updates when
+  // the app theme toggle fires (useTheme() instances are isolated per component)
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains('dark'),
+  )
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'))
+    })
+    observer.observe(document.documentElement, { attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
 
   // Convert raw DAG edges to React Flow edges (before layout, for ancestor map).
   const rawEdges = useMemo((): Edge[] => {
@@ -157,7 +168,7 @@ export function PrerequisiteDAG({ focusSubjectId, conflicts }: PrerequisiteDAGPr
           minZoom={0.2}
           maxZoom={2}
           proOptions={{ hideAttribution: true }}
-          colorMode={theme}
+          colorMode={isDark ? 'dark' : 'light'}
         >
           <Controls />
           <Background variant={BackgroundVariant.Dots} />
