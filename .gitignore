@@ -37,3 +37,4 @@ nats_data/
 /services/*/server
 /services/*/core
 /services/*/module-*
+repomix-output.xml
