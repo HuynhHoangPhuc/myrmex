@@ -157,6 +157,7 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 				students.GET("/:id", cfg.StudentHandler.GetStudent)
 				students.PATCH("/:id", cfg.StudentHandler.UpdateStudent)
 				students.DELETE("/:id", cfg.StudentHandler.DeleteStudent)
+			students.GET("/:id/transcript", cfg.StudentHandler.GetStudentTranscript)
 			}
 		}
 

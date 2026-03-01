@@ -136,3 +136,15 @@ func (h *StudentHandler) DeleteStudent(c *gin.Context) {
 	}
 	c.Status(http.StatusNoContent)
 }
+
+func (h *StudentHandler) GetStudentTranscript(c *gin.Context) {
+	id := c.Param("id")
+	resp, err := h.students.GetStudentTranscript(c.Request.Context(), &studentv1.GetStudentTranscriptRequest{
+		StudentId: id,
+	})
+	if err != nil {
+		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, resp)
+}
