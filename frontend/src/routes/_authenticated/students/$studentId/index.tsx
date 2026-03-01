@@ -7,6 +7,8 @@ import { PageHeader } from '@/components/shared/page-header'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { useStudent } from '@/modules/student/hooks/use-students'
 import { useEnrollments } from '@/modules/student/hooks/use-enrollments'
+import { useAllSubjects } from '@/modules/subject/hooks/use-subjects'
+import { useSemesters } from '@/modules/timetable/hooks/use-semesters'
 import type { EnrollmentRequest } from '@/modules/student/types'
 
 export const Route = createFileRoute('/_authenticated/students/$studentId/')({
@@ -30,6 +32,17 @@ function StudentDetailPage() {
   const [tab, setTab] = React.useState<'enrollments' | 'grades'>('enrollments')
   const { data: student, isLoading } = useStudent(studentId)
   const { data: enrollments } = useEnrollments({ page: 1, pageSize: 100, studentId })
+  const { data: allSubjects } = useAllSubjects()
+  const { data: allSemesters } = useSemesters({ page: 1, pageSize: 100 })
+
+  const subjectMap = React.useMemo(
+    () => new Map((allSubjects ?? []).map((s) => [s.id, `${s.code} — ${s.name}`])),
+    [allSubjects],
+  )
+  const semesterMap = React.useMemo(
+    () => new Map((allSemesters?.data ?? []).map((s) => [s.id, s.name])),
+    [allSemesters],
+  )
 
   if (isLoading) return <LoadingSpinner />
   if (!student) return <p className="text-muted-foreground">Student not found.</p>
@@ -79,23 +92,26 @@ function StudentDetailPage() {
         </div>
 
         {tab === 'enrollments' && (
-          <EnrollmentList enrollments={enrollments?.data ?? []} />
+          <EnrollmentList enrollments={enrollments?.data ?? []} subjectMap={subjectMap} />
         )}
         {tab === 'grades' && (
-          <GradeList enrollments={graded} />
+          <GradeList enrollments={graded} subjectMap={subjectMap} semesterMap={semesterMap} />
         )}
       </div>
     </div>
   )
 }
 
-function EnrollmentList({ enrollments }: { enrollments: EnrollmentRequest[] }) {
+function EnrollmentList({ enrollments, subjectMap }: {
+  enrollments: EnrollmentRequest[]
+  subjectMap: Map<string, string>
+}) {
   if (!enrollments.length) return <p className="text-sm text-muted-foreground">No enrollment requests.</p>
   return (
     <div className="space-y-2">
       {enrollments.map((e) => (
         <div key={e.id} className="flex items-center justify-between rounded-md border px-4 py-2 text-sm">
-          <span className="font-mono text-xs text-muted-foreground">{e.subject_id.slice(0, 8)}…</span>
+          <span>{subjectMap.get(e.subject_id) ?? e.subject_id.slice(0, 8)}</span>
           <Badge variant={STATUS_VARIANT[e.status] ?? 'outline'}>{e.status}</Badge>
         </div>
       ))}
@@ -103,7 +119,11 @@ function EnrollmentList({ enrollments }: { enrollments: EnrollmentRequest[] }) {
   )
 }
 
-function GradeList({ enrollments }: { enrollments: EnrollmentRequest[] }) {
+function GradeList({ enrollments, subjectMap, semesterMap }: {
+  enrollments: EnrollmentRequest[]
+  subjectMap: Map<string, string>
+  semesterMap: Map<string, string>
+}) {
   if (!enrollments.length) return <p className="text-sm text-muted-foreground">No grades recorded yet.</p>
   return (
     <div className="rounded-md border">
@@ -118,8 +138,8 @@ function GradeList({ enrollments }: { enrollments: EnrollmentRequest[] }) {
         <tbody>
           {enrollments.map((e) => (
             <tr key={e.id} className="border-b last:border-0">
-              <td className="px-4 py-2 font-mono text-xs">{e.subject_id.slice(0, 8)}…</td>
-              <td className="px-4 py-2 text-xs text-muted-foreground">{e.semester_id.slice(0, 8)}…</td>
+              <td className="px-4 py-2">{subjectMap.get(e.subject_id) ?? e.subject_id.slice(0, 8)}</td>
+              <td className="px-4 py-2 text-muted-foreground">{semesterMap.get(e.semester_id) ?? e.semester_id.slice(0, 8)}</td>
               <td className="px-4 py-2">
                 <Badge variant="outline">{e.status}</Badge>
               </td>
