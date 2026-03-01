@@ -33,6 +33,7 @@ type Semester struct {
 	EndDate           *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=end_date,json=endDate,proto3" json:"end_date,omitempty"`
 	OfferedSubjectIds []string               `protobuf:"bytes,7,rep,name=offered_subject_ids,json=offeredSubjectIds,proto3" json:"offered_subject_ids,omitempty"`
 	CreatedAt         *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	RoomIds           []string               `protobuf:"bytes,9,rep,name=room_ids,json=roomIds,proto3" json:"room_ids,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -119,6 +120,13 @@ func (x *Semester) GetOfferedSubjectIds() []string {
 func (x *Semester) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *Semester) GetRoomIds() []string {
+	if x != nil {
+		return x.RoomIds
 	}
 	return nil
 }
@@ -1071,11 +1079,107 @@ func (x *ApplyTimeSlotPresetResponse) GetTimeSlots() []*TimeSlot {
 	return nil
 }
 
+type SetSemesterRoomsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SemesterId    string                 `protobuf:"bytes,1,opt,name=semester_id,json=semesterId,proto3" json:"semester_id,omitempty"`
+	RoomIds       []string               `protobuf:"bytes,2,rep,name=room_ids,json=roomIds,proto3" json:"room_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetSemesterRoomsRequest) Reset() {
+	*x = SetSemesterRoomsRequest{}
+	mi := &file_timetable_v1_semester_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetSemesterRoomsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetSemesterRoomsRequest) ProtoMessage() {}
+
+func (x *SetSemesterRoomsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_timetable_v1_semester_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetSemesterRoomsRequest.ProtoReflect.Descriptor instead.
+func (*SetSemesterRoomsRequest) Descriptor() ([]byte, []int) {
+	return file_timetable_v1_semester_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *SetSemesterRoomsRequest) GetSemesterId() string {
+	if x != nil {
+		return x.SemesterId
+	}
+	return ""
+}
+
+func (x *SetSemesterRoomsRequest) GetRoomIds() []string {
+	if x != nil {
+		return x.RoomIds
+	}
+	return nil
+}
+
+type SetSemesterRoomsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RoomIds       []string               `protobuf:"bytes,1,rep,name=room_ids,json=roomIds,proto3" json:"room_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetSemesterRoomsResponse) Reset() {
+	*x = SetSemesterRoomsResponse{}
+	mi := &file_timetable_v1_semester_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetSemesterRoomsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetSemesterRoomsResponse) ProtoMessage() {}
+
+func (x *SetSemesterRoomsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_timetable_v1_semester_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetSemesterRoomsResponse.ProtoReflect.Descriptor instead.
+func (*SetSemesterRoomsResponse) Descriptor() ([]byte, []int) {
+	return file_timetable_v1_semester_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *SetSemesterRoomsResponse) GetRoomIds() []string {
+	if x != nil {
+		return x.RoomIds
+	}
+	return nil
+}
+
 var File_timetable_v1_semester_proto protoreflect.FileDescriptor
 
 const file_timetable_v1_semester_proto_rawDesc = "" +
 	"\n" +
-	"\x1btimetable/v1/semester.proto\x12\ftimetable.v1\x1a\x14core/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb3\x02\n" +
+	"\x1btimetable/v1/semester.proto\x12\ftimetable.v1\x1a\x14core/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xce\x02\n" +
 	"\bSemester\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -1086,7 +1190,8 @@ const file_timetable_v1_semester_proto_rawDesc = "" +
 	"\bend_date\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\aendDate\x12.\n" +
 	"\x13offered_subject_ids\x18\a \x03(\tR\x11offeredSubjectIds\x129\n" +
 	"\n" +
-	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xc5\x01\n" +
+	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x19\n" +
+	"\broom_ids\x18\t \x03(\tR\aroomIds\"\xc5\x01\n" +
 	"\x15CreateSemesterRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04year\x18\x02 \x01(\x05R\x04year\x12\x12\n" +
@@ -1155,7 +1260,13 @@ const file_timetable_v1_semester_proto_rawDesc = "" +
 	"\x06preset\x18\x02 \x01(\tR\x06preset\"T\n" +
 	"\x1bApplyTimeSlotPresetResponse\x125\n" +
 	"\n" +
-	"time_slots\x18\x01 \x03(\v2\x16.timetable.v1.TimeSlotR\ttimeSlots2\xf1\x06\n" +
+	"time_slots\x18\x01 \x03(\v2\x16.timetable.v1.TimeSlotR\ttimeSlots\"U\n" +
+	"\x17SetSemesterRoomsRequest\x12\x1f\n" +
+	"\vsemester_id\x18\x01 \x01(\tR\n" +
+	"semesterId\x12\x19\n" +
+	"\broom_ids\x18\x02 \x03(\tR\aroomIds\"5\n" +
+	"\x18SetSemesterRoomsResponse\x12\x19\n" +
+	"\broom_ids\x18\x01 \x03(\tR\aroomIds2\xd4\a\n" +
 	"\x0fSemesterService\x12[\n" +
 	"\x0eCreateSemester\x12#.timetable.v1.CreateSemesterRequest\x1a$.timetable.v1.CreateSemesterResponse\x12R\n" +
 	"\vGetSemester\x12 .timetable.v1.GetSemesterRequest\x1a!.timetable.v1.GetSemesterResponse\x12X\n" +
@@ -1165,7 +1276,8 @@ const file_timetable_v1_semester_proto_rawDesc = "" +
 	"\rListTimeSlots\x12\".timetable.v1.ListTimeSlotsRequest\x1a#.timetable.v1.ListTimeSlotsResponse\x12[\n" +
 	"\x0eCreateTimeSlot\x12#.timetable.v1.CreateTimeSlotRequest\x1a$.timetable.v1.CreateTimeSlotResponse\x12[\n" +
 	"\x0eDeleteTimeSlot\x12#.timetable.v1.DeleteTimeSlotRequest\x1a$.timetable.v1.DeleteTimeSlotResponse\x12j\n" +
-	"\x13ApplyTimeSlotPreset\x12(.timetable.v1.ApplyTimeSlotPresetRequest\x1a).timetable.v1.ApplyTimeSlotPresetResponseBBZ@github.com/HuynhHoangPhuc/myrmex/gen/go/timetable/v1;timetablev1b\x06proto3"
+	"\x13ApplyTimeSlotPreset\x12(.timetable.v1.ApplyTimeSlotPresetRequest\x1a).timetable.v1.ApplyTimeSlotPresetResponse\x12a\n" +
+	"\x10SetSemesterRooms\x12%.timetable.v1.SetSemesterRoomsRequest\x1a&.timetable.v1.SetSemesterRoomsResponseBBZ@github.com/HuynhHoangPhuc/myrmex/gen/go/timetable/v1;timetablev1b\x06proto3"
 
 var (
 	file_timetable_v1_semester_proto_rawDescOnce sync.Once
@@ -1179,7 +1291,7 @@ func file_timetable_v1_semester_proto_rawDescGZIP() []byte {
 	return file_timetable_v1_semester_proto_rawDescData
 }
 
-var file_timetable_v1_semester_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_timetable_v1_semester_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_timetable_v1_semester_proto_goTypes = []any{
 	(*Semester)(nil),                     // 0: timetable.v1.Semester
 	(*CreateSemesterRequest)(nil),        // 1: timetable.v1.CreateSemesterRequest
@@ -1201,21 +1313,23 @@ var file_timetable_v1_semester_proto_goTypes = []any{
 	(*DeleteTimeSlotResponse)(nil),       // 17: timetable.v1.DeleteTimeSlotResponse
 	(*ApplyTimeSlotPresetRequest)(nil),   // 18: timetable.v1.ApplyTimeSlotPresetRequest
 	(*ApplyTimeSlotPresetResponse)(nil),  // 19: timetable.v1.ApplyTimeSlotPresetResponse
-	(*timestamppb.Timestamp)(nil),        // 20: google.protobuf.Timestamp
-	(*v1.PaginationRequest)(nil),         // 21: core.v1.PaginationRequest
-	(*v1.PaginationResponse)(nil),        // 22: core.v1.PaginationResponse
+	(*SetSemesterRoomsRequest)(nil),      // 20: timetable.v1.SetSemesterRoomsRequest
+	(*SetSemesterRoomsResponse)(nil),     // 21: timetable.v1.SetSemesterRoomsResponse
+	(*timestamppb.Timestamp)(nil),        // 22: google.protobuf.Timestamp
+	(*v1.PaginationRequest)(nil),         // 23: core.v1.PaginationRequest
+	(*v1.PaginationResponse)(nil),        // 24: core.v1.PaginationResponse
 }
 var file_timetable_v1_semester_proto_depIdxs = []int32{
-	20, // 0: timetable.v1.Semester.start_date:type_name -> google.protobuf.Timestamp
-	20, // 1: timetable.v1.Semester.end_date:type_name -> google.protobuf.Timestamp
-	20, // 2: timetable.v1.Semester.created_at:type_name -> google.protobuf.Timestamp
-	20, // 3: timetable.v1.CreateSemesterRequest.start_date:type_name -> google.protobuf.Timestamp
-	20, // 4: timetable.v1.CreateSemesterRequest.end_date:type_name -> google.protobuf.Timestamp
+	22, // 0: timetable.v1.Semester.start_date:type_name -> google.protobuf.Timestamp
+	22, // 1: timetable.v1.Semester.end_date:type_name -> google.protobuf.Timestamp
+	22, // 2: timetable.v1.Semester.created_at:type_name -> google.protobuf.Timestamp
+	22, // 3: timetable.v1.CreateSemesterRequest.start_date:type_name -> google.protobuf.Timestamp
+	22, // 4: timetable.v1.CreateSemesterRequest.end_date:type_name -> google.protobuf.Timestamp
 	0,  // 5: timetable.v1.CreateSemesterResponse.semester:type_name -> timetable.v1.Semester
 	0,  // 6: timetable.v1.GetSemesterResponse.semester:type_name -> timetable.v1.Semester
-	21, // 7: timetable.v1.ListSemestersRequest.pagination:type_name -> core.v1.PaginationRequest
+	23, // 7: timetable.v1.ListSemestersRequest.pagination:type_name -> core.v1.PaginationRequest
 	0,  // 8: timetable.v1.ListSemestersResponse.semesters:type_name -> timetable.v1.Semester
-	22, // 9: timetable.v1.ListSemestersResponse.pagination:type_name -> core.v1.PaginationResponse
+	24, // 9: timetable.v1.ListSemestersResponse.pagination:type_name -> core.v1.PaginationResponse
 	0,  // 10: timetable.v1.AddOfferedSubjectResponse.semester:type_name -> timetable.v1.Semester
 	0,  // 11: timetable.v1.RemoveOfferedSubjectResponse.semester:type_name -> timetable.v1.Semester
 	11, // 12: timetable.v1.ListTimeSlotsResponse.time_slots:type_name -> timetable.v1.TimeSlot
@@ -1230,17 +1344,19 @@ var file_timetable_v1_semester_proto_depIdxs = []int32{
 	14, // 21: timetable.v1.SemesterService.CreateTimeSlot:input_type -> timetable.v1.CreateTimeSlotRequest
 	16, // 22: timetable.v1.SemesterService.DeleteTimeSlot:input_type -> timetable.v1.DeleteTimeSlotRequest
 	18, // 23: timetable.v1.SemesterService.ApplyTimeSlotPreset:input_type -> timetable.v1.ApplyTimeSlotPresetRequest
-	2,  // 24: timetable.v1.SemesterService.CreateSemester:output_type -> timetable.v1.CreateSemesterResponse
-	4,  // 25: timetable.v1.SemesterService.GetSemester:output_type -> timetable.v1.GetSemesterResponse
-	6,  // 26: timetable.v1.SemesterService.ListSemesters:output_type -> timetable.v1.ListSemestersResponse
-	8,  // 27: timetable.v1.SemesterService.AddOfferedSubject:output_type -> timetable.v1.AddOfferedSubjectResponse
-	10, // 28: timetable.v1.SemesterService.RemoveOfferedSubject:output_type -> timetable.v1.RemoveOfferedSubjectResponse
-	13, // 29: timetable.v1.SemesterService.ListTimeSlots:output_type -> timetable.v1.ListTimeSlotsResponse
-	15, // 30: timetable.v1.SemesterService.CreateTimeSlot:output_type -> timetable.v1.CreateTimeSlotResponse
-	17, // 31: timetable.v1.SemesterService.DeleteTimeSlot:output_type -> timetable.v1.DeleteTimeSlotResponse
-	19, // 32: timetable.v1.SemesterService.ApplyTimeSlotPreset:output_type -> timetable.v1.ApplyTimeSlotPresetResponse
-	24, // [24:33] is the sub-list for method output_type
-	15, // [15:24] is the sub-list for method input_type
+	20, // 24: timetable.v1.SemesterService.SetSemesterRooms:input_type -> timetable.v1.SetSemesterRoomsRequest
+	2,  // 25: timetable.v1.SemesterService.CreateSemester:output_type -> timetable.v1.CreateSemesterResponse
+	4,  // 26: timetable.v1.SemesterService.GetSemester:output_type -> timetable.v1.GetSemesterResponse
+	6,  // 27: timetable.v1.SemesterService.ListSemesters:output_type -> timetable.v1.ListSemestersResponse
+	8,  // 28: timetable.v1.SemesterService.AddOfferedSubject:output_type -> timetable.v1.AddOfferedSubjectResponse
+	10, // 29: timetable.v1.SemesterService.RemoveOfferedSubject:output_type -> timetable.v1.RemoveOfferedSubjectResponse
+	13, // 30: timetable.v1.SemesterService.ListTimeSlots:output_type -> timetable.v1.ListTimeSlotsResponse
+	15, // 31: timetable.v1.SemesterService.CreateTimeSlot:output_type -> timetable.v1.CreateTimeSlotResponse
+	17, // 32: timetable.v1.SemesterService.DeleteTimeSlot:output_type -> timetable.v1.DeleteTimeSlotResponse
+	19, // 33: timetable.v1.SemesterService.ApplyTimeSlotPreset:output_type -> timetable.v1.ApplyTimeSlotPresetResponse
+	21, // 34: timetable.v1.SemesterService.SetSemesterRooms:output_type -> timetable.v1.SetSemesterRoomsResponse
+	25, // [25:35] is the sub-list for method output_type
+	15, // [15:25] is the sub-list for method input_type
 	15, // [15:15] is the sub-list for extension type_name
 	15, // [15:15] is the sub-list for extension extendee
 	0,  // [0:15] is the sub-list for field type_name
@@ -1257,7 +1373,7 @@ func file_timetable_v1_semester_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_timetable_v1_semester_proto_rawDesc), len(file_timetable_v1_semester_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

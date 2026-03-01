@@ -15,6 +15,7 @@ service SemesterService {
   rpc CreateTimeSlot(CreateTimeSlotRequest) returns (CreateTimeSlotResponse);
   rpc DeleteTimeSlot(DeleteTimeSlotRequest) returns (DeleteTimeSlotResponse);
   rpc ApplyTimeSlotPreset(ApplyTimeSlotPresetRequest) returns (ApplyTimeSlotPresetResponse);
+  rpc SetSemesterRooms(SetSemesterRoomsRequest) returns (SetSemesterRoomsResponse);
 }
 
 message Semester {
@@ -26,6 +27,7 @@ message Semester {
   google.protobuf.Timestamp end_date = 6;
   repeated string offered_subject_ids = 7;
   google.protobuf.Timestamp created_at = 8;
+  repeated string room_ids = 9;
 }
 
 message CreateSemesterRequest {
@@ -115,4 +117,13 @@ message ApplyTimeSlotPresetRequest {
 
 message ApplyTimeSlotPresetResponse {
   repeated TimeSlot time_slots = 1;
+}
+
+message SetSemesterRoomsRequest {
+  string semester_id = 1;
+  repeated string room_ids = 2;
+}
+
+message SetSemesterRoomsResponse {
+  repeated string room_ids = 1;
 }

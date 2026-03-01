@@ -28,6 +28,7 @@ const (
 	SemesterService_CreateTimeSlot_FullMethodName       = "/timetable.v1.SemesterService/CreateTimeSlot"
 	SemesterService_DeleteTimeSlot_FullMethodName       = "/timetable.v1.SemesterService/DeleteTimeSlot"
 	SemesterService_ApplyTimeSlotPreset_FullMethodName  = "/timetable.v1.SemesterService/ApplyTimeSlotPreset"
+	SemesterService_SetSemesterRooms_FullMethodName     = "/timetable.v1.SemesterService/SetSemesterRooms"
 )
 
 // SemesterServiceClient is the client API for SemesterService service.
@@ -43,6 +44,7 @@ type SemesterServiceClient interface {
 	CreateTimeSlot(ctx context.Context, in *CreateTimeSlotRequest, opts ...grpc.CallOption) (*CreateTimeSlotResponse, error)
 	DeleteTimeSlot(ctx context.Context, in *DeleteTimeSlotRequest, opts ...grpc.CallOption) (*DeleteTimeSlotResponse, error)
 	ApplyTimeSlotPreset(ctx context.Context, in *ApplyTimeSlotPresetRequest, opts ...grpc.CallOption) (*ApplyTimeSlotPresetResponse, error)
+	SetSemesterRooms(ctx context.Context, in *SetSemesterRoomsRequest, opts ...grpc.CallOption) (*SetSemesterRoomsResponse, error)
 }
 
 type semesterServiceClient struct {
@@ -143,6 +145,16 @@ func (c *semesterServiceClient) ApplyTimeSlotPreset(ctx context.Context, in *App
 	return out, nil
 }
 
+func (c *semesterServiceClient) SetSemesterRooms(ctx context.Context, in *SetSemesterRoomsRequest, opts ...grpc.CallOption) (*SetSemesterRoomsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetSemesterRoomsResponse)
+	err := c.cc.Invoke(ctx, SemesterService_SetSemesterRooms_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SemesterServiceServer is the server API for SemesterService service.
 // All implementations must embed UnimplementedSemesterServiceServer
 // for forward compatibility.
@@ -156,6 +168,7 @@ type SemesterServiceServer interface {
 	CreateTimeSlot(context.Context, *CreateTimeSlotRequest) (*CreateTimeSlotResponse, error)
 	DeleteTimeSlot(context.Context, *DeleteTimeSlotRequest) (*DeleteTimeSlotResponse, error)
 	ApplyTimeSlotPreset(context.Context, *ApplyTimeSlotPresetRequest) (*ApplyTimeSlotPresetResponse, error)
+	SetSemesterRooms(context.Context, *SetSemesterRoomsRequest) (*SetSemesterRoomsResponse, error)
 	mustEmbedUnimplementedSemesterServiceServer()
 }
 
@@ -192,6 +205,9 @@ func (UnimplementedSemesterServiceServer) DeleteTimeSlot(context.Context, *Delet
 }
 func (UnimplementedSemesterServiceServer) ApplyTimeSlotPreset(context.Context, *ApplyTimeSlotPresetRequest) (*ApplyTimeSlotPresetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ApplyTimeSlotPreset not implemented")
+}
+func (UnimplementedSemesterServiceServer) SetSemesterRooms(context.Context, *SetSemesterRoomsRequest) (*SetSemesterRoomsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetSemesterRooms not implemented")
 }
 func (UnimplementedSemesterServiceServer) mustEmbedUnimplementedSemesterServiceServer() {}
 func (UnimplementedSemesterServiceServer) testEmbeddedByValue()                         {}
@@ -376,6 +392,24 @@ func _SemesterService_ApplyTimeSlotPreset_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SemesterService_SetSemesterRooms_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetSemesterRoomsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SemesterServiceServer).SetSemesterRooms(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SemesterService_SetSemesterRooms_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SemesterServiceServer).SetSemesterRooms(ctx, req.(*SetSemesterRoomsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SemesterService_ServiceDesc is the grpc.ServiceDesc for SemesterService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -418,6 +452,10 @@ var SemesterService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ApplyTimeSlotPreset",
 			Handler:    _SemesterService_ApplyTimeSlotPreset_Handler,
+		},
+		{
+			MethodName: "SetSemesterRooms",
+			Handler:    _SemesterService_SetSemesterRooms_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
