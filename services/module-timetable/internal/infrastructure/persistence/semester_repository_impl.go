@@ -76,6 +76,15 @@ func (r *SemesterRepositoryImpl) RemoveOfferedSubject(ctx context.Context, semes
 	return semesterToEntity(row), nil
 }
 
+func (r *SemesterRepositoryImpl) SetRoomIDs(ctx context.Context, semesterID uuid.UUID, roomIDs []uuid.UUID) (*entity.Semester, error) {
+	pgRoomIDs := uuidsToPostgres(roomIDs)
+	row, err := r.q.SetSemesterRooms(ctx, uuidToPg(semesterID), pgRoomIDs)
+	if err != nil {
+		return nil, fmt.Errorf("set semester rooms: %w", err)
+	}
+	return semesterToEntity(row), nil
+}
+
 func (r *SemesterRepositoryImpl) CreateTimeSlot(ctx context.Context, ts *entity.TimeSlot) (*entity.TimeSlot, error) {
 	row, err := r.q.CreateTimeSlot(ctx, sqlc.CreateTimeSlotParams{
 		SemesterID:  uuidToPg(ts.SemesterID),
@@ -129,6 +138,9 @@ func semesterToEntity(r sqlc.TimetableSemester) *entity.Semester {
 	}
 	for _, pgID := range r.OfferedSubjectIDs {
 		s.OfferedSubjectIDs = append(s.OfferedSubjectIDs, pgToUUID(pgID))
+	}
+	for _, pgID := range r.RoomIDs {
+		s.RoomIDs = append(s.RoomIDs, pgToUUID(pgID))
 	}
 	return s
 }

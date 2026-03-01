@@ -16,6 +16,7 @@ type Semester struct {
 	StartDate         time.Time
 	EndDate           time.Time
 	OfferedSubjectIDs []uuid.UUID
+	RoomIDs           []uuid.UUID
 	CreatedAt         time.Time
 }
 
