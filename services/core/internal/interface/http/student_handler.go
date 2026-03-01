@@ -137,6 +137,81 @@ func (h *StudentHandler) DeleteStudent(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+func (h *StudentHandler) ListEnrollments(c *gin.Context) {
+	page, pageSize := parsePage(c)
+	req := &studentv1.ListEnrollmentRequestsRequest{
+		Pagination: &corev1.PaginationRequest{Page: page, PageSize: pageSize},
+	}
+	if studentID := c.Query("student_id"); studentID != "" {
+		req.StudentId = &studentID
+	}
+	if semesterID := c.Query("semester_id"); semesterID != "" {
+		req.SemesterId = &semesterID
+	}
+	if statusFilter := c.Query("status"); statusFilter != "" {
+		req.Status = &statusFilter
+	}
+
+	resp, err := h.students.ListEnrollmentRequests(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
+		return
+	}
+
+	data := make([]gin.H, len(resp.Enrollments))
+	for i, e := range resp.Enrollments {
+		data[i] = enrollmentToJSON(e)
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"data":      data,
+		"total":     resp.Pagination.GetTotal(),
+		"page":      page,
+		"page_size": pageSize,
+	})
+}
+
+func (h *StudentHandler) ReviewEnrollment(c *gin.Context) {
+	var body struct {
+		Approve   bool   `json:"approve"`
+		AdminNote string `json:"admin_note"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	reviewedBy, _ := c.Get("user_id")
+	reviewedByStr, _ := reviewedBy.(string)
+
+	resp, err := h.students.ReviewEnrollment(c.Request.Context(), &studentv1.ReviewEnrollmentRequest{
+		Id:         c.Param("id"),
+		Approve:    body.Approve,
+		AdminNote:  body.AdminNote,
+		ReviewedBy: reviewedByStr,
+	})
+	if err != nil {
+		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, enrollmentToJSON(resp.Enrollment))
+}
+
+func enrollmentToJSON(e *studentv1.EnrollmentRequest) gin.H {
+	return gin.H{
+		"id":                 e.Id,
+		"student_id":         e.StudentId,
+		"semester_id":        e.SemesterId,
+		"offered_subject_id": e.OfferedSubjectId,
+		"subject_id":         e.SubjectId,
+		"status":             e.Status,
+		"request_note":       e.RequestNote,
+		"admin_note":         e.AdminNote,
+		"requested_at":       protoTime(e.RequestedAt),
+		"reviewed_at":        protoTime(e.ReviewedAt),
+		"reviewed_by":        e.ReviewedBy,
+	}
+}
+
 func (h *StudentHandler) GetStudentTranscript(c *gin.Context) {
 	id := c.Param("id")
 	resp, err := h.students.GetStudentTranscript(c.Request.Context(), &studentv1.GetStudentTranscriptRequest{

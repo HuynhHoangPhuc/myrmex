@@ -147,7 +147,7 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 			}
 		}
 
-		// Student module routes (safe Phase 03 subset: admin CRUD only)
+		// Student module routes
 		if cfg.StudentHandler != nil {
 			students := protected.Group("/students")
 			students.Use(middleware.RequireRole("admin"))
@@ -157,7 +157,14 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 				students.GET("/:id", cfg.StudentHandler.GetStudent)
 				students.PATCH("/:id", cfg.StudentHandler.UpdateStudent)
 				students.DELETE("/:id", cfg.StudentHandler.DeleteStudent)
-			students.GET("/:id/transcript", cfg.StudentHandler.GetStudentTranscript)
+				students.GET("/:id/transcript", cfg.StudentHandler.GetStudentTranscript)
+			}
+
+			enrollments := protected.Group("/enrollments")
+			enrollments.Use(middleware.RequireRole("admin"))
+			{
+				enrollments.GET("", cfg.StudentHandler.ListEnrollments)
+				enrollments.PATCH("/:id/review", cfg.StudentHandler.ReviewEnrollment)
 			}
 		}
 
