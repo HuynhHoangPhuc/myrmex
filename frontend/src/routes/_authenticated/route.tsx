@@ -12,6 +12,10 @@ export const Route = createFileRoute('/_authenticated')({
         search: { redirect: location.href },
       })
     }
+    const user = authStore.getUser()
+    if (user?.role === 'student') {
+      throw redirect({ to: '/student/dashboard' })
+    }
   },
   component: AuthenticatedLayout,
 })
