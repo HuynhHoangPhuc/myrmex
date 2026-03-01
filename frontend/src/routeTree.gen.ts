@@ -11,14 +11,22 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as StudentRouteRouteImport } from './routes/_student/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAnalyticsRouteRouteImport } from './routes/_authenticated/analytics/route'
 import { Route as AuthenticatedTimetableIndexRouteImport } from './routes/_authenticated/timetable/index'
 import { Route as AuthenticatedSubjectsIndexRouteImport } from './routes/_authenticated/subjects/index'
+import { Route as AuthenticatedStudentsIndexRouteImport } from './routes/_authenticated/students/index'
 import { Route as AuthenticatedHrIndexRouteImport } from './routes/_authenticated/hr/index'
+import { Route as AuthenticatedGradesIndexRouteImport } from './routes/_authenticated/grades/index'
+import { Route as AuthenticatedEnrollmentsIndexRouteImport } from './routes/_authenticated/enrollments/index'
 import { Route as AuthenticatedAnalyticsIndexRouteImport } from './routes/_authenticated/analytics/index'
+import { Route as StudentStudentTranscriptRouteImport } from './routes/_student/student/transcript'
+import { Route as StudentStudentSubjectsRouteImport } from './routes/_student/student/subjects'
+import { Route as StudentStudentProfileRouteImport } from './routes/_student/student/profile'
+import { Route as StudentStudentDashboardRouteImport } from './routes/_student/student/dashboard'
 import { Route as AuthenticatedSubjectsPrerequisitesRouteImport } from './routes/_authenticated/subjects/prerequisites'
 import { Route as AuthenticatedSubjectsNewRouteImport } from './routes/_authenticated/subjects/new'
 import { Route as AuthenticatedTimetableSemestersIndexRouteImport } from './routes/_authenticated/timetable/semesters/index'
@@ -27,6 +35,7 @@ import { Route as AuthenticatedTimetableGenerateIndexRouteImport } from './route
 import { Route as AuthenticatedTimetableAssignIndexRouteImport } from './routes/_authenticated/timetable/assign/index'
 import { Route as AuthenticatedSubjectsOfferingsIndexRouteImport } from './routes/_authenticated/subjects/offerings/index'
 import { Route as AuthenticatedSubjectsIdIndexRouteImport } from './routes/_authenticated/subjects/$id/index'
+import { Route as AuthenticatedStudentsStudentIdIndexRouteImport } from './routes/_authenticated/students/$studentId/index'
 import { Route as AuthenticatedHrTeachersIndexRouteImport } from './routes/_authenticated/hr/teachers/index'
 import { Route as AuthenticatedHrDepartmentsIndexRouteImport } from './routes/_authenticated/hr/departments/index'
 import { Route as AuthenticatedTimetableSemestersNewRouteImport } from './routes/_authenticated/timetable/semesters/new'
@@ -46,6 +55,10 @@ const RegisterRoute = RegisterRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudentRouteRoute = StudentRouteRouteImport.update({
+  id: '/_student',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -80,17 +93,56 @@ const AuthenticatedSubjectsIndexRoute =
     path: '/subjects/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedStudentsIndexRoute =
+  AuthenticatedStudentsIndexRouteImport.update({
+    id: '/students/',
+    path: '/students/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedHrIndexRoute = AuthenticatedHrIndexRouteImport.update({
   id: '/hr/',
   path: '/hr/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedGradesIndexRoute =
+  AuthenticatedGradesIndexRouteImport.update({
+    id: '/grades/',
+    path: '/grades/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEnrollmentsIndexRoute =
+  AuthenticatedEnrollmentsIndexRouteImport.update({
+    id: '/enrollments/',
+    path: '/enrollments/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAnalyticsIndexRoute =
   AuthenticatedAnalyticsIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedAnalyticsRouteRoute,
   } as any)
+const StudentStudentTranscriptRoute =
+  StudentStudentTranscriptRouteImport.update({
+    id: '/student/transcript',
+    path: '/student/transcript',
+    getParentRoute: () => StudentRouteRoute,
+  } as any)
+const StudentStudentSubjectsRoute = StudentStudentSubjectsRouteImport.update({
+  id: '/student/subjects',
+  path: '/student/subjects',
+  getParentRoute: () => StudentRouteRoute,
+} as any)
+const StudentStudentProfileRoute = StudentStudentProfileRouteImport.update({
+  id: '/student/profile',
+  path: '/student/profile',
+  getParentRoute: () => StudentRouteRoute,
+} as any)
+const StudentStudentDashboardRoute = StudentStudentDashboardRouteImport.update({
+  id: '/student/dashboard',
+  path: '/student/dashboard',
+  getParentRoute: () => StudentRouteRoute,
+} as any)
 const AuthenticatedSubjectsPrerequisitesRoute =
   AuthenticatedSubjectsPrerequisitesRouteImport.update({
     id: '/subjects/prerequisites',
@@ -137,6 +189,12 @@ const AuthenticatedSubjectsIdIndexRoute =
   AuthenticatedSubjectsIdIndexRouteImport.update({
     id: '/subjects/$id/',
     path: '/subjects/$id/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedStudentsStudentIdIndexRoute =
+  AuthenticatedStudentsStudentIdIndexRouteImport.update({
+    id: '/students/$studentId/',
+    path: '/students/$studentId/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedHrTeachersIndexRoute =
@@ -208,8 +266,15 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/subjects/new': typeof AuthenticatedSubjectsNewRoute
   '/subjects/prerequisites': typeof AuthenticatedSubjectsPrerequisitesRoute
+  '/student/dashboard': typeof StudentStudentDashboardRoute
+  '/student/profile': typeof StudentStudentProfileRoute
+  '/student/subjects': typeof StudentStudentSubjectsRoute
+  '/student/transcript': typeof StudentStudentTranscriptRoute
   '/analytics/': typeof AuthenticatedAnalyticsIndexRoute
+  '/enrollments/': typeof AuthenticatedEnrollmentsIndexRoute
+  '/grades/': typeof AuthenticatedGradesIndexRoute
   '/hr/': typeof AuthenticatedHrIndexRoute
+  '/students/': typeof AuthenticatedStudentsIndexRoute
   '/subjects/': typeof AuthenticatedSubjectsIndexRoute
   '/timetable/': typeof AuthenticatedTimetableIndexRoute
   '/hr/departments/new': typeof AuthenticatedHrDepartmentsNewRoute
@@ -219,6 +284,7 @@ export interface FileRoutesByFullPath {
   '/timetable/semesters/new': typeof AuthenticatedTimetableSemestersNewRoute
   '/hr/departments/': typeof AuthenticatedHrDepartmentsIndexRoute
   '/hr/teachers/': typeof AuthenticatedHrTeachersIndexRoute
+  '/students/$studentId/': typeof AuthenticatedStudentsStudentIdIndexRoute
   '/subjects/$id/': typeof AuthenticatedSubjectsIdIndexRoute
   '/subjects/offerings/': typeof AuthenticatedSubjectsOfferingsIndexRoute
   '/timetable/assign/': typeof AuthenticatedTimetableAssignIndexRoute
@@ -236,8 +302,15 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/subjects/new': typeof AuthenticatedSubjectsNewRoute
   '/subjects/prerequisites': typeof AuthenticatedSubjectsPrerequisitesRoute
+  '/student/dashboard': typeof StudentStudentDashboardRoute
+  '/student/profile': typeof StudentStudentProfileRoute
+  '/student/subjects': typeof StudentStudentSubjectsRoute
+  '/student/transcript': typeof StudentStudentTranscriptRoute
   '/analytics': typeof AuthenticatedAnalyticsIndexRoute
+  '/enrollments': typeof AuthenticatedEnrollmentsIndexRoute
+  '/grades': typeof AuthenticatedGradesIndexRoute
   '/hr': typeof AuthenticatedHrIndexRoute
+  '/students': typeof AuthenticatedStudentsIndexRoute
   '/subjects': typeof AuthenticatedSubjectsIndexRoute
   '/timetable': typeof AuthenticatedTimetableIndexRoute
   '/hr/departments/new': typeof AuthenticatedHrDepartmentsNewRoute
@@ -247,6 +320,7 @@ export interface FileRoutesByTo {
   '/timetable/semesters/new': typeof AuthenticatedTimetableSemestersNewRoute
   '/hr/departments': typeof AuthenticatedHrDepartmentsIndexRoute
   '/hr/teachers': typeof AuthenticatedHrTeachersIndexRoute
+  '/students/$studentId': typeof AuthenticatedStudentsStudentIdIndexRoute
   '/subjects/$id': typeof AuthenticatedSubjectsIdIndexRoute
   '/subjects/offerings': typeof AuthenticatedSubjectsOfferingsIndexRoute
   '/timetable/assign': typeof AuthenticatedTimetableAssignIndexRoute
@@ -261,14 +335,22 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/_student': typeof StudentRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRouteRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/subjects/new': typeof AuthenticatedSubjectsNewRoute
   '/_authenticated/subjects/prerequisites': typeof AuthenticatedSubjectsPrerequisitesRoute
+  '/_student/student/dashboard': typeof StudentStudentDashboardRoute
+  '/_student/student/profile': typeof StudentStudentProfileRoute
+  '/_student/student/subjects': typeof StudentStudentSubjectsRoute
+  '/_student/student/transcript': typeof StudentStudentTranscriptRoute
   '/_authenticated/analytics/': typeof AuthenticatedAnalyticsIndexRoute
+  '/_authenticated/enrollments/': typeof AuthenticatedEnrollmentsIndexRoute
+  '/_authenticated/grades/': typeof AuthenticatedGradesIndexRoute
   '/_authenticated/hr/': typeof AuthenticatedHrIndexRoute
+  '/_authenticated/students/': typeof AuthenticatedStudentsIndexRoute
   '/_authenticated/subjects/': typeof AuthenticatedSubjectsIndexRoute
   '/_authenticated/timetable/': typeof AuthenticatedTimetableIndexRoute
   '/_authenticated/hr/departments/new': typeof AuthenticatedHrDepartmentsNewRoute
@@ -278,6 +360,7 @@ export interface FileRoutesById {
   '/_authenticated/timetable/semesters/new': typeof AuthenticatedTimetableSemestersNewRoute
   '/_authenticated/hr/departments/': typeof AuthenticatedHrDepartmentsIndexRoute
   '/_authenticated/hr/teachers/': typeof AuthenticatedHrTeachersIndexRoute
+  '/_authenticated/students/$studentId/': typeof AuthenticatedStudentsStudentIdIndexRoute
   '/_authenticated/subjects/$id/': typeof AuthenticatedSubjectsIdIndexRoute
   '/_authenticated/subjects/offerings/': typeof AuthenticatedSubjectsOfferingsIndexRoute
   '/_authenticated/timetable/assign/': typeof AuthenticatedTimetableAssignIndexRoute
@@ -298,8 +381,15 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/subjects/new'
     | '/subjects/prerequisites'
+    | '/student/dashboard'
+    | '/student/profile'
+    | '/student/subjects'
+    | '/student/transcript'
     | '/analytics/'
+    | '/enrollments/'
+    | '/grades/'
     | '/hr/'
+    | '/students/'
     | '/subjects/'
     | '/timetable/'
     | '/hr/departments/new'
@@ -309,6 +399,7 @@ export interface FileRouteTypes {
     | '/timetable/semesters/new'
     | '/hr/departments/'
     | '/hr/teachers/'
+    | '/students/$studentId/'
     | '/subjects/$id/'
     | '/subjects/offerings/'
     | '/timetable/assign/'
@@ -326,8 +417,15 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/subjects/new'
     | '/subjects/prerequisites'
+    | '/student/dashboard'
+    | '/student/profile'
+    | '/student/subjects'
+    | '/student/transcript'
     | '/analytics'
+    | '/enrollments'
+    | '/grades'
     | '/hr'
+    | '/students'
     | '/subjects'
     | '/timetable'
     | '/hr/departments/new'
@@ -337,6 +435,7 @@ export interface FileRouteTypes {
     | '/timetable/semesters/new'
     | '/hr/departments'
     | '/hr/teachers'
+    | '/students/$studentId'
     | '/subjects/$id'
     | '/subjects/offerings'
     | '/timetable/assign'
@@ -350,14 +449,22 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/_student'
     | '/login'
     | '/register'
     | '/_authenticated/analytics'
     | '/_authenticated/dashboard'
     | '/_authenticated/subjects/new'
     | '/_authenticated/subjects/prerequisites'
+    | '/_student/student/dashboard'
+    | '/_student/student/profile'
+    | '/_student/student/subjects'
+    | '/_student/student/transcript'
     | '/_authenticated/analytics/'
+    | '/_authenticated/enrollments/'
+    | '/_authenticated/grades/'
     | '/_authenticated/hr/'
+    | '/_authenticated/students/'
     | '/_authenticated/subjects/'
     | '/_authenticated/timetable/'
     | '/_authenticated/hr/departments/new'
@@ -367,6 +474,7 @@ export interface FileRouteTypes {
     | '/_authenticated/timetable/semesters/new'
     | '/_authenticated/hr/departments/'
     | '/_authenticated/hr/teachers/'
+    | '/_authenticated/students/$studentId/'
     | '/_authenticated/subjects/$id/'
     | '/_authenticated/subjects/offerings/'
     | '/_authenticated/timetable/assign/'
@@ -381,6 +489,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  StudentRouteRoute: typeof StudentRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
 }
@@ -399,6 +508,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_student': {
+      id: '/_student'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof StudentRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -443,11 +559,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSubjectsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/students/': {
+      id: '/_authenticated/students/'
+      path: '/students'
+      fullPath: '/students/'
+      preLoaderRoute: typeof AuthenticatedStudentsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/hr/': {
       id: '/_authenticated/hr/'
       path: '/hr'
       fullPath: '/hr/'
       preLoaderRoute: typeof AuthenticatedHrIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/grades/': {
+      id: '/_authenticated/grades/'
+      path: '/grades'
+      fullPath: '/grades/'
+      preLoaderRoute: typeof AuthenticatedGradesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/enrollments/': {
+      id: '/_authenticated/enrollments/'
+      path: '/enrollments'
+      fullPath: '/enrollments/'
+      preLoaderRoute: typeof AuthenticatedEnrollmentsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/analytics/': {
@@ -456,6 +593,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/analytics/'
       preLoaderRoute: typeof AuthenticatedAnalyticsIndexRouteImport
       parentRoute: typeof AuthenticatedAnalyticsRouteRoute
+    }
+    '/_student/student/transcript': {
+      id: '/_student/student/transcript'
+      path: '/student/transcript'
+      fullPath: '/student/transcript'
+      preLoaderRoute: typeof StudentStudentTranscriptRouteImport
+      parentRoute: typeof StudentRouteRoute
+    }
+    '/_student/student/subjects': {
+      id: '/_student/student/subjects'
+      path: '/student/subjects'
+      fullPath: '/student/subjects'
+      preLoaderRoute: typeof StudentStudentSubjectsRouteImport
+      parentRoute: typeof StudentRouteRoute
+    }
+    '/_student/student/profile': {
+      id: '/_student/student/profile'
+      path: '/student/profile'
+      fullPath: '/student/profile'
+      preLoaderRoute: typeof StudentStudentProfileRouteImport
+      parentRoute: typeof StudentRouteRoute
+    }
+    '/_student/student/dashboard': {
+      id: '/_student/student/dashboard'
+      path: '/student/dashboard'
+      fullPath: '/student/dashboard'
+      preLoaderRoute: typeof StudentStudentDashboardRouteImport
+      parentRoute: typeof StudentRouteRoute
     }
     '/_authenticated/subjects/prerequisites': {
       id: '/_authenticated/subjects/prerequisites'
@@ -511,6 +676,13 @@ declare module '@tanstack/react-router' {
       path: '/subjects/$id'
       fullPath: '/subjects/$id/'
       preLoaderRoute: typeof AuthenticatedSubjectsIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/students/$studentId/': {
+      id: '/_authenticated/students/$studentId/'
+      path: '/students/$studentId'
+      fullPath: '/students/$studentId/'
+      preLoaderRoute: typeof AuthenticatedStudentsStudentIdIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/hr/teachers/': {
@@ -605,7 +777,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedSubjectsNewRoute: typeof AuthenticatedSubjectsNewRoute
   AuthenticatedSubjectsPrerequisitesRoute: typeof AuthenticatedSubjectsPrerequisitesRoute
+  AuthenticatedEnrollmentsIndexRoute: typeof AuthenticatedEnrollmentsIndexRoute
+  AuthenticatedGradesIndexRoute: typeof AuthenticatedGradesIndexRoute
   AuthenticatedHrIndexRoute: typeof AuthenticatedHrIndexRoute
+  AuthenticatedStudentsIndexRoute: typeof AuthenticatedStudentsIndexRoute
   AuthenticatedSubjectsIndexRoute: typeof AuthenticatedSubjectsIndexRoute
   AuthenticatedTimetableIndexRoute: typeof AuthenticatedTimetableIndexRoute
   AuthenticatedHrDepartmentsNewRoute: typeof AuthenticatedHrDepartmentsNewRoute
@@ -615,6 +790,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTimetableSemestersNewRoute: typeof AuthenticatedTimetableSemestersNewRoute
   AuthenticatedHrDepartmentsIndexRoute: typeof AuthenticatedHrDepartmentsIndexRoute
   AuthenticatedHrTeachersIndexRoute: typeof AuthenticatedHrTeachersIndexRoute
+  AuthenticatedStudentsStudentIdIndexRoute: typeof AuthenticatedStudentsStudentIdIndexRoute
   AuthenticatedSubjectsIdIndexRoute: typeof AuthenticatedSubjectsIdIndexRoute
   AuthenticatedSubjectsOfferingsIndexRoute: typeof AuthenticatedSubjectsOfferingsIndexRoute
   AuthenticatedTimetableAssignIndexRoute: typeof AuthenticatedTimetableAssignIndexRoute
@@ -633,7 +809,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSubjectsNewRoute: AuthenticatedSubjectsNewRoute,
   AuthenticatedSubjectsPrerequisitesRoute:
     AuthenticatedSubjectsPrerequisitesRoute,
+  AuthenticatedEnrollmentsIndexRoute: AuthenticatedEnrollmentsIndexRoute,
+  AuthenticatedGradesIndexRoute: AuthenticatedGradesIndexRoute,
   AuthenticatedHrIndexRoute: AuthenticatedHrIndexRoute,
+  AuthenticatedStudentsIndexRoute: AuthenticatedStudentsIndexRoute,
   AuthenticatedSubjectsIndexRoute: AuthenticatedSubjectsIndexRoute,
   AuthenticatedTimetableIndexRoute: AuthenticatedTimetableIndexRoute,
   AuthenticatedHrDepartmentsNewRoute: AuthenticatedHrDepartmentsNewRoute,
@@ -645,6 +824,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedTimetableSemestersNewRoute,
   AuthenticatedHrDepartmentsIndexRoute: AuthenticatedHrDepartmentsIndexRoute,
   AuthenticatedHrTeachersIndexRoute: AuthenticatedHrTeachersIndexRoute,
+  AuthenticatedStudentsStudentIdIndexRoute:
+    AuthenticatedStudentsStudentIdIndexRoute,
   AuthenticatedSubjectsIdIndexRoute: AuthenticatedSubjectsIdIndexRoute,
   AuthenticatedSubjectsOfferingsIndexRoute:
     AuthenticatedSubjectsOfferingsIndexRoute,
@@ -665,9 +846,28 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface StudentRouteRouteChildren {
+  StudentStudentDashboardRoute: typeof StudentStudentDashboardRoute
+  StudentStudentProfileRoute: typeof StudentStudentProfileRoute
+  StudentStudentSubjectsRoute: typeof StudentStudentSubjectsRoute
+  StudentStudentTranscriptRoute: typeof StudentStudentTranscriptRoute
+}
+
+const StudentRouteRouteChildren: StudentRouteRouteChildren = {
+  StudentStudentDashboardRoute: StudentStudentDashboardRoute,
+  StudentStudentProfileRoute: StudentStudentProfileRoute,
+  StudentStudentSubjectsRoute: StudentStudentSubjectsRoute,
+  StudentStudentTranscriptRoute: StudentStudentTranscriptRoute,
+}
+
+const StudentRouteRouteWithChildren = StudentRouteRoute._addFileChildren(
+  StudentRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  StudentRouteRoute: StudentRouteRouteWithChildren,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
 }

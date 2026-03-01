@@ -11,6 +11,7 @@ COPY services/core/go.mod services/core/go.mod
 COPY services/module-hr/go.mod services/module-hr/go.mod
 COPY services/module-subject/go.mod services/module-subject/go.mod
 COPY services/module-timetable/go.mod services/module-timetable/go.mod
+COPY services/module-student/go.mod services/module-student/go.mod
 
 WORKDIR /workspace/services/module-analytics
 RUN go build -o /bin/module-analytics ./cmd/server
