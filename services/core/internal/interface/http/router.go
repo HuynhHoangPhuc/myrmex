@@ -127,9 +127,11 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 		if cfg.TimetableHandler != nil {
 			tt := protected.Group("/timetable")
 			{
+				tt.GET("/rooms", cfg.TimetableHandler.ListRooms)
 				tt.GET("/semesters", cfg.TimetableHandler.ListSemesters)
 				tt.POST("/semesters", cfg.TimetableHandler.CreateSemester)
 				tt.GET("/semesters/:id", cfg.TimetableHandler.GetSemester)
+				tt.PUT("/semesters/:id/rooms", cfg.TimetableHandler.SetSemesterRooms)
 				tt.POST("/semesters/:id/slots", cfg.TimetableHandler.CreateTimeSlot)
 				tt.DELETE("/semesters/:id/slots/:slotId", cfg.TimetableHandler.DeleteTimeSlot)
 				tt.POST("/semesters/:id/slots/preset", cfg.TimetableHandler.ApplyTimeSlotPreset)

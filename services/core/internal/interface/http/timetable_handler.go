@@ -136,14 +136,70 @@ func (h *TimetableHandler) GetSemester(c *gin.Context) {
 		return
 	}
 
-	// Enrich semester with time slots and rooms (best-effort — ignore errors)
+	// Enrich with time slots (best-effort)
 	slotsResp, _ := h.semesters.ListTimeSlots(c.Request.Context(), &timetablev1.ListTimeSlotsRequest{SemesterId: id})
-	roomsResp, _ := h.timetable.ListRooms(c.Request.Context(), &timetablev1.ListRoomsRequest{})
+
+	// Rooms: if semester has specific room_ids use only those, otherwise return all rooms
+	var enrichedRooms []gin.H
+	if len(resp.Semester.GetRoomIds()) > 0 {
+		// fetch full room details for each selected room
+		allRoomsResp, _ := h.timetable.ListRooms(c.Request.Context(), &timetablev1.ListRoomsRequest{})
+		selectedIDs := make(map[string]bool, len(resp.Semester.RoomIds))
+		for _, rid := range resp.Semester.RoomIds {
+			selectedIDs[rid] = true
+		}
+		for _, r := range allRoomsResp.GetRooms() {
+			if selectedIDs[r.Id] {
+				enrichedRooms = append(enrichedRooms, gin.H{
+					"id":        r.Id,
+					"name":      r.Name,
+					"capacity":  r.Capacity,
+					"room_type": r.RoomType,
+				})
+			}
+		}
+	} else {
+		allRoomsResp, _ := h.timetable.ListRooms(c.Request.Context(), &timetablev1.ListRoomsRequest{})
+		enrichedRooms = roomsToJSON(allRoomsResp.GetRooms())
+	}
+	if enrichedRooms == nil {
+		enrichedRooms = []gin.H{}
+	}
 
 	result := semesterToJSON(resp.Semester)
 	result["time_slots"] = timeSlotsToJSON(slotsResp.GetTimeSlots())
-	result["rooms"] = roomsToJSON(roomsResp.GetRooms())
+	result["rooms"] = enrichedRooms
 	c.JSON(http.StatusOK, result)
+}
+
+// ListRooms returns all active rooms for use in the room selector.
+func (h *TimetableHandler) ListRooms(c *gin.Context) {
+	resp, err := h.timetable.ListRooms(c.Request.Context(), &timetablev1.ListRoomsRequest{})
+	if err != nil {
+		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": roomsToJSON(resp.GetRooms())})
+}
+
+// SetSemesterRooms replaces the room selection for a semester.
+func (h *TimetableHandler) SetSemesterRooms(c *gin.Context) {
+	var body struct {
+		RoomIDs []string `json:"room_ids" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	resp, err := h.semesters.SetSemesterRooms(c.Request.Context(), &timetablev1.SetSemesterRoomsRequest{
+		SemesterId: c.Param("id"),
+		RoomIds:    body.RoomIDs,
+	})
+	if err != nil {
+		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"room_ids": resp.RoomIds})
 }
 
 func timeSlotsToJSON(slots []*timetablev1.TimeSlot) []gin.H {
