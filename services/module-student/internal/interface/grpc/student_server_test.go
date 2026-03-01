@@ -87,8 +87,16 @@ func (m *mockStudentRepository) Count(_ context.Context, _ *uuid.UUID, _ *string
 	return m.totalCount, m.countErr
 }
 
+func (m *mockStudentRepository) GetByUserID(_ context.Context, _ uuid.UUID) (*entity.Student, error) {
+	panic("not implemented")
+}
+
 func (m *mockStudentRepository) Update(_ context.Context, student *entity.Student) (*entity.Student, error) {
 	return student, nil
+}
+
+func (m *mockStudentRepository) LinkUser(_ context.Context, _ uuid.UUID, _ uuid.UUID) (*entity.Student, error) {
+	panic("not implemented")
 }
 
 func (m *mockStudentRepository) Delete(_ context.Context, _ uuid.UUID) error {
@@ -106,7 +114,9 @@ func newTestStudentServer(
 		createStudent,
 		updateStudent,
 		deleteStudent,
+		nil, // linkUserToStudent
 		getStudent,
+		nil, // getStudentByUserID
 		listStudents,
 		nil,
 		nil,

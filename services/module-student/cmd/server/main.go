@@ -138,11 +138,13 @@ func main() {
 	createStudentHandler := command.NewCreateStudentHandler(studentRepo, publisher)
 	updateStudentHandler := command.NewUpdateStudentHandler(studentRepo, publisher)
 	deleteStudentHandler := command.NewDeleteStudentHandler(studentRepo, publisher)
+	linkUserToStudentHandler := command.NewLinkUserToStudentHandler(studentRepo, publisher)
 	requestEnrollmentHandler := command.NewRequestEnrollmentHandler(studentRepo, enrollmentRepo, prerequisiteChecker, publisher)
 	reviewEnrollmentHandler := command.NewReviewEnrollmentHandler(enrollmentRepo, publisher)
 	assignGradeHandler := command.NewAssignGradeHandler(enrollmentRepo, gradeRepo, cacheStore, publisher)
 	updateGradeHandler := command.NewUpdateGradeHandler(enrollmentRepo, gradeRepo, cacheStore)
 	getStudentHandler := query.NewGetStudentHandler(studentRepo)
+	getStudentByUserIDHandler := query.NewGetStudentByUserIDHandler(studentRepo)
 	listStudentsHandler := query.NewListStudentsHandler(studentRepo)
 	listEnrollmentRequestsHandler := query.NewListEnrollmentRequestsHandler(enrollmentRepo)
 	getStudentEnrollmentsHandler := query.NewGetStudentEnrollmentsHandler(enrollmentRepo)
@@ -152,7 +154,9 @@ func main() {
 		createStudentHandler,
 		updateStudentHandler,
 		deleteStudentHandler,
+		linkUserToStudentHandler,
 		getStudentHandler,
+		getStudentByUserIDHandler,
 		listStudentsHandler,
 		requestEnrollmentHandler,
 		reviewEnrollmentHandler,

@@ -24,7 +24,9 @@ type StudentServer struct {
 	createStudent          *command.CreateStudentHandler
 	updateStudent          *command.UpdateStudentHandler
 	deleteStudent          *command.DeleteStudentHandler
+	linkUserToStudent      *command.LinkUserToStudentHandler
 	getStudent             *query.GetStudentHandler
+	getStudentByUserID     *query.GetStudentByUserIDHandler
 	listStudents           *query.ListStudentsHandler
 	requestEnrollment      *command.RequestEnrollmentHandler
 	reviewEnrollment       *command.ReviewEnrollmentHandler
@@ -40,7 +42,9 @@ func NewStudentServer(
 	createStudent *command.CreateStudentHandler,
 	updateStudent *command.UpdateStudentHandler,
 	deleteStudent *command.DeleteStudentHandler,
+	linkUserToStudent *command.LinkUserToStudentHandler,
 	getStudent *query.GetStudentHandler,
+	getStudentByUserID *query.GetStudentByUserIDHandler,
 	listStudents *query.ListStudentsHandler,
 	requestEnrollment *command.RequestEnrollmentHandler,
 	reviewEnrollment *command.ReviewEnrollmentHandler,
@@ -55,7 +59,9 @@ func NewStudentServer(
 		createStudent:          createStudent,
 		updateStudent:          updateStudent,
 		deleteStudent:          deleteStudent,
+		linkUserToStudent:      linkUserToStudent,
 		getStudent:             getStudent,
+		getStudentByUserID:     getStudentByUserID,
 		listStudents:           listStudents,
 		requestEnrollment:      requestEnrollment,
 		reviewEnrollment:       reviewEnrollment,
@@ -223,6 +229,47 @@ func (s *StudentServer) DeleteStudent(ctx context.Context, req *studentv1.Delete
 	}
 
 	return &studentv1.DeleteStudentResponse{Success: true}, nil
+}
+
+func (s *StudentServer) GetStudentByUserID(ctx context.Context, req *studentv1.GetStudentByUserIDRequest) (*studentv1.GetStudentByUserIDResponse, error) {
+	userID, err := uuid.Parse(req.GetUserId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid user_id")
+	}
+
+	student, err := s.getStudentByUserID.Handle(ctx, query.GetStudentByUserIDQuery{UserID: userID})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, status.Error(codes.NotFound, "student not found for user_id")
+		}
+		return nil, status.Errorf(codes.Internal, "get student by user_id: %v", err)
+	}
+
+	return &studentv1.GetStudentByUserIDResponse{Student: studentToProto(student)}, nil
+}
+
+func (s *StudentServer) LinkUserToStudent(ctx context.Context, req *studentv1.LinkUserToStudentRequest) (*studentv1.LinkUserToStudentResponse, error) {
+	studentID, err := uuid.Parse(req.GetStudentId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid student_id")
+	}
+	userID, err := uuid.Parse(req.GetUserId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid user_id")
+	}
+
+	student, err := s.linkUserToStudent.Handle(ctx, command.LinkUserToStudentCommand{
+		StudentID: studentID,
+		UserID:    userID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, status.Error(codes.NotFound, "student not found")
+		}
+		return nil, status.Errorf(codes.Internal, "link user to student: %v", err)
+	}
+
+	return &studentv1.LinkUserToStudentResponse{Student: studentToProto(student)}, nil
 }
 
 func (s *StudentServer) RequestEnrollment(ctx context.Context, req *studentv1.RequestEnrollmentRequest) (*studentv1.RequestEnrollmentResponse, error) {
