@@ -22,6 +22,8 @@ export const ENDPOINTS = {
     },
   },
   timetable: {
+    rooms: '/timetable/rooms',
+    semesterRooms: (semesterId: string) => `/timetable/semesters/${semesterId}/rooms`,
     semesters: '/timetable/semesters',
     semester: (id: string) => `/timetable/semesters/${id}`,
     generate: (semesterId: string) => `/timetable/semesters/${semesterId}/generate`,
