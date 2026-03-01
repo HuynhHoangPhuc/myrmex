@@ -35,7 +35,7 @@ test.describe('AI Chat (Mock Provider)', () => {
 
     // Should show some tool execution feedback (tool call or result)
     await expect(
-      page.getByText(/list_teachers|teacher|executing/i),
+      page.getByText(/list_teachers|teacher|executing/i).first(),
     ).toBeVisible({ timeout: 10_000 })
   })
 })

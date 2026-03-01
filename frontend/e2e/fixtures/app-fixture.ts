@@ -17,8 +17,8 @@ export const test = base.extend<AuthFixtures>({
     const regRes = await page.request.post('/api/auth/register', {
       data: { full_name: 'E2E Test User', email, password },
     })
-    // If already registered (409), continue to login
-    if (!regRes.ok() && regRes.status() !== 409) {
+    // If already registered (409) or rate-limited (429), continue to login
+    if (!regRes.ok() && regRes.status() !== 409 && regRes.status() !== 429) {
       throw new Error(`Registration failed: ${regRes.status()} ${await regRes.text()}`)
     }
 

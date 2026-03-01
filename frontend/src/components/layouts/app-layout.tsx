@@ -3,7 +3,6 @@ import { SidebarNav } from '@/components/layouts/sidebar-nav'
 import { TopBar } from '@/components/layouts/top-bar'
 import { MobileSidebarDrawer } from '@/components/layouts/mobile-sidebar-drawer'
 import { CommandPalette } from '@/components/shared/command-palette'
-import { Toaster } from '@/components/ui/toaster'
 import { ChatPanel } from '@/chat/components/chat-panel'
 
 interface AppLayoutProps {
@@ -47,7 +46,6 @@ export function AppLayout({ children }: AppLayoutProps) {
         </main>
       </div>
 
-      <Toaster />
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
       <ChatPanel isOpen={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
