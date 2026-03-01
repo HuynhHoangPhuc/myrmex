@@ -96,3 +96,8 @@ export interface AssignTeacherInput {
   entry_id: string
   teacher_id: string
 }
+
+export interface AssignRoomInput {
+  entry_id: string
+  room_id: string
+}
