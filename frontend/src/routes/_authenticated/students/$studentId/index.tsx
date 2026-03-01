@@ -14,10 +14,15 @@ export const Route = createFileRoute('/_authenticated/students/$studentId/')({
 })
 
 const STATUS_VARIANT = {
+  // enrollment statuses
   pending: 'secondary',
   approved: 'default',
   rejected: 'destructive',
   completed: 'outline',
+  // student statuses
+  active: 'default',
+  graduated: 'outline',
+  suspended: 'destructive',
 } as const
 
 function StudentDetailPage() {
