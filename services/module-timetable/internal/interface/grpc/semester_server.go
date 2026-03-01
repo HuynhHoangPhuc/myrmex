@@ -30,6 +30,7 @@ type semesterReader interface {
 	Count(ctx context.Context) (int64, error)
 	AddOfferedSubject(ctx context.Context, semesterID, subjectID uuid.UUID) (*entity.Semester, error)
 	RemoveOfferedSubject(ctx context.Context, semesterID, subjectID uuid.UUID) (*entity.Semester, error)
+	SetRoomIDs(ctx context.Context, semesterID uuid.UUID, roomIDs []uuid.UUID) (*entity.Semester, error)
 	ListTimeSlots(ctx context.Context, semesterID uuid.UUID) ([]*entity.TimeSlot, error)
 	CreateTimeSlot(ctx context.Context, ts *entity.TimeSlot) (*entity.TimeSlot, error)
 	DeleteTimeSlot(ctx context.Context, slotID uuid.UUID) error
@@ -279,6 +280,30 @@ func (s *SemesterServer) ApplyTimeSlotPreset(ctx context.Context, req *timetable
 	return &timetablev1.ApplyTimeSlotPresetResponse{TimeSlots: created}, nil
 }
 
+func (s *SemesterServer) SetSemesterRooms(ctx context.Context, req *timetablev1.SetSemesterRoomsRequest) (*timetablev1.SetSemesterRoomsResponse, error) {
+	semesterID, err := uuid.Parse(req.SemesterId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid semester_id")
+	}
+	roomIDs := make([]uuid.UUID, 0, len(req.RoomIds))
+	for _, rid := range req.RoomIds {
+		id, err := uuid.Parse(rid)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid room_id %q", rid)
+		}
+		roomIDs = append(roomIDs, id)
+	}
+	sem, err := s.semesterRepo.SetRoomIDs(ctx, semesterID, roomIDs)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "set semester rooms: %v", err)
+	}
+	resp := &timetablev1.SetSemesterRoomsResponse{}
+	for _, id := range sem.RoomIDs {
+		resp.RoomIds = append(resp.RoomIds, id.String())
+	}
+	return resp, nil
+}
+
 // --- proto helpers ---
 
 func semesterToProto(s *entity.Semester) *timetablev1.Semester {
@@ -293,6 +318,9 @@ func semesterToProto(s *entity.Semester) *timetablev1.Semester {
 	}
 	for _, id := range s.OfferedSubjectIDs {
 		p.OfferedSubjectIds = append(p.OfferedSubjectIds, id.String())
+	}
+	for _, id := range s.RoomIDs {
+		p.RoomIds = append(p.RoomIds, id.String())
 	}
 	return p
 }
