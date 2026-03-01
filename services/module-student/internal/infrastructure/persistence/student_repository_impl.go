@@ -46,6 +46,25 @@ func (r *StudentRepositoryImpl) GetByID(ctx context.Context, id uuid.UUID) (*ent
 	return studentRowToEntity(row), nil
 }
 
+func (r *StudentRepositoryImpl) GetByUserID(ctx context.Context, userID uuid.UUID) (*entity.Student, error) {
+	row, err := r.queries.GetStudentByUserID(ctx, uuidToPgtype(userID))
+	if err != nil {
+		return nil, fmt.Errorf("get student by user_id: %w", err)
+	}
+	return studentRowToEntity(row), nil
+}
+
+func (r *StudentRepositoryImpl) LinkUser(ctx context.Context, studentID uuid.UUID, userID uuid.UUID) (*entity.Student, error) {
+	row, err := r.queries.LinkUserToStudent(ctx, sqlc.LinkUserToStudentParams{
+		ID:     uuidToPgtype(studentID),
+		UserID: uuidToPgtype(userID),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("link user to student: %w", err)
+	}
+	return studentRowToEntity(row), nil
+}
+
 func (r *StudentRepositoryImpl) List(ctx context.Context, departmentID *uuid.UUID, status *string, limit, offset int32) ([]*entity.Student, error) {
 	arg := sqlc.ListStudentsParams{
 		DepartmentID: uuidOptToPgtype(departmentID),

@@ -12,8 +12,10 @@ import (
 type StudentRepository interface {
 	Create(ctx context.Context, student *entity.Student) (*entity.Student, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.Student, error)
+	GetByUserID(ctx context.Context, userID uuid.UUID) (*entity.Student, error)
 	List(ctx context.Context, departmentID *uuid.UUID, status *string, limit, offset int32) ([]*entity.Student, error)
 	Count(ctx context.Context, departmentID *uuid.UUID, status *string) (int64, error)
 	Update(ctx context.Context, student *entity.Student) (*entity.Student, error)
+	LinkUser(ctx context.Context, studentID uuid.UUID, userID uuid.UUID) (*entity.Student, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
