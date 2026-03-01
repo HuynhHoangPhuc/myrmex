@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api/client'
 import { ENDPOINTS } from '@/lib/api/endpoints'
 import type { ListResponse } from '@/lib/api/types'
-import type { Schedule, ScheduleEntry, GenerateScheduleInput, TeacherSuggestion, AssignTeacherInput } from '../types'
+import type { Schedule, ScheduleEntry, GenerateScheduleInput, TeacherSuggestion, AssignTeacherInput, AssignRoomInput } from '../types'
 
 interface ScheduleListParams {
   semesterId?: string
@@ -103,6 +103,23 @@ export function useAssignTeacher(scheduleId: string) {
       const { data } = await apiClient.put(
         ENDPOINTS.timetable.manualAssign(scheduleId, input.entry_id),
         { teacher_id: input.teacher_id },
+      )
+      return data
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['schedules', scheduleId] })
+    },
+  })
+}
+
+// Manual override: assign a specific room to an entry
+export function useAssignRoom(scheduleId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: AssignRoomInput) => {
+      const { data } = await apiClient.put(
+        ENDPOINTS.timetable.manualAssign(scheduleId, input.entry_id),
+        { room_id: input.room_id },
       )
       return data
     },

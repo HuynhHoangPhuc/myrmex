@@ -99,6 +99,18 @@ export function useDeleteTimeSlot(semesterId: string) {
   })
 }
 
+export function useSetSemesterRooms(semesterId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (roomIds: string[]) => {
+      await apiClient.put(ENDPOINTS.timetable.semesterRooms(semesterId), { room_ids: roomIds })
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['semesters', semesterId] })
+    },
+  })
+}
+
 export function useApplyTimeSlotPreset(semesterId: string) {
   const qc = useQueryClient()
   return useMutation({
