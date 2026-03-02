@@ -52,11 +52,12 @@ var StudentTools = []RegisteredTool{
 	{
 		Definition: llm.Tool{
 			Name:        "student.list_enrollments",
-			Description: "List enrollments with optional filters by student or status.",
+			Description: "List enrollments with optional filters. The response total field gives the exact count for the filter. Use subject_id to count how many students enrolled in a specific subject.",
 			Parameters: rawSchema(`{
 				"type": "object",
 				"properties": {
 					"student_id": {"type": "string", "description": "Optional: filter by student UUID"},
+					"subject_id": {"type": "string", "description": "Optional: filter by subject UUID — use this to count enrollments for a specific subject"},
 					"status":     {"type": "string", "description": "Optional: filter by enrollment status"}
 				}
 			}`),
