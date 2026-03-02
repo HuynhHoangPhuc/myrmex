@@ -155,7 +155,7 @@ func buildEndpoint(baseURL, module, method string, args map[string]interface{}) 
 	switch module + "." + method {
 	case "hr.list_teachers":
 		url := base + "/api/hr/teachers"
-		if params := buildQueryParams(args, "search", "department", "specialization"); params != "" {
+		if params := buildQueryParams(args, "search", "department_id", "specialization"); params != "" {
 			url += "?" + params
 		}
 		return url, http.MethodGet, nil
@@ -245,7 +245,7 @@ func buildEndpoint(baseURL, module, method string, args map[string]interface{}) 
 
 	case "student.list_enrollments":
 		url := base + "/api/enrollments"
-		if params := buildQueryParams(args, "student_id", "status"); params != "" {
+		if params := buildQueryParams(args, "student_id", "subject_id", "status"); params != "" {
 			url += "?" + params
 		}
 		return url, http.MethodGet, nil

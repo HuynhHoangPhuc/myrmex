@@ -12,7 +12,7 @@ var HRTools = []RegisteredTool{
 				"type": "object",
 				"properties": {
 					"search":         {"type": "string",  "description": "Full-text search by name or email"},
-					"department":     {"type": "string",  "description": "Filter by department name"},
+					"department_id":  {"type": "string",  "description": "UUID of the department to filter by (call hr.list_departments first to get the UUID)"},
 					"specialization": {"type": "string",  "description": "Filter by subject specialization"}
 				}
 			}`),
