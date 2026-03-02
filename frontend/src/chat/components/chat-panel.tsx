@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Trash2, Maximize2, Minimize2 } from 'lucide-react'
+import { X, Trash2, Maximize2, Minimize2, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ChatMessage } from '@/chat/components/chat-message'
 import { ChatInput } from '@/chat/components/chat-input'
 import { useChat } from '@/chat/hooks/use-chat'
 import { cn } from '@/lib/utils/cn'
+import type { ChatMessage as ChatMessageType } from '@/chat/types'
 
 interface ChatPanelProps {
   isOpen: boolean
@@ -19,6 +20,7 @@ interface ChatPanelProps {
 export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { messages, isConnected, isStreaming, isWaiting, sendMessage, clearMessages } = useChat()
+  const isProcessing = isWaiting || isStreaming
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -83,7 +85,21 @@ export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
         {messages.length === 0 && !isWaiting ? (
           <WelcomePrompt />
         ) : (
-          messages.map((message) => <ChatMessage key={message.id} message={message} />)
+          (() => {
+            const grouped = groupMessages(messages)
+            const lastToolGroupIdx = grouped.reduce<number>((last, g, i) => g.type === 'tool_group' ? i : last, -1)
+            return grouped.map((group, idx) =>
+              group.type === 'single' ? (
+                <ChatMessage key={group.message.id} message={group.message} />
+              ) : (
+                <ThinkingToggle
+                  key={group.id}
+                  toolMessages={group.messages}
+                  isActive={isProcessing && idx === lastToolGroupIdx}
+                />
+              ),
+            )
+          })()
         )}
         {isWaiting && (
           <div className="flex justify-start">
@@ -114,6 +130,73 @@ export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
               : 'Ask about teachers, subjects, or schedules…'
         }
       />
+    </div>
+  )
+}
+
+// --- Tool group helpers ---
+
+type MessageGroup =
+  | { type: 'single'; message: ChatMessageType }
+  | { type: 'tool_group'; messages: ChatMessageType[]; id: string }
+
+/** Groups consecutive tool_call / tool_result messages together. */
+function groupMessages(messages: ChatMessageType[]): MessageGroup[] {
+  const result: MessageGroup[] = []
+  let i = 0
+  while (i < messages.length) {
+    const msg = messages[i]
+    if (msg.role === 'tool_call' || msg.role === 'tool_result') {
+      const toolMsgs: ChatMessageType[] = []
+      while (i < messages.length && (messages[i].role === 'tool_call' || messages[i].role === 'tool_result')) {
+        toolMsgs.push(messages[i])
+        i++
+      }
+      result.push({ type: 'tool_group', messages: toolMsgs, id: toolMsgs[0].id })
+    } else {
+      result.push({ type: 'single', message: msg })
+      i++
+    }
+  }
+  return result
+}
+
+/**
+ * Collapsible toggle that groups tool activity under a "Thinking…" header.
+ * isActive=true (during streaming) auto-opens; turning false auto-collapses.
+ */
+function ThinkingToggle({ toolMessages, isActive }: { toolMessages: ChatMessageType[]; isActive: boolean }) {
+  const [open, setOpen] = useState(isActive)
+
+  useEffect(() => {
+    setOpen(isActive)
+  }, [isActive])
+
+  return (
+    <div className="flex justify-start">
+      <div className="w-full max-w-[85%]">
+        <button
+          className="flex items-center gap-1 text-xs text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+          onClick={() => setOpen((o) => !o)}
+        >
+          <ChevronRight className={cn('h-3 w-3 transition-transform duration-200', open && 'rotate-90')} />
+          <span>
+            {isActive
+              ? 'Thinking…'
+              : (() => {
+                  const steps = toolMessages.filter((m) => m.role === 'tool_call').length
+                  return `Thought for ${steps} step${steps === 1 ? '' : 's'}`
+                })()}
+          </span>
+        </button>
+        {open && (
+          <div className="mt-1.5 space-y-2 border-l-2 border-muted pl-3">
+            {toolMessages.map((m) => (
+              <ChatMessage key={m.id} message={m} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

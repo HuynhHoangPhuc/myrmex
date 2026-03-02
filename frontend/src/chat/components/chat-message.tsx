@@ -1,5 +1,6 @@
 import { CheckCircle2, Wrench } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { cn } from '@/lib/utils/cn'
 import type { ChatMessage as ChatMessageType } from '@/chat/types'
 
@@ -56,6 +57,7 @@ function AssistantBubble({ content }: { content: string }) {
     <div className="flex justify-start">
       <div className="max-w-[80%] rounded-2xl rounded-bl-sm bg-muted px-4 py-2.5 text-sm text-foreground">
         <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
           components={{
             p: ({ children }) => <p className="mb-2 last:mb-0 break-words">{children}</p>,
             ul: ({ children }) => <ul className="mb-2 ml-4 list-disc space-y-1 last:mb-0">{children}</ul>,
@@ -78,6 +80,18 @@ function AssistantBubble({ content }: { content: string }) {
             },
             pre: ({ children }) => <pre className="mb-2 last:mb-0">{children}</pre>,
             hr: () => <hr className="my-2 border-border" />,
+            table: ({ children }) => (
+              <div className="mb-2 overflow-x-auto last:mb-0">
+                <table className="min-w-full border-collapse text-xs">{children}</table>
+              </div>
+            ),
+            thead: ({ children }) => <thead className="bg-background/40">{children}</thead>,
+            tbody: ({ children }) => <tbody>{children}</tbody>,
+            tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
+            th: ({ children }) => (
+              <th className="border border-border px-3 py-1.5 text-left font-semibold">{children}</th>
+            ),
+            td: ({ children }) => <td className="border border-border px-3 py-1.5">{children}</td>,
           }}
         >
           {content}
