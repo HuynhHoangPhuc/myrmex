@@ -156,7 +156,7 @@ export function useChat(): UseChatReturn {
           appendMessage({
             id: crypto.randomUUID(),
             role: 'assistant',
-            content: 'Something went wrong. Please try again.',
+            content: data.content || 'Something went wrong. Please try again.',
             timestamp: new Date(),
           })
           break

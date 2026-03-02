@@ -46,7 +46,13 @@ func RequireRole(roles ...string) gin.HandlerFunc {
 	}
 	return func(c *gin.Context) {
 		role, exists := c.Get("user_role")
-		if !exists || !allowed[role.(string)] {
+		if !exists {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
+			return
+		}
+		// Internal service JWT bypasses role checks (used by AI agent tool executor)
+		roleStr := role.(string)
+		if roleStr != "service" && !allowed[roleStr] {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
 			return
 		}

@@ -149,3 +149,26 @@ func TestToolRegistry_RegisterMultipleAtOnce(t *testing.T) {
 		t.Fatalf("expected %d tools, got %d", expected, len(tools))
 	}
 }
+
+func TestDefaultTools_TotalCount(t *testing.T) {
+	// DefaultTools aggregates all 5 module tool slices.
+	// Update this total whenever a module adds or removes tools.
+	expectedTotal := len(HRTools) + len(SubjectTools) + len(TimetableTools) + len(StudentTools) + len(AnalyticsTools)
+	if len(DefaultTools) != expectedTotal {
+		t.Fatalf("DefaultTools count mismatch: expected %d (HR=%d + Subject=%d + Timetable=%d + Student=%d + Analytics=%d), got %d",
+			expectedTotal, len(HRTools), len(SubjectTools), len(TimetableTools), len(StudentTools), len(AnalyticsTools), len(DefaultTools))
+	}
+}
+
+func TestDefaultTools_AllModulesPresent(t *testing.T) {
+	// Verify that each module has at least one tool in DefaultTools.
+	modules := make(map[string]int)
+	for _, tool := range DefaultTools {
+		modules[tool.ModuleName]++
+	}
+	for _, mod := range []string{"hr", "subjects", "timetable", "student", "analytics"} {
+		if modules[mod] == 0 {
+			t.Fatalf("module %q has no tools in DefaultTools", mod)
+		}
+	}
+}
