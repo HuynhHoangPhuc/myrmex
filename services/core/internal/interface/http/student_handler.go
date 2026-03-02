@@ -139,8 +139,14 @@ func (h *StudentHandler) DeleteStudent(c *gin.Context) {
 
 func (h *StudentHandler) ListEnrollments(c *gin.Context) {
 	page, pageSize := parsePage(c)
+	subjectIDFilter := c.Query("subject_id") // client-side filter (proto doesn't support it)
+
 	req := &studentv1.ListEnrollmentRequestsRequest{
 		Pagination: &corev1.PaginationRequest{Page: page, PageSize: pageSize},
+	}
+	// When filtering by subject, fetch a large batch so client-side count is accurate
+	if subjectIDFilter != "" {
+		req.Pagination = &corev1.PaginationRequest{Page: 1, PageSize: 500}
 	}
 	if studentID := c.Query("student_id"); studentID != "" {
 		req.StudentId = &studentID
@@ -162,6 +168,24 @@ func (h *StudentHandler) ListEnrollments(c *gin.Context) {
 	for i, e := range resp.Enrollments {
 		data[i] = enrollmentToJSON(e)
 	}
+
+	// Apply client-side subject_id filter
+	if subjectIDFilter != "" {
+		filtered := make([]gin.H, 0, len(data))
+		for _, entry := range data {
+			if sid, _ := entry["subject_id"].(string); sid == subjectIDFilter {
+				filtered = append(filtered, entry)
+			}
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"data":      filtered,
+			"total":     int64(len(filtered)),
+			"page":      1,
+			"page_size": len(filtered),
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"data":      data,
 		"total":     resp.Pagination.GetTotal(),

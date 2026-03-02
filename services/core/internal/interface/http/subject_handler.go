@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -144,24 +145,52 @@ func (h *SubjectHandler) DeleteSubject(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// ListPrerequisites GET /subjects/:id/prerequisites — returns array directly
+// buildSubjectMap fetches all subjects and returns a map of ID → Subject proto (best-effort).
+func (h *SubjectHandler) buildSubjectMap(ctx context.Context) map[string]*subjectv1.Subject {
+	resp, err := h.subjects.ListSubjects(ctx, &subjectv1.ListSubjectsRequest{
+		Pagination: &corev1.PaginationRequest{Page: 1, PageSize: 500},
+	})
+	if err != nil {
+		return nil
+	}
+	m := make(map[string]*subjectv1.Subject, len(resp.Subjects))
+	for _, s := range resp.Subjects {
+		m[s.Id] = s
+	}
+	return m
+}
+
+// ListPrerequisites GET /subjects/:id/prerequisites — returns array with enriched subject names
 func (h *SubjectHandler) ListPrerequisites(c *gin.Context) {
 	resp, err := h.prerequisites.ListPrerequisites(c.Request.Context(), &subjectv1.ListPrerequisitesRequest{SubjectId: c.Param("id")})
 	if err != nil {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
+
+	// Resolve UUIDs to names so the AI agent can present meaningful information
+	subjectMap := h.buildSubjectMap(c.Request.Context())
+
 	prereqs := make([]gin.H, len(resp.Prerequisites))
 	for i, p := range resp.Prerequisites {
 		prereqType := p.Type
 		if prereqType == "" {
 			prereqType = "hard"
 		}
-		prereqs[i] = gin.H{
+		entry := gin.H{
 			"subject_id":        p.SubjectId,
 			"prerequisite_id":   p.PrerequisiteId,
 			"prerequisite_type": prereqType,
 		}
+		if s, ok := subjectMap[p.SubjectId]; ok {
+			entry["subject_name"] = s.Name
+			entry["subject_code"] = s.Code
+		}
+		if prereq, ok := subjectMap[p.PrerequisiteId]; ok {
+			entry["prerequisite_name"] = prereq.Name
+			entry["prerequisite_code"] = prereq.Code
+		}
+		prereqs[i] = entry
 	}
 	c.JSON(http.StatusOK, prereqs)
 }
@@ -295,5 +324,21 @@ func (h *SubjectHandler) TopologicalSort(c *gin.Context) {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"subject_ids": resp.SubjectIds})
+
+	// Resolve IDs to subject objects so the AI agent can present meaningful names
+	subjectMap := h.buildSubjectMap(c.Request.Context())
+	subjects := make([]gin.H, 0, len(resp.SubjectIds))
+	for _, id := range resp.SubjectIds {
+		if s, ok := subjectMap[id]; ok {
+			subjects = append(subjects, gin.H{
+				"id":      s.Id,
+				"code":    s.Code,
+				"name":    s.Name,
+				"credits": s.Credits,
+			})
+		} else {
+			subjects = append(subjects, gin.H{"id": id})
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"subject_ids": resp.SubjectIds, "subjects": subjects})
 }
