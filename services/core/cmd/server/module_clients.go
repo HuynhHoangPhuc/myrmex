@@ -83,6 +83,7 @@ func buildModuleHandlers(v *viper.Viper, js jetstream.JetStream, log *zap.Logger
 			h.Timetable = httpif.NewTimetableHandler(
 				timetablev1.NewTimetableServiceClient(conn),
 				semesterClient,
+				subjectClient, // for resolving offered subject UUIDs to names
 				js,
 			)
 			log.Info("timetable handler ready", zap.String("addr", addr))

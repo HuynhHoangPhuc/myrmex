@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	corev1 "github.com/HuynhHoangPhuc/myrmex/gen/go/core/v1"
+	subjectv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/subject/v1"
 	timetablev1 "github.com/HuynhHoangPhuc/myrmex/gen/go/timetable/v1"
 )
 
@@ -17,15 +19,35 @@ import (
 type TimetableHandler struct {
 	timetable timetablev1.TimetableServiceClient
 	semesters timetablev1.SemesterServiceClient
-	natsJS    jetstream.JetStream // nil-safe — SSE endpoint returns 503 if nil
+	subjects  subjectv1.SubjectServiceClient // nil-safe — used for UUID-to-name resolution
+	natsJS    jetstream.JetStream            // nil-safe — SSE endpoint returns 503 if nil
 }
 
 func NewTimetableHandler(
 	timetable timetablev1.TimetableServiceClient,
 	semesters timetablev1.SemesterServiceClient,
+	subjects subjectv1.SubjectServiceClient,
 	natsJS jetstream.JetStream,
 ) *TimetableHandler {
-	return &TimetableHandler{timetable: timetable, semesters: semesters, natsJS: natsJS}
+	return &TimetableHandler{timetable: timetable, semesters: semesters, subjects: subjects, natsJS: natsJS}
+}
+
+// buildSubjectMap fetches all subjects and returns a map of ID → Subject proto (best-effort).
+func (h *TimetableHandler) buildSubjectMap(ctx context.Context) map[string]*subjectv1.Subject {
+	if h.subjects == nil {
+		return nil
+	}
+	resp, err := h.subjects.ListSubjects(ctx, &subjectv1.ListSubjectsRequest{
+		Pagination: &corev1.PaginationRequest{Page: 1, PageSize: 500},
+	})
+	if err != nil {
+		return nil
+	}
+	m := make(map[string]*subjectv1.Subject, len(resp.Subjects))
+	for _, s := range resp.Subjects {
+		m[s.Id] = s
+	}
+	return m
 }
 
 // semesterToJSON converts a proto Semester to a frontend-compatible JSON map.
@@ -169,6 +191,21 @@ func (h *TimetableHandler) GetSemester(c *gin.Context) {
 	result := semesterToJSON(resp.Semester)
 	result["time_slots"] = timeSlotsToJSON(slotsResp.GetTimeSlots())
 	result["rooms"] = enrichedRooms
+
+	// Enrich offered_subject_ids with subject names for human-readable AI responses (best-effort)
+	if len(resp.Semester.GetOfferedSubjectIds()) > 0 {
+		subjectMap := h.buildSubjectMap(c.Request.Context())
+		offeredSubjects := make([]gin.H, 0, len(resp.Semester.OfferedSubjectIds))
+		for _, subID := range resp.Semester.OfferedSubjectIds {
+			if s, ok := subjectMap[subID]; ok {
+				offeredSubjects = append(offeredSubjects, gin.H{"id": s.Id, "name": s.Name, "code": s.Code})
+			} else {
+				offeredSubjects = append(offeredSubjects, gin.H{"id": subID})
+			}
+		}
+		result["offered_subjects"] = offeredSubjects
+	}
+
 	c.JSON(http.StatusOK, result)
 }
 
