@@ -15,7 +15,7 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
-// On 401 clear tokens and redirect to login
+// On 401 clear tokens and redirect to login (skip redirect on auth pages to allow error toasts)
 apiClient.interceptors.response.use(
   (res) => res,
   (err: unknown) => {
@@ -23,7 +23,12 @@ apiClient.interceptors.response.use(
     if (status === 401) {
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
-      window.location.href = '/login'
+      const isAuthPage = ['/login', '/register'].some((p) =>
+        window.location.pathname.startsWith(p),
+      )
+      if (!isAuthPage) {
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(err)
   },

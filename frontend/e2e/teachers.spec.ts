@@ -6,12 +6,16 @@ test.describe('Teachers CRUD', () => {
     await expect(page).toHaveURL(/hr\/teachers/)
 
     // Create a department first (required for teacher creation)
-    const token = await page.evaluate(() => localStorage.getItem('access_token'))
-    const deptRes = await page.request.post('/api/hr/departments', {
-      data: { name: 'E2E Teachers Dept', code: 'E2ETEACH' },
-      headers: { Authorization: `Bearer ${token}` },
+    // Use page.evaluate so the fetch runs in the browser context with the correct token
+    const dept = await page.evaluate(async () => {
+      const token = localStorage.getItem('access_token')
+      const res = await fetch('/api/hr/departments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: 'E2E Teachers Dept', code: 'E2ETEACH' }),
+      })
+      return (await res.json()) as { id: string }
     })
-    const dept = await deptRes.json()
 
     await page.getByRole('link', { name: /new|add|create/i }).click()
     await expect(page).toHaveURL(/hr\/teachers\/new/)

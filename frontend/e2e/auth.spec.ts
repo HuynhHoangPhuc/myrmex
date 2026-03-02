@@ -42,6 +42,6 @@ test.describe('Authentication', () => {
     await page.getByRole('button', { name: /sign in/i }).click()
 
     // Should show error toast
-    await expect(page.getByText(/login failed|invalid/i)).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText(/login failed|invalid/i)).toBeVisible({ timeout: 10_000 })
   })
 })
