@@ -47,7 +47,8 @@ Myrmex is a microservice architecture with modular services communicating via gR
 │  AI Chat Gateway                                                       │
 │  ├─ WebSocket handler + connection manager                             │
 │  ├─ Message routing (user → LLM → tools → response)                   │
-│  ├─ Tool registry (dynamic registration)                               │
+│  ├─ Tool Registry (50+ tools across 5 modules, thread-safe RWMutex)   │
+│  │   └─ Dispatch: HTTP self-referential via internal JWT token       │
 │  └─ Event streaming to frontend                                        │
 └─────────────────────────────────────────────────────────────────────────┘
               │          │           │              │             │              │
@@ -503,11 +504,12 @@ Note: maxToolIterations=10 enables complex workflows requiring multiple tool cal
 | GET | `/api/timetable/suggest-teachers` | Module-Timetable | Query: subject_id, day_of_week, start_period, end_period; returns array |
 | GET | `/api/timetable/schedules/:id/stream` | Module-Timetable | SSE stream of schedule generation progress |
 | **Student Module** | | | |
-| GET | `/api/students` | Module-Student | Admin-only paginated list; optional `department_id`, `status` filters |
+| GET | `/api/students` | Module-Student | Admin-only paginated list; optional `department_id`, `status` filters; optional `subject_id` filter for enrollment queries |
 | POST | `/api/students` | Module-Student | Admin-only create student |
 | GET | `/api/students/:id` | Module-Student | Admin-only single active student |
 | PATCH | `/api/students/:id` | Module-Student | Admin-only partial update |
 | DELETE | `/api/students/:id` | Module-Student | Admin-only soft delete |
+| GET | `/api/students/:id/enrollments` | Module-Student | List enrollments for student; optional `subject_id` query param |
 | **Analytics** | | | |
 | GET | `/api/analytics/dashboard` | Module-Analytics | KPI cards: teacher count, avg workload, schedule completion % |
 | GET | `/api/analytics/workload` | Module-Analytics | Workload analytics per teacher with period breakdown |
@@ -776,13 +778,11 @@ event_store (same pattern)
 
 | Failure | Impact | Recovery |
 |---------|--------|----------|
-| **Core Down** | All API calls fail | Restart Core; requests queue client-side |
-| **Module-HR Down** | HR operations fail; other modules work | Restart HR; circuit breaker returns cached data |
-| **Module-Subject Down** | Subject ops fail; timetable can't fetch subjects | Restart Subject; cache prerequisites in Module-Timetable |
-| **PostgreSQL Down** | All data access fails | Failover to replica (future); requests buffer in client |
-| **NATS Down** | Events not persisted; real-time features fail | Restart NATS; replay events from event_store (future) |
-| **LLM API Down** | Chat unavailable | Graceful error message; queue requests (future) |
-| **CSP Timeout** | Schedule generation incomplete | Return best partial solution; mark as "partial" |
+| **Core Down** | API calls fail | Restart core; client-side request buffering |
+| **Module Down** | Service operations fail | Restart module; circuit breaker returns cached data |
+| **PostgreSQL Down** | Data access fails | Failover to replica (Phase 4); client buffering |
+| **NATS Down** | Events not persisted | Restart NATS; replay from event_store (Phase 4) |
+| **CSP Timeout** | Schedule incomplete | Return best partial solution |
 
 ## Performance Characteristics
 

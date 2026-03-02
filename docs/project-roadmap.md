@@ -109,7 +109,7 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 
 ## Phase 3: Advanced Features (IN PROGRESS)
 
-**Timeline**: Q3 2026 (4-5 weeks) | **Status**: ~75% Complete (Advanced Prerequisites + frontend UX polish + room assignment + full student module done, Mar 1)
+**Timeline**: Q3 2026 (4-5 weeks) | **Status**: ~80% Complete (Advanced Prerequisites + frontend UX polish + room assignment + full student module + agent tool expansion done, Mar 2)
 
 ### Goals
 - Implement advanced prerequisite conflict detection (DONE)
@@ -137,6 +137,16 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 - [x] Transcript generation: Student academic history export (JSON + PDF)
 - [x] Prerequisite validation: Prevent enrollment if prerequisites not met (Redis-cached)
 - [ ] User-linking + student self-service portal routes (planned follow-up)
+
+#### Agent Tool Registry Expansion (COMPLETE - Mar 2)
+- [x] Tool registry: Expanded to 50+ tools across 5 modules (hr, subject, timetable, student, analytics)
+- [x] Naming convention: `module.action` pattern for all tools (e.g., `hr.list_teachers`)
+- [x] UUID enrichment: Subject/Timetable handlers enrich responses with entity names + codes
+- [x] Student filtering: ListEnrollments now supports optional `subject_id` query parameter
+- [x] Query parameters: Fixed API query parameter handling for hr and enrollment tools
+- [x] Silent token refresh: Frontend auto-refresh on 401 with request queuing
+- [x] Agent guidelines: Enhanced system prompt with UUID resolution workflow hints
+- [x] UI improvements: Collapsible thinking toggle, improved dark mode visibility
 
 #### Mobile & UX Enhancements
 - [x] Responsive web app shell: Mobile nav drawer + small-screen layout polish

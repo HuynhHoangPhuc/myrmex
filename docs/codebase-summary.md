@@ -559,3 +559,42 @@ make demo
 - **Types**: `AssignRoomInput` for timetable operations
 - **Integration**: Semester wizard step 2 includes room selection; schedule detail adds "Change Room" action
 - **User Flow**: Select rooms during semester setup → CSP respects constraints → Manual override via dialog
+
+## Agent Tool Registry Expansion (Mar 2)
+
+### Tool Registry — 50+ Tools Across 5 Modules
+- **Module Naming**: `module.action` pattern (e.g., `hr.list_teachers`)
+- **Thread-Safe Implementation**: RWMutex-protected tool map with concurrent access
+- **Tool Dispatch**: HTTP self-referential dispatch via internal JWT token
+- **HR Tools (10)**: list_teachers, get_teacher, list_departments, get_teacher_availability, create_teacher, update_teacher, delete_teacher, update_teacher_availability, create_department, list_departments
+- **Subject Tools (11+)**: list_subjects, get_subject, create_subject, update_subject, delete_subject, get_prerequisites, add_prerequisite, remove_prerequisite, check_conflicts, validate_dag, topological_sort, full_dag
+- **Timetable Tools (14)**: list_semesters, generate, get_semester, get_schedule, list_schedules, suggest_teachers, list_rooms, create_semester, set_semester_rooms, create_time_slot, delete_time_slot, apply_time_slot_preset, add_offered_subject, remove_offered_subject, manual_assign
+- **Student Tools (10)**: list, get, transcript, create, update, delete, list_enrollments (with subject_id filter), review_enrollment
+- **Analytics Tools (6)**: workload, utilization, dashboard, department_metrics, schedule_metrics, schedule_heatmap
+
+### UUID-to-Name Enrichment Pattern
+- **Subject Handler**: `buildSubjectMap()` helper enriches prerequisites/topological sort responses with subject names + codes
+- **Timetable Handler**: `buildSubjectMap()` helper enriches semester offerings with subject names + codes
+- **Purpose**: Make agent responses human-readable instead of raw UUIDs for improved conversational UX
+
+### Student Enrollment Filtering
+- **ListEnrollments** API now accepts optional `subject_id` query parameter
+- **Implementation**: Fetches 500-item batch server-side, filters client-side for accurate count
+- **Agent Tool Update**: `student.list_enrollments` now includes subject_id filtering capability
+
+### Frontend Silent Token Refresh
+- **API Client** (`frontend/src/lib/api/client.ts`): Automatic 401 handling with refresh token retry
+- **Request Queuing**: Pending requests queued while refresh in progress, all retried on success
+- **Graceful Fallback**: Only redirects to login if refresh fails or no refresh token available
+- **Improved UX**: Seamless user experience without interruption on token expiry
+
+### Agent Guidelines & Chat Improvements
+- **Enhanced Tool Descriptions**: Include UUID resolution workflow hints (e.g., "call list_departments first")
+- **Multi-Step Workflow Support**: maxToolIterations=10 allows complex agent sequences
+- **System Prompt Guidance**: Explicit instructions for semester-dependent operations (list_semesters before generate)
+- **Error Message Security**: Generic error messages prevent internal error leakage to users
+
+### UI & UX Enhancements
+- **Collapsible Thinking Toggle**: Optional expanded thinking display in chat tool execution
+- **Dark Mode Visibility**: Improved contrast for chat panel and navigation in dark mode
+- **Error Handling**: Consistent error messaging across all modules

@@ -384,22 +384,7 @@ logging:
 
 ### Module Services (HR, Subject, Timetable, Student)
 
-Similar structure:
-
-```yaml
-server:
-  grpc_port: 50052         # Different for each module
-
-database:
-  url: "postgres://myrmex:myrmex_dev@localhost:5432/myrmex?sslmode=disable"
-  max_connections: 20
-
-nats:
-  url: "nats://localhost:4222"
-
-logging:
-  level: "info"
-```
+Similar YAML structure for each module gRPC service (port varies: 50052, 50053, 50054, 50055).
 
 ### Frontend (`frontend/.env.local`)
 
@@ -415,45 +400,17 @@ VITE_CHAT_WS_URL=ws://localhost:8080/ws/chat
 ### Running Migrations
 
 ```bash
-# Set DATABASE_URL
 export DATABASE_URL="postgres://myrmex:myrmex_dev@localhost:5432/myrmex?sslmode=disable"
-
-# Run migrations for all services
-make migrate
-
-# Or manually for specific service
-cd services/core
-go tool goose -dir migrations postgres "$DATABASE_URL" up
-cd ../..
+make migrate  # Runs all service migrations
 ```
 
 ### Creating Migrations
 
 ```bash
-# Create new migration for module-hr
 cd services/module-hr
-go tool goose create add_teacher_specializations sql
-# Creates: migrations/NNN_add_teacher_specializations.sql
-
-# Edit migration file
-cat migrations/NNN_add_teacher_specializations.sql
-# Add up/down SQL
-
-# Test migration
+go tool goose create migration_name sql  # Creates migration file
+# Edit migration with up/down SQL
 go tool goose -dir migrations postgres "$DATABASE_URL" up
-
-# Rollback if needed
-go tool goose -dir migrations postgres "$DATABASE_URL" down
-```
-
-### Viewing Migration Status
-
-```bash
-# List applied migrations
-go tool goose -dir migrations postgres "$DATABASE_URL" status
-
-# Rollback to previous version
-go tool goose -dir migrations postgres "$DATABASE_URL" down
 ```
 
 ---
@@ -547,41 +504,9 @@ air
 ps aux | grep server
 ```
 
-### Systemd Service (Linux)
+### Systemd Service (Linux Production)
 
-Create `/etc/systemd/system/myrmex-core.service`:
-
-```ini
-[Unit]
-Description=Myrmex Core Service
-After=network.target postgresql.service nats.service
-
-[Service]
-Type=simple
-User=myrmex
-WorkingDirectory=/opt/myrmex
-ExecStart=/opt/myrmex/bin/core-server
-Restart=on-failure
-RestartSec=5s
-StandardOutput=journal
-StandardError=journal
-
-Environment="DATABASE_URL=postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable"
-Environment="NATS_URL=nats://nats:4222"
-Environment="CORE_JWT_SECRET=your-secret-key"
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable and start:
-
-```bash
-sudo systemctl enable myrmex-core
-sudo systemctl start myrmex-core
-sudo systemctl status myrmex-core
-sudo journalctl -u myrmex-core -f
-```
+Create `/etc/systemd/system/myrmex-core.service` with proper environment variables and enable via systemctl.
 
 ---
 
@@ -601,90 +526,17 @@ docker compose -f deploy/docker/compose.yml logs
 make down
 ```
 
-### Docker Compose File Structure
+### Docker Compose Structure
 
-```yaml
-# deploy/docker/compose.yml
-services:
-  postgres:16-alpine
-    # PostgreSQL database
-    ports: 5432:5432
-    volumes: postgres_data
+`deploy/docker/compose.yml` includes:
+- Infrastructure: postgres, nats, redis
+- Services: core, module-hr, module-subject, module-timetable, module-student, module-analytics
+- Frontend: nginx-based React UI
 
-  nats:2.10-alpine
-    # Message bus
-    ports: 4222:4222, 8222:8222
-    volumes: nats_data
-
-  redis:7-alpine
-    # Shared cache infrastructure (used by pkg/cache)
-    ports: 6379:6379
-
-volumes:
-  postgres_data
-  nats_data
-```
-
-### Adding Services to Docker Compose
-
-To run Go services in Docker:
-
-```yaml
-# deploy/docker/compose.yml
-services:
-  core:
-    build:
-      context: .
-      dockerfile: services/core/Dockerfile
-    ports: 8080:8080, 50051:50051
-    environment:
-      DATABASE_URL: postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable&search_path=core
-      NATS_URL: nats://nats:4222
-      HR_GRPC_ADDR: module-hr:50052
-      SUBJECT_GRPC_ADDR: module-subject:50053
-      TIMETABLE_GRPC_ADDR: module-timetable:50054
-      STUDENT_GRPC_ADDR: module-student:50055
-    depends_on:
-      postgres:
-        condition: service_healthy
-      nats:
-        condition: service_started
-
-  module-hr:
-    build:
-      context: .
-      dockerfile: services/module-hr/Dockerfile
-    ports: 50052:50052
-    environment:
-      DATABASE_URL: postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable&search_path=hr
-      NATS_URL: nats://nats:4222
-    depends_on: [postgres, nats]
-
-  module-student:
-    build:
-      context: .
-      dockerfile: services/module-student/Dockerfile
-    ports: 50055:50055
-    environment:
-      DATABASE_URL: postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable&search_path=student
-      NATS_URL: nats://nats:4222
-    depends_on: [postgres, nats]
-
-  # Similar for module-subject, module-timetable, module-analytics
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports: 3000:3000
-    environment:
-      VITE_API_URL: http://core:8080
-    depends_on: [core]
-```
-
-Start all services with:
+All services use environment variable overrides for configuration (DATABASE_URL, NATS_URL, gRPC addresses).
 
 ```bash
+# Start all services
 docker compose -f deploy/docker/compose.yml up -d
 
 # View logs
@@ -698,149 +550,43 @@ docker compose -f deploy/docker/compose.yml down
 
 ## Troubleshooting
 
-### Port Already in Use
+### Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| Port already in use | `lsof -i :8080` to find process, `kill -9 <PID>` to kill |
+| Database connection error | Check PostgreSQL running: `docker ps \| grep postgres`; verify DATABASE_URL |
+| NATS connection error | Check NATS: `curl http://localhost:8222/varz` |
+| Proto changes not reflected | Run `make proto` then rebuild: `go build ./cmd/server` |
+| Frontend API 404 | Verify gateway: `curl http://localhost:8080/api/health` |
+| Migration issues | Check status: `go tool goose -dir migrations postgres "$DATABASE_URL" status` |
+
+### Health Checks
 
 ```bash
-# Find process using port
-lsof -i :8080
-
-# Kill process
-kill -9 <PID>
-
-# Or use alternative port
-CORE_HTTP_PORT=8081 go run ./cmd/server
-```
-
-### Database Connection Error
-
-```bash
-# Test PostgreSQL connection
-psql postgres://myrmex:myrmex_dev@localhost:5432/myrmex
-
-# Check PostgreSQL is running
-docker ps | grep postgres
-
-# View PostgreSQL logs
-docker logs <postgres-container-id>
-
-# Restart PostgreSQL
-make down
-make up
-```
-
-### NATS Connection Error
-
-```bash
-# Test NATS connection
-curl http://localhost:8222/varz
-
-# Check NATS is running
-docker ps | grep nats
-
-# View NATS logs
-docker logs <nats-container-id>
-
-# Check firewall
-telnet localhost 4222
-```
-
-### Proto Changes Not Reflected
-
-```bash
-# Regenerate Go code
-make proto
-
-# Rebuild service
-cd services/core && go build ./cmd/server && cd ../..
-
-# Restart service
-go run ./cmd/server
-```
-
-### Frontend API 404 Errors
-
-```bash
-# Verify API gateway is running
-curl http://localhost:8080/api/health
-
-# Check CORS headers
-curl -H "Origin: http://localhost:3000" http://localhost:8080/api/health
-
-# Check frontend API_URL
-cat frontend/.env.local | grep VITE_API_URL
-```
-
-### Migration Rollback Issues
-
-```bash
-# Check migration status
-go tool goose -dir migrations postgres "$DATABASE_URL" status
-
-# Rollback one step
-go tool goose -dir migrations postgres "$DATABASE_URL" down
-
-# Rollback all
-go tool goose -dir migrations postgres "$DATABASE_URL" reset
-
-# Re-run migrations
-go tool goose -dir migrations postgres "$DATABASE_URL" up
-```
-
-### Service Health Checks
-
-```bash
-# Core HTTP gateway
-curl http://localhost:8080/api/health
-
-# Core gRPC health
-grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check
-
-# HR gRPC health
-grpcurl -plaintext localhost:50052 grpc.health.v1.Health/Check
-
-# NATS info
-curl http://localhost:8222/varz
-
-# Database connectivity
-psql "$DATABASE_URL" -c "SELECT 1"
+curl http://localhost:8080/api/health          # HTTP gateway
+grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check  # Core gRPC
+curl http://localhost:8222/varz                 # NATS
+psql "$DATABASE_URL" -c "SELECT 1"              # Database
 ```
 
 ---
 
 ## Production Deployment (Future)
 
-### Requirements
-- Kubernetes 1.24+ or Docker Swarm
-- PostgreSQL 16 with replication (master-slave)
+### Key Requirements
+- Kubernetes 1.24+ with Helm
+- PostgreSQL 16 with replication
 - NATS JetStream cluster (3+ nodes)
-- Redis cluster (optional)
-- Monitoring: Prometheus + Grafana
-- Log aggregation: ELK Stack or Loki
-- Load balancer: Nginx or Traefik
+- Monitoring (Prometheus) + Logging (ELK/Loki)
+- Secrets management (Vault / AWS Secrets Manager)
 
-### Deployment Strategy
-1. **Container Registry**: Push images to Docker Hub / ECR / GCR
-2. **Orchestration**: Deploy via Helm charts (Kubernetes) or Docker Swarm
-3. **Database**: RDS (AWS) / Cloud SQL (GCP) / managed PostgreSQL
-4. **NATS**: JetStream cluster with 3+ nodes
-5. **Monitoring**: Prometheus scrape gRPC metrics
-6. **Logging**: Fluent-bit → Elasticsearch
-7. **Secrets**: HashiCorp Vault / AWS Secrets Manager
-8. **CI/CD**: GitHub Actions → Docker build → Kubernetes deploy
-
-### High Availability Setup
-- **Load Balancer**: Nginx/Traefik with health checks
-- **Database Replication**: PostgreSQL streaming replication (RTO: 1min, RPO: 5s)
-- **NATS HA**: 3-node cluster with persistent storage
-- **Service Replicas**: Minimum 2 per service (auto-scaling 1-10)
-- **Health Checks**: Liveness + readiness probes per service
-
-### Scaling Strategy
-- **Horizontal**: Auto-scale services based on CPU/memory
-- **Vertical**: Increase pod resources for data-intensive services (CSP solver)
-- **Database**: Connection pooling (PgBouncer), read replicas for analytics
-- **Cache**: Redis cache-aside for frequently accessed data
-- **CDN**: Static assets (frontend) via CloudFront/Cloudflare
+### HA & Scaling
+- Load balancer (Nginx/Traefik) with health checks
+- PostgreSQL streaming replication
+- NATS 3-node HA cluster
+- Auto-scaling services (min 2, max 10 per service)
+- Redis cache-aside for frequently accessed data
 
 ---
 

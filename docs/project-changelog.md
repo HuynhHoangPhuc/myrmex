@@ -2,6 +2,49 @@
 
 All notable changes to the Myrmex project are documented here.
 
+## [2026-03-02] — Agent Tool Registry Expansion & Frontend Enhancements
+
+**Status**: Complete
+
+### Summary
+Expanded agent tool registry to 50+ tools across 5 modules with complete CRUD coverage. Implemented UUID-to-name enrichment pattern in handlers, added student enrollment filtering with subject_id support, and enhanced frontend with silent token refresh and security improvements.
+
+### Backend Changes
+- **Tool Registry**: Expanded from ~20 to 50+ tools (hr, subject, timetable, student, analytics modules)
+- **Module Naming**: Standardized `module.action` pattern (e.g., `hr.list_teachers`, `subject.create_subject`)
+- **Thread-Safe Implementation**: RWMutex-protected tool map for concurrent access
+- **UUID Enrichment**: Subject/Timetable handlers now use `buildSubjectMap()` to enrich responses with entity names + codes
+- **Student Filtering**: `ListEnrollments` now accepts optional `subject_id` query parameter for filtered enrollment queries
+- **API Query Parameters**: Fixed hr and enrollment tool query parameter handling
+
+### Frontend Changes
+- **Silent Token Refresh**: Auto-refresh on 401 with request queuing; graceful fallback to login only on refresh failure
+- **Collapsible Thinking**: Optional expanded thinking display toggle in chat tool execution
+- **Error Message Security**: Generic error messages hide internal implementation details
+- **Dark Mode**: Improved visibility for chat panel and navigation UI
+
+### Agent Guidelines
+- **UUID Resolution Workflow**: Tool descriptions now include hints for multi-step operations (e.g., "call list_departments first")
+- **Enhanced System Prompt**: Explicit instructions for semester-dependent operations (list_semesters before generate)
+- **Tool Iterations**: maxToolIterations=10 supports complex multi-step agent workflows
+
+### Files Modified
+- `services/core/internal/infrastructure/agent/tool_registry.go` — Tool registry expansion
+- `services/core/internal/infrastructure/agent/tool_executor.go` — Tool dispatch logic
+- `services/core/internal/interface/http/subject_handler.go` — UUID enrichment pattern
+- `services/core/internal/interface/http/timetable_handler.go` — Subject name enrichment
+- `services/core/internal/interface/http/student_handler.go` — subject_id filtering
+- `frontend/src/lib/api/client.ts` — Silent token refresh logic
+- `frontend/src/chat/components/chat-panel.tsx` — Thinking toggle and UI improvements
+
+### Quality Metrics
+- All services compile: `go build ./...` ✓
+- TypeScript check: `npx tsc --noEmit` ✓
+- Tool registry: 50+ tools operational ✓
+- No breaking changes to existing APIs ✓
+
+---
+
 ## [2026-03-01] — Student Module + Scalability Hardening COMPLETE
 
 **Status**: Complete (All 8 phases delivered)
