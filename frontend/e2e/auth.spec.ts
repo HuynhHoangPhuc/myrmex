@@ -41,7 +41,7 @@ test.describe('Authentication', () => {
     await page.getByLabel(/password/i).fill('wrongpassword')
     await page.getByRole('button', { name: /sign in/i }).click()
 
-    // Should show error toast
-    await expect(page.getByText(/login failed|invalid/i)).toBeVisible({ timeout: 10_000 })
+    // Should show error toast (use first() to avoid strict mode violation when toast has title + description)
+    await expect(page.getByText(/login failed|invalid/i).first()).toBeVisible({ timeout: 10_000 })
   })
 })
