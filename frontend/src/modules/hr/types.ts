@@ -21,6 +21,7 @@ export interface Teacher {
   full_name: string
   email: string
   phone?: string
+  title: string
   department_id: string
   department?: Department
   max_hours_per_week: number
@@ -35,6 +36,7 @@ export interface CreateTeacherInput {
   full_name: string
   email: string
   phone?: string
+  title: string
   department_id: string
   max_hours_per_week: number
   specializations: string[]

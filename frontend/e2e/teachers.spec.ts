@@ -27,6 +27,7 @@ test.describe('Teachers CRUD', () => {
     await page.getByLabel(/employee code/i).fill(`E2E-${runId}`)
     await page.getByLabel(/full name/i).fill('E2E Test Teacher')
     await page.getByLabel(/email/i).fill(`e2e-teacher-${runId}@test.com`)
+    await page.getByLabel(/title/i).fill('Dr.')
 
     // Wait for department option to load, then select it
     await expect(page.locator(`option[value="${dept.id}"]`)).toBeAttached({ timeout: 5_000 })

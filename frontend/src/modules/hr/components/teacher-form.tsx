@@ -13,6 +13,7 @@ const teacherSchema = z.object({
   full_name: z.string().min(2, 'Full name is required'),
   email: z.string().email('Valid email is required'),
   phone: z.string().optional(),
+  title: z.string().min(1, 'Title is required'),
   department_id: z.string().min(1, 'Department is required'),
   max_hours_per_week: z.number().min(1).max(60),
   specializations: z.array(z.string()),
@@ -36,6 +37,7 @@ export function TeacherForm({ defaultValues, onSubmit, isLoading, submitLabel = 
       full_name: defaultValues?.full_name ?? '',
       email: defaultValues?.email ?? '',
       phone: defaultValues?.phone ?? '',
+      title: defaultValues?.title ?? '',
       department_id: defaultValues?.department_id ?? '',
       max_hours_per_week: defaultValues?.max_hours_per_week ?? 20,
       specializations: defaultValues?.specializations ?? [],
@@ -99,6 +101,20 @@ export function TeacherForm({ defaultValues, onSubmit, isLoading, submitLabel = 
               label="Phone"
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
+            />
+          )}
+        />
+        <form.Field
+          name="title"
+          validators={{ onChange: teacherSchema.shape.title }}
+          children={(field) => (
+            <TextInputField
+              label="Title"
+              required
+              placeholder="e.g. Dr., Professor, Lecturer"
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+              error={field.state.meta.errors[0]?.toString()}
             />
           )}
         />
