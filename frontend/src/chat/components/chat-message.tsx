@@ -99,12 +99,12 @@ function ToolCallCard({
 
   return (
     <div className="flex justify-start">
-      <div className="flex max-w-[85%] items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs">
-        <Wrench className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+      <div className="flex max-w-[85%] items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs dark:border-amber-800 dark:bg-amber-950/30">
+        <Wrench className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
         <div className="min-w-0">
-          <span className="font-medium text-amber-800">{label}</span>
+          <span className="font-medium text-amber-800 dark:text-amber-300">{label}</span>
           {paramSummary && (
-            <p className="mt-0.5 truncate text-amber-600">{paramSummary}</p>
+            <p className="mt-0.5 truncate text-amber-600 dark:text-amber-400">{paramSummary}</p>
           )}
         </div>
       </div>
@@ -117,9 +117,9 @@ function ToolResultCard({ result }: { result?: string }) {
 
   return (
     <div className="flex justify-start">
-      <div className="flex max-w-[85%] items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs">
-        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600" />
-        <span className="text-green-700">{summary}</span>
+      <div className="flex max-w-[85%] items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs dark:border-green-800 dark:bg-green-950/30">
+        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" />
+        <span className="text-green-700 dark:text-green-300">{summary}</span>
       </div>
     </div>
   )

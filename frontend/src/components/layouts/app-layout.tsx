@@ -31,7 +31,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className="flex h-screen overflow-hidden bg-background">
       <MobileSidebarDrawer open={mobileNavOpen} onOpenChange={setMobileNavOpen} />
 
-      <aside className="hidden w-60 shrink-0 overflow-y-auto bg-sidebar-background md:flex md:flex-col">
+      <aside className="hidden w-60 shrink-0 overflow-y-auto border-r border-sidebar-border bg-sidebar-background md:flex md:flex-col">
         <SidebarNav />
       </aside>
 
