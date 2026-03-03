@@ -15,7 +15,7 @@ const registerSchema = z
     email: z.string().email('Invalid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirm_password: z.string(),
-    invite_code: z.string().optional(),
+    invite_code: z.string(),
   })
   .refine((d) => d.password === d.confirm_password, {
     message: 'Passwords do not match',
