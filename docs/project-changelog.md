@@ -2,6 +2,107 @@
 
 All notable changes to the Myrmex project are documented here.
 
+## [2026-03-03] — Student Self-Service Portal & Invite Code System (COMPLETE)
+
+**Status**: Complete | **All 5 Phases Delivered**
+
+### Summary
+Completed the Student Self-Service Portal feature with invite-code registration, student-facing API routes, admin management UI, and comprehensive testing. Students can now self-register with admin-generated invite codes, access their own portal (`/_student/`), and view/request enrollments + transcripts. Admins can manage invite codes, approve enrollments, and assign grades.
+
+### Key Deliverables
+
+#### Phase 1: Invite Code Backend
+- [x] DB migration: `invite_codes` table with SHA-256 hashing + 48h TTL
+- [x] Domain entity: `InviteCode` with expiry, usage, validity checks
+- [x] Repository + sqlc queries: Create, find by hash, mark used
+- [x] Command handlers: `CreateInviteCode`, `RedeemInviteCode`, `ValidateInviteCode`
+- [x] gRPC RPCs: 3 new student service RPCs for invite code operations
+- [x] Core gateway: `POST /api/students/:id/invite-code` (admin only)
+- [x] Security: Cryptographic random (crypto/rand), TOCTOU-safe redemption (atomic WHERE used_at IS NULL), hashed storage
+
+#### Phase 2: Student Self-Service Routes
+- [x] Portal handlers: `StudentPortalHandler` with 5 endpoints
+- [x] Routes: `/api/student/me`, `/api/student/enrollments`, `/api/student/transcript`, etc.
+- [x] Middleware: `ResolveStudentMiddleware` to prevent N+1 gRPC calls
+- [x] Student role enforcement: All portal routes require `student` role
+- [x] Response enrichment: Enrollment/student responses include human-readable names (subject codes, semester labels, department names)
+
+#### Phase 3: Admin Panel Frontend
+- [x] Invite code dialog: Generate + copy functionality on student detail page
+- [x] Enrollment approval page: `/enrollments` route with pending requests table + approve/reject buttons
+- [x] Grade entry page: `/grades` route with numeric grade input + notes
+- [x] UI patterns: Consistent with HR module (DataTable, Dialog, ConfirmDialog, toast notifications)
+
+#### Phase 4: Student Portal Enhancement
+- [x] Registration form: Added optional invite code field (conditional on link `?invite_code=` param)
+- [x] `useRegisterStudent` hook: Separate mutation for invite-code registration flow
+- [x] Dashboard: Enrollment count, GPA, pending requests summary cards
+- [x] Subjects page: Enrollment request with prereq check + history section
+- [x] Transcript page: Grades table + GPA + semester grouping
+- [x] Profile page: Read-only student info (email, department, enrollment year)
+- [x] Error boundary: Graceful 404 handling for unlinked students
+
+#### Phase 5: Testing & Hardening
+- [x] Backend unit tests: 31 tests across invite code domain, handlers, portal routes
+- [x] Test coverage: Expiry/usage validation, TOCTOU race protection, re-linking guards, error cases
+- [x] Frontend hardening: Loading skeletons, error boundaries, toast notifications on all mutations
+- [x] TypeScript compilation: Clean (no errors)
+- [x] API envelope bug: Fixed on portal responses
+- [x] StaleTime tuning: Added to prerequisites hook
+- [x] Redirect fixes: Portal auth guard correctly routes students
+
+### New Proto RPCs
+```protobuf
+service StudentService {
+  rpc CreateInviteCode(CreateInviteCodeRequest) returns (CreateInviteCodeResponse);
+  rpc ValidateInviteCode(ValidateInviteCodeRequest) returns (ValidateInviteCodeResponse);
+  rpc RedeemInviteCode(RedeemInviteCodeRequest) returns (RedeemInviteCodeResponse);
+}
+```
+
+### New API Endpoints
+- **Invite Code**: `POST /api/students/:id/invite-code` (admin, returns plaintext code once)
+- **Register Student**: `POST /api/auth/register-student` (public, with invite code)
+- **Portal Profile**: `GET /api/student/me`
+- **Portal Enrollments**: `GET /api/student/enrollments`, `POST /api/student/enrollments`
+- **Portal Prerequisites**: `GET /api/student/enrollments/check-prerequisites`
+- **Portal Transcript**: `GET /api/student/transcript`, `GET /api/student/transcript/export` (stub)
+
+### Security Considerations
+- **Code generation**: Cryptographically random via `crypto/rand` (128-bit entropy per 32-char hex)
+- **Code storage**: SHA-256 hashed in DB (no plaintext exposure)
+- **Single-use enforcement**: Atomic `WHERE used_at IS NULL` prevents concurrent redemption
+- **Re-linking protection**: `CreateInviteCode` rejects if student already linked
+- **Role enforcement**: Portal routes require `student` role + user_id matching
+- **Rate limiting**: Registration endpoint rate-limited at 100/min
+
+### Quality Metrics
+- Backend tests: 31 unit tests (invite code + portal flows)
+- TypeScript compilation: `npx tsc --noEmit` ✓ (clean)
+- Go compilation: `cd services/{module-student,core} && go build ./...` ✓
+- API response validation: All portal endpoints return enriched JSON (names + IDs)
+- Frontend coverage: All pages have loading + error states
+
+### Files Created/Modified
+- **Backend**: 8 new files (migration, domain, handlers, repo impl), 4 modified (proto, router, auth handler, student handler)
+- **Frontend**: 5 new components (dialog, hooks), 4 modified pages (register, dashboard, subjects, transcript)
+- **Documentation**: Plan + 5 phase docs (referenced in implementation)
+
+### Impact
+- **User-facing**: Students can self-register with invite codes, no more manual admin account creation
+- **Admin workflow**: Invite code dialog + enrollment approval + grade entry pages reduce manual work
+- **Platform completeness**: Student self-service portal feature (Phase 3 milestone) now fully delivered
+- **Roadmap progress**: Phase 3 completion moved from 80% → 85%, on track for Q3 2026
+
+### Next Steps
+- Phase 4 (Enterprise): Multi-tenancy + advanced RBAC + enterprise integrations (planned for Q4)
+- Phase 3 remaining: Mobile app (React Native), offline mode, push notifications (backlog)
+
+### Breaking Changes
+- None. New routes are additive; existing admin endpoints unchanged.
+
+---
+
 ## [2026-03-02] — Agent Tool Registry Expansion & Frontend Enhancements
 
 **Status**: Complete

@@ -116,214 +116,157 @@ Myrmex is a microservice architecture with modular services communicating via gR
 
 ### Core Service (HTTP Gateway + Auth + AI Chat)
 
-**Purpose**: Entry point for all HTTP requests; manages authentication and delegates to gRPC services.
+**Purpose**: Entry point for HTTP requests; manages authentication and delegates to gRPC services.
 
-**Ports**:
-- HTTP: `:8080`
-- gRPC: `:50051`
-- Metrics: `:9090` (future)
+**Ports**: HTTP `:8080`, gRPC `:50051`, Metrics `:9090` (future)
 
 **Key Responsibilities**:
-1. **HTTP Gateway**: Proxy requests to gRPC services
-2. **Authentication**: JWT token generation + validation
-3. **User Management**: User CRUD, roles
+1. **HTTP Gateway**: Proxy requests to gRPC modules (HR, Subject, Timetable, Student)
+2. **Authentication**: JWT generation + validation (15min access, 7day refresh)
+3. **User Management**: User CRUD, roles (admin, manager, viewer, student)
 4. **Module Registry**: Service discovery + health checks
-5. **AI Chat**: WebSocket endpoint, tool execution, LLM integration
+5. **AI Chat**: WebSocket endpoint, tool execution (50+ tools), LLM integration
 
-**Outbound Dependencies**:
-- PostgreSQL (core schema: users, event_store, conversations)
-- NATS JetStream (publish events)
-- LLM API (OpenAI, Claude, or Gemini for LLM inference)
+**Outbound**: PostgreSQL (core schema), NATS JetStream, LLM API (OpenAI/Claude/Gemini)
 
-**Inbound Dependencies**:
-- Module-HR (gRPC)
-- Module-Subject (gRPC)
-- Module-Timetable (gRPC)
-- Module-Student (gRPC)
+**Inbound Dependencies**: All module gRPC services
 
 ### Module-HR (Department & Teacher Management)
 
-**Purpose**: Faculty data management.
+**Purpose**: Faculty data management and availability scheduling.
 
 **Port**: gRPC `:50052`
 
 **Key Entities**:
 - **Department**: id, name, created_at, deleted_at
 - **Teacher**: id, name, email, department_id, specializations[], availability[]
-- **Availability**: {day_of_week, start_time, end_time} (value object) — Time slots in RFC3339 format (HH:MM)
-  - Example: {day_of_week: "MONDAY", start_time: "07:00", end_time: "19:00"}
+- **Availability**: {day_of_week, start_time, end_time} — Time slots in HH:MM format
   - Periods 1-6 mapped to: 07:00-09:00, 09:00-11:00, 11:00-13:00, 13:00-15:00, 15:00-17:00, 17:00-19:00
 
 **Key Operations**:
-- CRUD: Create/Read/Update/Delete department
-- CRUD: Create/Read/Update/Delete teacher (includes availability in response)
-- **GetTeacher**: Returns `availability: [{day_of_week, start_time, end_time}]` as time strings
-- **GetTeacherAvailability**: Fetch availability with time-based representation
-- **UpdateTeacherAvailability**: Accept `{available_slots: [{day_of_week, start_time, end_time}]}`, store as period integers
-- **Assign specializations**: Link teachers to subject specializations
+- CRUD: Department, Teacher (with availability + specializations)
+- GetTeacher: Returns availability as time strings
+- UpdateTeacherAvailability: Accepts {available_slots: [{day_of_week, start_time, end_time}]}
+- Soft delete for both departments and teachers
 
-**Domain Services**:
-- Availability validation
-- Soft delete logic
+**Event Types**: `teacher.created/updated/deleted`, `department.created/updated/deleted`, `teacher.availability_updated`
 
-**Event Types**:
-- `teacher.created`, `teacher.updated`, `teacher.deleted`
-- `department.created`, `department.updated`, `department.deleted`
-- `teacher.availability_updated`
-
-**Outbound**:
-- PostgreSQL (hr schema)
-- NATS JetStream (publish events)
+**Outbound**: PostgreSQL (hr schema), NATS JetStream
 
 ### Module-Subject (Subject & Prerequisite DAG)
 
-**Purpose**: Course structure with prerequisite management.
+**Purpose**: Course structure with prerequisite management and cycle detection.
 
 **Port**: gRPC `:50053`
 
 **Key Entities**:
 - **Subject**: id, code, name, credits, weekly_hours, department_id, is_active
-- **Prerequisite**: subject_id, prerequisite_subject_id, type (strict/recommended/corequisite), priority (1-5 soft: -2 to +2 hard)
-- **DAG**: In-memory representation for cycle detection + topological sort
-- **DAGNode**: Subject with metadata for visualization (id, code, name, credits, department_id)
-- **DAGEdge**: Prerequisite link with type and priority for conflict detection
+- **Prerequisite**: subject_id, prerequisite_subject_id, type (strict/recommended/corequisite), priority (-2 to +5)
+- **DAG**: In-memory for cycle detection + topological sort; DAGNode + DAGEdge for visualization
 
 **Key Operations**:
 - CRUD: Subject
-- Add prerequisite (validates no cycles via DFS 3-color)
-- Remove prerequisite
-- Topological sort (all DAGs starting from a subject)
-- Validate DAG (full cycle check)
-- **GetFullDAG**: Returns all subjects + prerequisite edges (for DAG visualization)
-- **CheckPrerequisiteConflicts**: Detects missing prerequisites in a subject set
+- Add/Remove prerequisites (cycle detection via DFS 3-color)
+- **GetFullDAG**: All subjects + edges for visualization
+- **CheckPrerequisiteConflicts**: Detect missing prerequisites in subject set
+- Topological sort for enrollment planning
 
-**Domain Services**:
-- **DAGService**: Cycle detection (DFS with 3 colors: white/gray/black)
-- **DAGService**: Topological sort (BFS layers)
+**Domain Services**: DAGService (cycle detection, topological sort via BFS)
 
-**Event Types**:
-- `subject.created`, `subject.updated`, `subject.deleted`
-- `prerequisite.added`, `prerequisite.removed`
-- `prerequisite_dag.validated` (async cycle check)
+**Event Types**: `subject.created/updated/deleted`, `prerequisite.added/removed`, `prerequisite_dag.validated`
 
-**Outbound**:
-- PostgreSQL (subject schema)
-- NATS JetStream (publish events)
+**Outbound**: PostgreSQL (subject schema), NATS JetStream
 
-### Module-Student (Student Management + Enrollment + Grades)
+### Module-Student (Student Management + Enrollment + Grades + Invite Codes)
 
-**Purpose**: Complete student lifecycle: registration, enrollment request/approval, grade assignment, transcript generation.
+**Purpose**: Complete student lifecycle: invite code generation, registration, enrollment request/approval, grade assignment, transcript generation.
 
 **Port**: gRPC `:50055`
 
 **Key Entities**:
 - **Student**: id, student_code, user_id, full_name, email, department_id, enrollment_year, status, is_active
+- **InviteCode**: code (SHA-256 hash), created_by_user_id, used_at (nullable), expires_at; single-use TOCTOU-safe via WHERE used_at IS NULL
 - **Enrollment**: id, student_id, offered_subject_id, semester_id, status (requested/approved/rejected/completed)
 - **Grade**: id, enrollment_id, grade_numeric (0-10), grade_letter (auto-derived A-F)
 
 **Key Operations**:
 - **Student CRUD**: Create, get, list (paginated), update, soft-delete
-- **RequestEnrollment**: Student requests subject enrollment (subject_id, semester_id)
-- **ApproveEnrollment**: Admin approves with prerequisite validation (Redis-cached)
-- **RejectEnrollment**: Admin rejects request
+- **CreateInviteCode**: Admin generates code; hashed in DB (redemption validation via constant-time compare)
+- **ValidateInviteCode**: Check code exists + unused + not expired (used by registration flow)
+- **RedeemInviteCode**: Atomically mark code used + link user to student (WHERE used_at IS NULL prevents double-redeem)
+- **RequestEnrollment**: Student requests subject enrollment
+- **ApproveEnrollment**: Admin approves with prerequisite validation
 - **AssignGrade**: Teacher/admin assigns numeric grade → letter auto-derived
 - **GetTranscript**: Student's full academic history + GPA calculation
 
 **Domain Services**:
-- **PrerequisiteValidator**: Checks student has completed prerequisites (Redis-cached from module-subject)
-- **GradeComputer**: Auto-derives letter grade (A≥8.5, B≥7, C≥5.5, D≥4, F<4)
+- **PrerequisiteValidator**: Checks student has completed prerequisites (Redis-cached)
+- **GradeComputer**: Auto-derives letter grade
 - **TranscriptBuilder**: Aggregates approved enrollments + grades
 
 **Event Types**:
 - `student.created`, `student.updated`, `student.deleted`
 - `student.enrollment_requested`, `student.enrollment_approved`, `student.enrollment_rejected`
 - `student.grade_assigned`
+- `invite_code.created`, `invite_code.redeemed`
 
 **Outbound**:
-- PostgreSQL (student schema: students, enrollments, grades tables)
-- NATS JetStream (publish enrollment/grade events)
-- Module-Subject (gRPC): GetSubject, ListPrerequisites (for prerequisite validation)
+- PostgreSQL (student schema: students, enrollments, grades, invite_codes tables)
+- NATS JetStream (publish events)
+- Module-Subject (gRPC): For prerequisite validation
 - Redis (pkg/cache): Cache prerequisites graph (TTL 1h)
 
 ### Module-Analytics (Analytics & Reporting)
 
-**Purpose**: Business intelligence and reporting on resource utilization.
+**Purpose**: Business intelligence on resource utilization and performance metrics.
 
-**Port**: HTTP `:8055` (reverse-proxied via Core gateway at `/api/analytics/`)
+**Port**: HTTP `:8055` (reverse-proxied via Core at `/api/analytics/`)
 
 **Key Entities**:
 - **Dimensions**: Teacher, Subject, Department, Semester (denormalized)
-- **Facts**: ScheduleEntry (star-schema fact table with measures: hours, utilization)
+- **Facts**: ScheduleEntry (star-schema with hours, utilization measures)
 
 **Key Operations**:
-- GetDashboardSummary: KPI aggregates (teachers count, avg workload, schedule completion %)
-- GetWorkloadAnalytics: Per-teacher workload summary with weekly breakdown
-- GetUtilizationAnalytics: Resource utilization metrics (rooms, teachers, semesters)
-- GetDepartmentMetrics / GetScheduleMetrics / GetScheduleHeatmap: Additional dashboard data slices
-- Export routes are reserved in the core gateway and documented in the changelog, but the current analytics HTTP server exposes dashboard/query endpoints only
+- GetDashboardSummary: KPI aggregates (count, avg workload, completion %)
+- GetWorkloadAnalytics: Per-teacher workload + weekly breakdown
+- GetUtilizationAnalytics: Resource metrics (rooms, teachers, semesters)
+- GetDepartmentMetrics / GetScheduleMetrics / GetScheduleHeatmap: Dashboard slices
+- Export: PDF/Excel (future implementation)
 
-**Domain Services**:
-- **AnalyticsRepository**: Query dimension & fact tables
-- **ExportService**: PDF/Excel report generation (iText-based)
+**Event Types**: Consumes `teacher.created/updated`, `department.created`, `subject.created`, `schedule.generation_completed`
 
-**Event Types**:
-- Consumes: `teacher.created`, `teacher.updated`, `department.created`, `subject.created`, `schedule.generation_completed`
-- Triggers ETL via NATS consumer (nightly or on-demand)
-
-**Outbound**:
-- PostgreSQL (analytics schema)
-- NATS JetStream (consumes events)
+**Outbound**: PostgreSQL (analytics schema), NATS JetStream (ETL consumer)
 
 ### Module-Timetable (Schedule Generation & Management)
 
-**Purpose**: Semester + schedule management with CSP-based generation.
+**Purpose**: Semester and schedule management with CSP-based generation.
 
 **Port**: gRPC `:50054`
 
 **Key Entities**:
-- **Semester**: id, name, year, term, start_date, end_date, offered_subject_ids[], room_ids[], academic_year (computed), is_active (computed)
+- **Semester**: id, name, year, term, start_date, end_date, offered_subject_ids[], room_ids[], academic_year (computed), is_active
 - **Room**: id, code, capacity, type (classroom|lab|lecture_hall), features[]
-- **TimeSlot**: day_of_week, period_of_day (reference data)
 - **Schedule**: id, semester_id, status (pending/generating/completed/failed), entries[]
-- **ScheduleEntry**: schedule_id, subject_id, teacher_id, room_id, day, period, week, subject_name, teacher_name, room_name (denormalized)
+- **ScheduleEntry**: schedule_id, subject_id, teacher_id, room_id, day, period, week (denormalized with names)
 
 **Key Operations**:
-- CRUD: Semester + offerings
-- CRUD: Room
-- **ListTimeSlots**: Fetch reference time slot data (day_of_week, period, time range) — RPC: `ListTimeSlots`
-- **ListRooms**: Fetch available rooms (id, code, capacity) — RPC: `ListRooms`
-- **GenerateSchedule**: Trigger CSP solver (async) — returns status `generating` → `completed` or `failed`
-- **ListSchedules**: Paginated list with optional semester filter
-- **GetSchedule**: Fetch generated schedule with status + enriched entries
-- **UpdateEntry**: Manual teacher assignment with validation
-- **SuggestTeachers**: Ranking by specialization match + availability
+- CRUD: Semester, offerings, rooms
+- **GenerateSchedule**: Trigger CSP solver (async) → `generating` → `completed`/`failed`
+- **ListTimeSlots**: Reference time data (id, period, time range)
+- **ListRooms**: Available rooms
+- **GetSchedule**: Fetch with status + enriched entries
+- **UpdateEntry**: Manual teacher assignment
+- **SuggestTeachers**: Ranking by specialization + availability
 
-**Domain Services**:
-- **CSPService**: Constraint satisfaction problem solver
-  - Variables: (teacher, room, day, period) per subject
-  - **Hard Constraints**:
-    - No teacher time conflicts
-    - Teacher specialization matches subject
-    - Room capacity ≥ subject class size
-  - **Soft Constraints**:
-    - Minimize teacher workload imbalance
-    - Respect teacher availability preferences
-  - **Algorithm**: AC-3 (arc consistency) + Backtracking
-    - MRV heuristic: Choose most constrained variable
-    - LCV heuristic: Choose least constraining value
-    - Context timeout (30s): Return best partial solution
-  - **Output**: Ordered list of schedule entries
+**CSP Domain Service**:
+- Variables: (teacher, room, day, period) per subject
+- **Hard Constraints**: No conflicts, specialization match, room capacity
+- **Soft Constraints**: Minimize workload imbalance, respect availability preferences
+- **Algorithm**: AC-3 + Backtracking (MRV/LCV heuristics, 30s timeout)
 
-**Event Types**:
-- `semester.created`, `semester.updated`
-- `schedule.generation_started`, `schedule.generation_completed`, `schedule.generation_failed`
-- `schedule.entry_assigned`, `schedule.entry_updated`
+**Event Types**: `semester.created/updated`, `schedule.generation_started/completed/failed`, `schedule.entry_assigned/updated`
 
-**Outbound**:
-- PostgreSQL (timetable schema)
-- Module-Subject (gRPC): Fetch subject details, validate prerequisites
-- Module-HR (gRPC): Fetch teacher details, validate specializations + availability
-- NATS JetStream (publish events)
+**Outbound**: PostgreSQL (timetable schema), Module-Subject (gRPC), Module-HR (gRPC), NATS JetStream
 
 ## Data Flow
 
@@ -383,6 +326,40 @@ Myrmex is a microservice architecture with modular services communicating via gR
    → Returns status: "completed"
    → Fetches entries
    → Renders calendar
+```
+
+### Student Registration Flow (Invite Code)
+
+**Example: Student registration with invite code**
+
+```
+1. Admin
+   POST /api/students/:id/invite-code
+   → Module-Student generates code (e.g., "STUD-2024-ABC123")
+   → Code hashed in DB (SHA-256), stored with expires_at + created_by
+   → Returns plaintext code to admin (never stored unhashed)
+
+2. Student
+   POST /api/auth/register-student
+   {
+     "invite_code": "STUD-2024-ABC123",
+     "email": "student@example.com",
+     "password": "secure123",
+     "full_name": "Jane Doe"
+   }
+
+3. Core Service
+   - Step 1: Validate code → Module-Student.ValidateInviteCode (check unused + not expired)
+   - Step 2: Create user with role=viewer (safe default)
+   - Step 3: Redeem code atomically → Module-Student.RedeemInviteCode (WHERE used_at IS NULL prevents double-redeem)
+   - Step 4: Upgrade user role to student
+   - Rollback: If redemption fails, delete viewer user to avoid orphaned accounts
+   → Returns access_token + refresh_token
+
+4. Result
+   - Invite code now linked to user_id, used_at=now()
+   - User can now access student portal (/api/student/*)
+   - Student record user_id_id now points to authenticated user
 ```
 
 ### Chat Agent Flow (WebSocket + Tool Execution)
@@ -504,12 +481,19 @@ Note: maxToolIterations=10 enables complex workflows requiring multiple tool cal
 | GET | `/api/timetable/suggest-teachers` | Module-Timetable | Query: subject_id, day_of_week, start_period, end_period; returns array |
 | GET | `/api/timetable/schedules/:id/stream` | Module-Timetable | SSE stream of schedule generation progress |
 | **Student Module** | | | |
-| GET | `/api/students` | Module-Student | Admin-only paginated list; optional `department_id`, `status` filters; optional `subject_id` filter for enrollment queries |
+| GET | `/api/students` | Module-Student | Admin-only paginated list; optional `department_id`, `status` filters |
 | POST | `/api/students` | Module-Student | Admin-only create student |
 | GET | `/api/students/:id` | Module-Student | Admin-only single active student |
 | PATCH | `/api/students/:id` | Module-Student | Admin-only partial update |
 | DELETE | `/api/students/:id` | Module-Student | Admin-only soft delete |
+| POST | `/api/students/:id/invite-code` | Module-Student | Admin-only; generates single-use invite code |
 | GET | `/api/students/:id/enrollments` | Module-Student | List enrollments for student; optional `subject_id` query param |
+| GET | `/api/student/me` | Module-Student | Student self-service: current student profile |
+| GET | `/api/student/enrollments` | Module-Student | Student self-service: list my enrollments |
+| POST | `/api/student/enrollments` | Module-Student | Student self-service: request enrollment (semester_id, offered_subject_id) |
+| GET | `/api/student/enrollments/check-prerequisites` | Module-Student | Student self-service: check prerequisites for subject (query: subject_id) |
+| GET | `/api/student/transcript` | Module-Student | Student self-service: full transcript + GPA |
+| POST | `/api/auth/register-student` | Core | Public: register student with invite code (code, email, password, full_name) |
 | **Analytics** | | | |
 | GET | `/api/analytics/dashboard` | Module-Analytics | KPI cards: teacher count, avg workload, schedule completion % |
 | GET | `/api/analytics/workload` | Module-Analytics | Workload analytics per teacher with period breakdown |
@@ -628,7 +612,7 @@ event_store (same pattern)
 students (
   id: uuid primary key,
   student_code: string unique,
-  user_id: uuid nullable,
+  user_id: uuid nullable fk core.users,
   full_name: string,
   email: string unique,
   department_id: uuid fk hr.departments,
@@ -637,6 +621,31 @@ students (
   is_active: bool,
   created_at: timestamp,
   updated_at: timestamp
+)
+
+invite_codes (
+  code: string primary key,  -- SHA-256 hash of plaintext code
+  created_by_user_id: uuid fk core.users,
+  used_at: timestamp nullable,  -- NULL = unused; TOCTOU protection via WHERE used_at IS NULL
+  expires_at: timestamp,
+  created_at: timestamp
+)
+
+enrollments (
+  id: uuid primary key,
+  student_id: uuid fk students,
+  offered_subject_id: uuid,
+  semester_id: uuid,
+  status: string,
+  created_at: timestamp
+)
+
+grades (
+  id: uuid primary key,
+  enrollment_id: uuid fk enrollments,
+  grade_numeric: decimal,
+  grade_letter: string,
+  created_at: timestamp
 )
 
 event_store (same pattern)
@@ -707,32 +716,19 @@ event_store (same pattern)
 
 ## Interaction Patterns
 
-### Request-Response (Synchronous)
-- **HTTP ↔ Core**: Standard REST request/response
-- **Core ↔ Module gRPC**: Blocking call with timeout (5s default)
-- **Module ↔ Module gRPC**: Blocking call with timeout
+**Request-Response (Sync)**:
+- HTTP ↔ Core: Standard REST
+- Core ↔ Module: gRPC (5s timeout)
+- Example: POST /api/subjects/dag/check-conflicts returns {has_conflicts, conflicts[]}
 
-**Example: Prerequisite Conflict Detection**
-```
-1. Frontend: POST /api/subjects/dag/check-conflicts
-   { subject_ids: ["math101", "physics201", "cs302"] }
-2. Core routes to Module-Subject gRPC
-3. Module-Subject checks prerequisites:
-   - physics201 requires math101 ✓
-   - cs302 requires math101 ✓
-4. Returns: { has_conflicts: false, conflicts: [] }
-   Or: { has_conflicts: true, conflicts: [{subject: "advanced-calc", missing: "linear-algebra"}] }
-5. Frontend renders ConflictWarningBanner with "Add missing" button if conflicts exist
-```
+**Event-Driven (Async)**:
+- NATS JetStream: Durability + ordering
+- Consumers: Logs, cache invalidation, notifications
+- Frontend: WebSocket for real-time events
 
-### Event-Driven (Asynchronous)
-- **NATS JetStream**: Durability + ordering
-- **Consumers**: Log handlers, cache invalidators, email notifiers
-- **Frontend**: WebSocket subscribed to relevant events
-
-### Polling (Frontend)
-- **Schedule Status**: Poll every 3s until completed/failed
-- **Module Health**: Periodic health check (30s)
+**Polling**:
+- Schedule status: Every 3s until completed
+- Module health: Every 30s
 
 ## Scalability & High Availability
 
@@ -778,30 +774,28 @@ event_store (same pattern)
 
 | Failure | Impact | Recovery |
 |---------|--------|----------|
-| **Core Down** | API calls fail | Restart core; client-side request buffering |
-| **Module Down** | Service operations fail | Restart module; circuit breaker returns cached data |
-| **PostgreSQL Down** | Data access fails | Failover to replica (Phase 4); client buffering |
-| **NATS Down** | Events not persisted | Restart NATS; replay from event_store (Phase 4) |
+| **Core Down** | API calls fail | Restart; client buffering |
+| **Module Down** | Operations fail | Restart; circuit breaker + cached data |
+| **PostgreSQL Down** | Data access fails | Failover to replica (Phase 4) |
+| **NATS Down** | Events lost | Restart; replay from event_store (Phase 4) |
 | **CSP Timeout** | Schedule incomplete | Return best partial solution |
 
-## Performance Characteristics
+## Performance Targets (MVP)
 
-| Component | Target | Actual (MVP) | Notes |
-|-----------|--------|--------------|-------|
-| API Latency (p95) | <500ms | ~300ms | Excl. CSP solver |
-| CSP Solver | <30s (p95) | ~20s for 100-subject semesters | Context cancellation → partial |
-| DB Query | <100ms (p95) | ~50ms | Via sqlc + optimized indexes |
-| gRPC Call | <200ms (p95) | ~100ms | Local network |
-| WebSocket Latency | <200ms | ~50ms | Direct connection |
-| Frontend Bundle | <100KB gzipped | ~80KB | Vite tree-shaking |
-| Memory per Service | <200MB | ~100MB | Go efficiency |
+- API Latency (p95): ~300ms (excl. CSP)
+- CSP Solver: ~20s for 100-subject semesters (30s timeout)
+- DB Query: ~50ms (sqlc optimized)
+- gRPC Call: ~100ms (local network)
+- WebSocket Latency: ~50ms
+- Frontend Bundle: ~80KB gzipped (Vite tree-shaking)
+- Memory per Service: ~100MB (Go efficiency)
 
 ## Future Enhancements
 
-1. **Multi-Tenancy**: Isolate data per institution (Phase 4)
+1. **Multi-Tenancy**: Institution isolation (Phase 4)
 2. **HA Setup**: PostgreSQL replication, NATS clustering, Core redundancy (Phase 2)
-3. **Distributed Tracing**: OpenTelemetry integration (Phase 3)
-4. **Service Mesh**: Istio for advanced traffic management (Phase 4)
-5. **Caching Layer**: Expand current `pkg/cache` Redis abstraction into cache-aside usage for frequently accessed data
-6. **Search**: Elasticsearch for full-text search (Phase 3)
-7. **Analytics**: Data warehouse + BI tools (Phase 4)
+3. **Distributed Tracing**: OpenTelemetry (Phase 3)
+4. **Service Mesh**: Istio (Phase 4)
+5. **Caching Layer**: Redis cache-aside pattern for frequently accessed data
+6. **Full-Text Search**: Elasticsearch (Phase 3)
+7. **Data Warehouse**: BI tools (Phase 4)

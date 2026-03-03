@@ -109,7 +109,7 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 
 ## Phase 3: Advanced Features (IN PROGRESS)
 
-**Timeline**: Q3 2026 (4-5 weeks) | **Status**: ~80% Complete (Advanced Prerequisites + frontend UX polish + room assignment + full student module + agent tool expansion done, Mar 2)
+**Timeline**: Q3 2026 (4-5 weeks) | **Status**: ~85% Complete (Advanced Prerequisites + frontend UX polish + room assignment + full student module + agent tool expansion + student self-service portal done, Mar 3)
 
 ### Goals
 - Implement advanced prerequisite conflict detection (DONE)
@@ -129,14 +129,20 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 - [x] Tests: 6 conflict detection tests + 7 banner component tests
 - [x] Proto enhancements: Prerequisite.type + priority fields
 
-#### Student Management Module (COMPLETE - Mar 1)
+#### Student Management Module (COMPLETE - Mar 3)
 - [x] Module-Student foundation: Student CRUD gRPC service + persistence + soft delete semantics
 - [x] Core gateway subset: Admin-only `/api/students` CRUD routes + `student` role + docker wiring
 - [x] Enrollment workflow: Students enroll in offered subjects with request→approve flow
 - [x] Grade tracking: Teachers input grades per student per subject + auto-derived letter grades
 - [x] Transcript generation: Student academic history export (JSON + PDF)
 - [x] Prerequisite validation: Prevent enrollment if prerequisites not met (Redis-cached)
-- [ ] User-linking + student self-service portal routes (planned follow-up)
+- [x] User-linking + student self-service portal routes + invite codes (COMPLETE - Mar 3)
+  - [x] Invite code system: Admin generates single-use codes (32-char hex, SHA-256 hashed, 48h TTL)
+  - [x] Self-registration: Students register with invite code → auto-linked to student record
+  - [x] Portal routes: `/api/student/*` endpoints for profile, enrollments, transcript, prerequisites
+  - [x] Admin UI: Invite code generation dialog, enrollment approval, grade entry pages
+  - [x] Portal UI: Enhanced registration with invite code field, enrollment history, prereq warnings
+  - [x] Testing: 31 backend unit tests for invite code + portal flows
 
 #### Agent Tool Registry Expansion (COMPLETE - Mar 2)
 - [x] Tool registry: Expanded to 50+ tools across 5 modules (hr, subject, timetable, student, analytics)
