@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, KeyRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/shared/page-header'
@@ -9,6 +9,7 @@ import { useStudent } from '@/modules/student/hooks/use-students'
 import { useEnrollments } from '@/modules/student/hooks/use-enrollments'
 import { useAllSubjects } from '@/modules/subject/hooks/use-subjects'
 import { useSemesters } from '@/modules/timetable/hooks/use-semesters'
+import { InviteCodeDialog } from '@/modules/student/components/invite-code-dialog'
 import type { EnrollmentRequest } from '@/modules/student/types'
 
 export const Route = createFileRoute('/_authenticated/students/$studentId/')({
@@ -30,6 +31,7 @@ const STATUS_VARIANT = {
 function StudentDetailPage() {
   const { studentId } = Route.useParams()
   const [tab, setTab] = React.useState<'enrollments' | 'grades'>('enrollments')
+  const [inviteOpen, setInviteOpen] = React.useState(false)
   const { data: student, isLoading } = useStudent(studentId)
   const { data: enrollments } = useEnrollments({ page: 1, pageSize: 100, studentId })
   const { data: allSubjects } = useAllSubjects()
@@ -55,12 +57,26 @@ function StudentDetailPage() {
         title={student.full_name}
         description={`${student.student_code} · Year ${student.enrollment_year}`}
         actions={
-          <Button variant="outline" asChild>
-            <Link to="/students" search={{ page: 1, pageSize: 25 }}>
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            {!student.user_id && (
+              <Button variant="outline" size="sm" onClick={() => setInviteOpen(true)}>
+                <KeyRound className="mr-2 h-4 w-4" /> Invite Code
+              </Button>
+            )}
+            <Button variant="outline" asChild>
+              <Link to="/students" search={{ page: 1, pageSize: 25 }}>
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back
+              </Link>
+            </Button>
+          </div>
         }
+      />
+
+      <InviteCodeDialog
+        studentId={studentId}
+        studentName={student.full_name}
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
       />
 
       {/* Info grid */}

@@ -16,12 +16,13 @@ import (
 
 // moduleHandlers holds gateway handlers and gRPC connections for lifecycle management.
 type moduleHandlers struct {
-	HR        *httpif.HRHandler
-	Subject   *httpif.SubjectHandler
-	Timetable *httpif.TimetableHandler
-	Student   *httpif.StudentHandler
-	Dashboard *httpif.DashboardHandler
-	conns     []*grpc.ClientConn
+	HR            *httpif.HRHandler
+	Subject       *httpif.SubjectHandler
+	Timetable     *httpif.TimetableHandler
+	Student       *httpif.StudentHandler
+	Dashboard     *httpif.DashboardHandler
+	StudentClient studentv1.StudentServiceClient // exposed for AuthHandler
+	conns         []*grpc.ClientConn
 }
 
 // Close releases all gRPC client connections.
@@ -96,7 +97,8 @@ func buildModuleHandlers(v *viper.Viper, js jetstream.JetStream, log *zap.Logger
 			log.Warn("student grpc client failed", zap.Error(err))
 		} else {
 			h.conns = append(h.conns, conn)
-			h.Student = httpif.NewStudentHandler(studentv1.NewStudentServiceClient(conn))
+			h.StudentClient = studentv1.NewStudentServiceClient(conn)
+			h.Student = httpif.NewStudentHandler(h.StudentClient)
 			log.Info("student handler ready", zap.String("addr", addr))
 		}
 	}

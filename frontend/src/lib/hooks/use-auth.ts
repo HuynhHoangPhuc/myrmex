@@ -55,6 +55,32 @@ export function useRegister() {
   })
 }
 
+interface RegisterStudentCredentials {
+  full_name: string
+  email: string
+  password: string
+  invite_code: string
+}
+
+// Register student: validates invite code, creates account, auto-logs in to student portal
+export function useRegisterStudent() {
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+
+  return useMutation({
+    mutationFn: async (creds: RegisterStudentCredentials) => {
+      const { data } = await apiClient.post<AuthResponse>(ENDPOINTS.auth.registerStudent, creds)
+      return data
+    },
+    onSuccess: (data) => {
+      authStore.setTokens(data.access_token, data.refresh_token)
+      authStore.setUser(data.user)
+      queryClient.setQueryData(['current-user'], data.user)
+      void navigate({ to: '/student/dashboard' })
+    },
+  })
+}
+
 // Logout: clears store, invalidates all queries, navigates to login
 export function useLogout() {
   const queryClient = useQueryClient()

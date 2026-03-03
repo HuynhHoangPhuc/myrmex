@@ -3,6 +3,7 @@ export const ENDPOINTS = {
   auth: {
     login: '/auth/login',
     register: '/auth/register',
+    registerStudent: '/auth/register-student',
     refresh: '/auth/refresh',
     me: '/auth/me',
     logout: '/auth/logout',
@@ -43,6 +44,8 @@ export const ENDPOINTS = {
   students: {
     list: '/students',
     detail: (id: string) => `/students/${id}`,
+    inviteCode: (id: string) => `/students/${id}/invite-code`,
+    transcript: (id: string) => `/students/${id}/transcript`,
   },
   enrollments: {
     list: '/enrollments',

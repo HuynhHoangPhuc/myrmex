@@ -117,7 +117,6 @@ func main() {
 	listModulesHandler := query.NewListModulesHandler(moduleRepo)
 
 	// 10. HTTP handlers
-	authHandler := httpif.NewAuthHandler(registerUserHandler, loginHandler, jwtSvc)
 	userHandler := httpif.NewUserHandler(getUserHandler, listUsersHandler, updateUserHandler, deleteUserHandler)
 	gatewayProxy := httpif.NewGatewayProxy(zapLog)
 	defer gatewayProxy.Close()
@@ -126,6 +125,9 @@ func main() {
 	// 10a. Module gRPC client connections (graceful — nil if unavailable)
 	modHandlers := buildModuleHandlers(v, js, zapLog)
 	defer modHandlers.Close()
+
+	authHandler := httpif.NewAuthHandler(registerUserHandler, loginHandler, jwtSvc,
+		updateUserHandler, deleteUserHandler, modHandlers.StudentClient)
 
 	// 10b. AI Chat: LLM provider + tool registry + executor + handler
 	llmProvider := buildLLMProvider(v)

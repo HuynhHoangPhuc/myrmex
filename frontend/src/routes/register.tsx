@@ -1,11 +1,11 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
-import { Building2 } from 'lucide-react'
+import { Building2, KeyRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TextInputField } from '@/components/shared/form-field'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
-import { useRegister } from '@/lib/hooks/use-auth'
+import { useRegister, useRegisterStudent } from '@/lib/hooks/use-auth'
 import { authStore } from '@/lib/stores/auth-store'
 import { toast } from '@/lib/hooks/use-toast'
 
@@ -15,6 +15,7 @@ const registerSchema = z
     email: z.string().email('Invalid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirm_password: z.string(),
+    invite_code: z.string().optional(),
   })
   .refine((d) => d.password === d.confirm_password, {
     message: 'Passwords do not match',
@@ -24,7 +25,8 @@ const registerSchema = z
 export const Route = createFileRoute('/register')({
   beforeLoad: () => {
     if (authStore.isAuthenticated()) {
-      throw redirect({ to: '/dashboard' })
+      const user = authStore.getUser()
+      throw redirect({ to: user?.role === 'student' ? '/student/dashboard' : '/dashboard' })
     }
   },
   component: RegisterPage,
@@ -32,23 +34,37 @@ export const Route = createFileRoute('/register')({
 
 function RegisterPage() {
   const register = useRegister()
+  const registerStudent = useRegisterStudent()
+
+  const isPending = register.isPending || registerStudent.isPending
 
   const form = useForm({
-    defaultValues: { full_name: '', email: '', password: '', confirm_password: '' },
+    defaultValues: { full_name: '', email: '', password: '', confirm_password: '', invite_code: '' },
     validators: { onSubmit: registerSchema },
     onSubmit: async ({ value }) => {
       try {
-        await register.mutateAsync({
-          full_name: value.full_name,
-          email: value.email,
-          password: value.password,
-        })
-        toast({ title: 'Account created', description: 'Please sign in to continue.' })
+        if (value.invite_code) {
+          await registerStudent.mutateAsync({
+            full_name: value.full_name,
+            email: value.email,
+            password: value.password,
+            invite_code: value.invite_code,
+          })
+        } else {
+          await register.mutateAsync({
+            full_name: value.full_name,
+            email: value.email,
+            password: value.password,
+          })
+          toast({ title: 'Account created', description: 'Please sign in to continue.' })
+        }
       } catch {
         toast({
           variant: 'destructive',
           title: 'Registration failed',
-          description: 'This email may already be in use.',
+          description: value.invite_code
+            ? 'Invalid or expired invite code.'
+            : 'This email may already be in use.',
         })
       }
     },
@@ -132,8 +148,26 @@ function RegisterPage() {
               )}
             </form.Field>
 
-            <Button type="submit" className="w-full" disabled={register.isPending}>
-              {register.isPending && <LoadingSpinner size="sm" className="mr-2" />}
+            <form.Field name="invite_code">
+              {(field) => (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <KeyRound className="h-3 w-3" />
+                    <span>Invite code (optional — students only)</span>
+                  </div>
+                  <TextInputField
+                    label=""
+                    placeholder="e.g. a3f8c2…"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                </div>
+              )}
+            </form.Field>
+
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending && <LoadingSpinner size="sm" className="mr-2" />}
               Create account
             </Button>
           </form>

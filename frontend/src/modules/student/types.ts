@@ -118,3 +118,9 @@ export interface RequestEnrollmentInput {
   subject_id: string
   request_note?: string
 }
+
+export interface InviteCodeResponse {
+  code: string
+  student_id: string
+  expires_at: string
+}

@@ -7,8 +7,8 @@ export function useMyEnrollments() {
   return useQuery({
     queryKey: ['student-portal', 'enrollments'] as const,
     queryFn: async () => {
-      const { data } = await apiClient.get<EnrollmentRequest[]>(ENDPOINTS.studentPortal.myEnrollments)
-      return data
+      const { data } = await apiClient.get<{ enrollments: EnrollmentRequest[] }>(ENDPOINTS.studentPortal.myEnrollments)
+      return data.enrollments
     },
   })
 }

@@ -13,19 +13,20 @@ import (
 )
 
 type RouterConfig struct {
-	AuthHandler        *AuthHandler
-	UserHandler        *UserHandler
-	ModuleHandler      *ModuleHandler
-	GatewayProxy       *GatewayProxy
-	ChatHandler        *ChatHandler
-	HRHandler          *HRHandler
-	SubjectHandler     *SubjectHandler
-	TimetableHandler   *TimetableHandler
-	StudentHandler     *StudentHandler
-	DashboardHandler   *DashboardHandler
-	AnalyticsHTTPAddr  string // e.g. "http://module-analytics:8055"
-	JWTService         *auth.JWTService
-	Logger             *zap.Logger
+	AuthHandler          *AuthHandler
+	UserHandler          *UserHandler
+	ModuleHandler        *ModuleHandler
+	GatewayProxy         *GatewayProxy
+	ChatHandler          *ChatHandler
+	HRHandler            *HRHandler
+	SubjectHandler       *SubjectHandler
+	TimetableHandler     *TimetableHandler
+	StudentHandler       *StudentHandler
+	StudentPortalHandler *StudentPortalHandler
+	DashboardHandler     *DashboardHandler
+	AnalyticsHTTPAddr    string // e.g. "http://module-analytics:8055"
+	JWTService           *auth.JWTService
+	Logger               *zap.Logger
 }
 
 func NewRouter(cfg RouterConfig) *gin.Engine {
@@ -52,6 +53,7 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 	authGroup.Use(middleware.RateLimitMiddleware(100, time.Minute))
 	{
 		authGroup.POST("/register", cfg.AuthHandler.Register)
+		authGroup.POST("/register-student", cfg.AuthHandler.RegisterStudent)
 		authGroup.POST("/login", cfg.AuthHandler.Login)
 		authGroup.POST("/refresh", cfg.AuthHandler.Refresh)
 	}
@@ -158,6 +160,7 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 				students.PATCH("/:id", cfg.StudentHandler.UpdateStudent)
 				students.DELETE("/:id", cfg.StudentHandler.DeleteStudent)
 				students.GET("/:id/transcript", cfg.StudentHandler.GetStudentTranscript)
+				students.POST("/:id/invite-code", cfg.StudentHandler.GenerateInviteCode)
 			}
 
 			enrollments := protected.Group("/enrollments")
@@ -165,6 +168,28 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 			{
 				enrollments.GET("", cfg.StudentHandler.ListEnrollments)
 				enrollments.PATCH("/:id/review", cfg.StudentHandler.ReviewEnrollment)
+			}
+
+			grades := protected.Group("/grades")
+			grades.Use(middleware.RequireRole("admin", "teacher"))
+			{
+				grades.POST("", cfg.StudentHandler.AssignGrade)
+				grades.PATCH("/:id", cfg.StudentHandler.UpdateGrade)
+			}
+
+			// Student self-service portal routes (Phase 2)
+			if cfg.StudentPortalHandler != nil {
+				portal := protected.Group("/student")
+				portal.Use(middleware.RequireRole("student"))
+				portal.Use(cfg.StudentPortalHandler.ResolveStudentMiddleware())
+				{
+					portal.GET("/me", cfg.StudentPortalHandler.GetMyProfile)
+					portal.GET("/enrollments", cfg.StudentPortalHandler.ListMyEnrollments)
+					portal.POST("/enrollments", cfg.StudentPortalHandler.RequestMyEnrollment)
+					portal.GET("/enrollments/check-prerequisites", cfg.StudentPortalHandler.CheckMyPrerequisites)
+					portal.GET("/transcript", cfg.StudentPortalHandler.GetMyTranscript)
+					portal.GET("/transcript/export", cfg.StudentPortalHandler.ExportTranscript)
+				}
 			}
 		}
 
