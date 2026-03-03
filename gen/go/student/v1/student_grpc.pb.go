@@ -34,6 +34,9 @@ const (
 	StudentService_AssignGrade_FullMethodName            = "/student.v1.StudentService/AssignGrade"
 	StudentService_UpdateGrade_FullMethodName            = "/student.v1.StudentService/UpdateGrade"
 	StudentService_GetStudentTranscript_FullMethodName   = "/student.v1.StudentService/GetStudentTranscript"
+	StudentService_CreateInviteCode_FullMethodName       = "/student.v1.StudentService/CreateInviteCode"
+	StudentService_ValidateInviteCode_FullMethodName     = "/student.v1.StudentService/ValidateInviteCode"
+	StudentService_RedeemInviteCode_FullMethodName       = "/student.v1.StudentService/RedeemInviteCode"
 )
 
 // StudentServiceClient is the client API for StudentService service.
@@ -55,6 +58,9 @@ type StudentServiceClient interface {
 	AssignGrade(ctx context.Context, in *AssignGradeRequest, opts ...grpc.CallOption) (*AssignGradeResponse, error)
 	UpdateGrade(ctx context.Context, in *UpdateGradeRequest, opts ...grpc.CallOption) (*UpdateGradeResponse, error)
 	GetStudentTranscript(ctx context.Context, in *GetStudentTranscriptRequest, opts ...grpc.CallOption) (*GetStudentTranscriptResponse, error)
+	CreateInviteCode(ctx context.Context, in *CreateInviteCodeRequest, opts ...grpc.CallOption) (*CreateInviteCodeResponse, error)
+	ValidateInviteCode(ctx context.Context, in *ValidateInviteCodeRequest, opts ...grpc.CallOption) (*ValidateInviteCodeResponse, error)
+	RedeemInviteCode(ctx context.Context, in *RedeemInviteCodeRequest, opts ...grpc.CallOption) (*RedeemInviteCodeResponse, error)
 }
 
 type studentServiceClient struct {
@@ -215,6 +221,36 @@ func (c *studentServiceClient) GetStudentTranscript(ctx context.Context, in *Get
 	return out, nil
 }
 
+func (c *studentServiceClient) CreateInviteCode(ctx context.Context, in *CreateInviteCodeRequest, opts ...grpc.CallOption) (*CreateInviteCodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateInviteCodeResponse)
+	err := c.cc.Invoke(ctx, StudentService_CreateInviteCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *studentServiceClient) ValidateInviteCode(ctx context.Context, in *ValidateInviteCodeRequest, opts ...grpc.CallOption) (*ValidateInviteCodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ValidateInviteCodeResponse)
+	err := c.cc.Invoke(ctx, StudentService_ValidateInviteCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *studentServiceClient) RedeemInviteCode(ctx context.Context, in *RedeemInviteCodeRequest, opts ...grpc.CallOption) (*RedeemInviteCodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RedeemInviteCodeResponse)
+	err := c.cc.Invoke(ctx, StudentService_RedeemInviteCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StudentServiceServer is the server API for StudentService service.
 // All implementations must embed UnimplementedStudentServiceServer
 // for forward compatibility.
@@ -234,6 +270,9 @@ type StudentServiceServer interface {
 	AssignGrade(context.Context, *AssignGradeRequest) (*AssignGradeResponse, error)
 	UpdateGrade(context.Context, *UpdateGradeRequest) (*UpdateGradeResponse, error)
 	GetStudentTranscript(context.Context, *GetStudentTranscriptRequest) (*GetStudentTranscriptResponse, error)
+	CreateInviteCode(context.Context, *CreateInviteCodeRequest) (*CreateInviteCodeResponse, error)
+	ValidateInviteCode(context.Context, *ValidateInviteCodeRequest) (*ValidateInviteCodeResponse, error)
+	RedeemInviteCode(context.Context, *RedeemInviteCodeRequest) (*RedeemInviteCodeResponse, error)
 	mustEmbedUnimplementedStudentServiceServer()
 }
 
@@ -288,6 +327,15 @@ func (UnimplementedStudentServiceServer) UpdateGrade(context.Context, *UpdateGra
 }
 func (UnimplementedStudentServiceServer) GetStudentTranscript(context.Context, *GetStudentTranscriptRequest) (*GetStudentTranscriptResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetStudentTranscript not implemented")
+}
+func (UnimplementedStudentServiceServer) CreateInviteCode(context.Context, *CreateInviteCodeRequest) (*CreateInviteCodeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateInviteCode not implemented")
+}
+func (UnimplementedStudentServiceServer) ValidateInviteCode(context.Context, *ValidateInviteCodeRequest) (*ValidateInviteCodeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ValidateInviteCode not implemented")
+}
+func (UnimplementedStudentServiceServer) RedeemInviteCode(context.Context, *RedeemInviteCodeRequest) (*RedeemInviteCodeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RedeemInviteCode not implemented")
 }
 func (UnimplementedStudentServiceServer) mustEmbedUnimplementedStudentServiceServer() {}
 func (UnimplementedStudentServiceServer) testEmbeddedByValue()                        {}
@@ -580,6 +628,60 @@ func _StudentService_GetStudentTranscript_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StudentService_CreateInviteCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateInviteCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StudentServiceServer).CreateInviteCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StudentService_CreateInviteCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StudentServiceServer).CreateInviteCode(ctx, req.(*CreateInviteCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StudentService_ValidateInviteCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ValidateInviteCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StudentServiceServer).ValidateInviteCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StudentService_ValidateInviteCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StudentServiceServer).ValidateInviteCode(ctx, req.(*ValidateInviteCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StudentService_RedeemInviteCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RedeemInviteCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StudentServiceServer).RedeemInviteCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StudentService_RedeemInviteCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StudentServiceServer).RedeemInviteCode(ctx, req.(*RedeemInviteCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StudentService_ServiceDesc is the grpc.ServiceDesc for StudentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -646,6 +748,18 @@ var StudentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetStudentTranscript",
 			Handler:    _StudentService_GetStudentTranscript_Handler,
+		},
+		{
+			MethodName: "CreateInviteCode",
+			Handler:    _StudentService_CreateInviteCode_Handler,
+		},
+		{
+			MethodName: "ValidateInviteCode",
+			Handler:    _StudentService_ValidateInviteCode_Handler,
+		},
+		{
+			MethodName: "RedeemInviteCode",
+			Handler:    _StudentService_RedeemInviteCode_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

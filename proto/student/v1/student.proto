@@ -21,6 +21,9 @@ service StudentService {
   rpc AssignGrade(AssignGradeRequest) returns (AssignGradeResponse);
   rpc UpdateGrade(UpdateGradeRequest) returns (UpdateGradeResponse);
   rpc GetStudentTranscript(GetStudentTranscriptRequest) returns (GetStudentTranscriptResponse);
+  rpc CreateInviteCode(CreateInviteCodeRequest) returns (CreateInviteCodeResponse);
+  rpc ValidateInviteCode(ValidateInviteCodeRequest) returns (ValidateInviteCodeResponse);
+  rpc RedeemInviteCode(RedeemInviteCodeRequest) returns (RedeemInviteCodeResponse);
 }
 
 message Student {
@@ -228,4 +231,36 @@ message GetStudentTranscriptResponse {
   double gpa = 3;
   int32 total_credits = 4;
   int32 passed_credits = 5;
+}
+
+message CreateInviteCodeRequest {
+  string student_id = 1;
+  string created_by = 2;
+  int32 expires_hours = 3;  // default 48
+}
+
+message CreateInviteCodeResponse {
+  string code = 1;        // plaintext code (returned once)
+  string student_id = 2;
+  string expires_at = 3;  // ISO 8601
+}
+
+message ValidateInviteCodeRequest {
+  string code = 1;
+}
+
+message ValidateInviteCodeResponse {
+  bool valid = 1;
+  string student_id = 2;
+  string student_name = 3;
+  string message = 4;  // reason if invalid
+}
+
+message RedeemInviteCodeRequest {
+  string code = 1;
+  string user_id = 2;
+}
+
+message RedeemInviteCodeResponse {
+  Student student = 1;
 }

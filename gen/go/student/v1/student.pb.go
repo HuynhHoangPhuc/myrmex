@@ -2163,6 +2163,334 @@ func (x *GetStudentTranscriptResponse) GetPassedCredits() int32 {
 	return 0
 }
 
+type CreateInviteCodeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StudentId     string                 `protobuf:"bytes,1,opt,name=student_id,json=studentId,proto3" json:"student_id,omitempty"`
+	CreatedBy     string                 `protobuf:"bytes,2,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
+	ExpiresHours  int32                  `protobuf:"varint,3,opt,name=expires_hours,json=expiresHours,proto3" json:"expires_hours,omitempty"` // default 48
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateInviteCodeRequest) Reset() {
+	*x = CreateInviteCodeRequest{}
+	mi := &file_student_v1_student_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateInviteCodeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateInviteCodeRequest) ProtoMessage() {}
+
+func (x *CreateInviteCodeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_student_v1_student_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateInviteCodeRequest.ProtoReflect.Descriptor instead.
+func (*CreateInviteCodeRequest) Descriptor() ([]byte, []int) {
+	return file_student_v1_student_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *CreateInviteCodeRequest) GetStudentId() string {
+	if x != nil {
+		return x.StudentId
+	}
+	return ""
+}
+
+func (x *CreateInviteCodeRequest) GetCreatedBy() string {
+	if x != nil {
+		return x.CreatedBy
+	}
+	return ""
+}
+
+func (x *CreateInviteCodeRequest) GetExpiresHours() int32 {
+	if x != nil {
+		return x.ExpiresHours
+	}
+	return 0
+}
+
+type CreateInviteCodeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"` // plaintext code (returned once)
+	StudentId     string                 `protobuf:"bytes,2,opt,name=student_id,json=studentId,proto3" json:"student_id,omitempty"`
+	ExpiresAt     string                 `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // ISO 8601
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateInviteCodeResponse) Reset() {
+	*x = CreateInviteCodeResponse{}
+	mi := &file_student_v1_student_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateInviteCodeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateInviteCodeResponse) ProtoMessage() {}
+
+func (x *CreateInviteCodeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_student_v1_student_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateInviteCodeResponse.ProtoReflect.Descriptor instead.
+func (*CreateInviteCodeResponse) Descriptor() ([]byte, []int) {
+	return file_student_v1_student_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *CreateInviteCodeResponse) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *CreateInviteCodeResponse) GetStudentId() string {
+	if x != nil {
+		return x.StudentId
+	}
+	return ""
+}
+
+func (x *CreateInviteCodeResponse) GetExpiresAt() string {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return ""
+}
+
+type ValidateInviteCodeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ValidateInviteCodeRequest) Reset() {
+	*x = ValidateInviteCodeRequest{}
+	mi := &file_student_v1_student_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidateInviteCodeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidateInviteCodeRequest) ProtoMessage() {}
+
+func (x *ValidateInviteCodeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_student_v1_student_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidateInviteCodeRequest.ProtoReflect.Descriptor instead.
+func (*ValidateInviteCodeRequest) Descriptor() ([]byte, []int) {
+	return file_student_v1_student_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *ValidateInviteCodeRequest) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+type ValidateInviteCodeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Valid         bool                   `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
+	StudentId     string                 `protobuf:"bytes,2,opt,name=student_id,json=studentId,proto3" json:"student_id,omitempty"`
+	StudentName   string                 `protobuf:"bytes,3,opt,name=student_name,json=studentName,proto3" json:"student_name,omitempty"`
+	Message       string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"` // reason if invalid
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ValidateInviteCodeResponse) Reset() {
+	*x = ValidateInviteCodeResponse{}
+	mi := &file_student_v1_student_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidateInviteCodeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidateInviteCodeResponse) ProtoMessage() {}
+
+func (x *ValidateInviteCodeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_student_v1_student_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidateInviteCodeResponse.ProtoReflect.Descriptor instead.
+func (*ValidateInviteCodeResponse) Descriptor() ([]byte, []int) {
+	return file_student_v1_student_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *ValidateInviteCodeResponse) GetValid() bool {
+	if x != nil {
+		return x.Valid
+	}
+	return false
+}
+
+func (x *ValidateInviteCodeResponse) GetStudentId() string {
+	if x != nil {
+		return x.StudentId
+	}
+	return ""
+}
+
+func (x *ValidateInviteCodeResponse) GetStudentName() string {
+	if x != nil {
+		return x.StudentName
+	}
+	return ""
+}
+
+func (x *ValidateInviteCodeResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type RedeemInviteCodeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RedeemInviteCodeRequest) Reset() {
+	*x = RedeemInviteCodeRequest{}
+	mi := &file_student_v1_student_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RedeemInviteCodeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RedeemInviteCodeRequest) ProtoMessage() {}
+
+func (x *RedeemInviteCodeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_student_v1_student_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RedeemInviteCodeRequest.ProtoReflect.Descriptor instead.
+func (*RedeemInviteCodeRequest) Descriptor() ([]byte, []int) {
+	return file_student_v1_student_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *RedeemInviteCodeRequest) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *RedeemInviteCodeRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type RedeemInviteCodeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Student       *Student               `protobuf:"bytes,1,opt,name=student,proto3" json:"student,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RedeemInviteCodeResponse) Reset() {
+	*x = RedeemInviteCodeResponse{}
+	mi := &file_student_v1_student_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RedeemInviteCodeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RedeemInviteCodeResponse) ProtoMessage() {}
+
+func (x *RedeemInviteCodeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_student_v1_student_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RedeemInviteCodeResponse.ProtoReflect.Descriptor instead.
+func (*RedeemInviteCodeResponse) Descriptor() ([]byte, []int) {
+	return file_student_v1_student_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *RedeemInviteCodeResponse) GetStudent() *Student {
+	if x != nil {
+		return x.Student
+	}
+	return nil
+}
+
 var File_student_v1_student_proto protoreflect.FileDescriptor
 
 const file_student_v1_student_proto_rawDesc = "" +
@@ -2366,7 +2694,32 @@ const file_student_v1_student_proto_rawDesc = "" +
 	"\aentries\x18\x02 \x03(\v2\x1b.student.v1.TranscriptEntryR\aentries\x12\x10\n" +
 	"\x03gpa\x18\x03 \x01(\x01R\x03gpa\x12#\n" +
 	"\rtotal_credits\x18\x04 \x01(\x05R\ftotalCredits\x12%\n" +
-	"\x0epassed_credits\x18\x05 \x01(\x05R\rpassedCredits2\x89\v\n" +
+	"\x0epassed_credits\x18\x05 \x01(\x05R\rpassedCredits\"|\n" +
+	"\x17CreateInviteCodeRequest\x12\x1d\n" +
+	"\n" +
+	"student_id\x18\x01 \x01(\tR\tstudentId\x12\x1d\n" +
+	"\n" +
+	"created_by\x18\x02 \x01(\tR\tcreatedBy\x12#\n" +
+	"\rexpires_hours\x18\x03 \x01(\x05R\fexpiresHours\"l\n" +
+	"\x18CreateInviteCodeResponse\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\x12\x1d\n" +
+	"\n" +
+	"student_id\x18\x02 \x01(\tR\tstudentId\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\tR\texpiresAt\"/\n" +
+	"\x19ValidateInviteCodeRequest\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\"\x8e\x01\n" +
+	"\x1aValidateInviteCodeResponse\x12\x14\n" +
+	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x1d\n" +
+	"\n" +
+	"student_id\x18\x02 \x01(\tR\tstudentId\x12!\n" +
+	"\fstudent_name\x18\x03 \x01(\tR\vstudentName\x12\x18\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage\"F\n" +
+	"\x17RedeemInviteCodeRequest\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"I\n" +
+	"\x18RedeemInviteCodeResponse\x12-\n" +
+	"\astudent\x18\x01 \x01(\v2\x13.student.v1.StudentR\astudent2\xac\r\n" +
 	"\x0eStudentService\x12T\n" +
 	"\rCreateStudent\x12 .student.v1.CreateStudentRequest\x1a!.student.v1.CreateStudentResponse\x12K\n" +
 	"\n" +
@@ -2383,7 +2736,10 @@ const file_student_v1_student_proto_rawDesc = "" +
 	"\x12CheckPrerequisites\x12%.student.v1.CheckPrerequisitesRequest\x1a&.student.v1.CheckPrerequisitesResponse\x12N\n" +
 	"\vAssignGrade\x12\x1e.student.v1.AssignGradeRequest\x1a\x1f.student.v1.AssignGradeResponse\x12N\n" +
 	"\vUpdateGrade\x12\x1e.student.v1.UpdateGradeRequest\x1a\x1f.student.v1.UpdateGradeResponse\x12i\n" +
-	"\x14GetStudentTranscript\x12'.student.v1.GetStudentTranscriptRequest\x1a(.student.v1.GetStudentTranscriptResponseB>Z<github.com/HuynhHoangPhuc/myrmex/gen/go/student/v1;studentv1b\x06proto3"
+	"\x14GetStudentTranscript\x12'.student.v1.GetStudentTranscriptRequest\x1a(.student.v1.GetStudentTranscriptResponse\x12]\n" +
+	"\x10CreateInviteCode\x12#.student.v1.CreateInviteCodeRequest\x1a$.student.v1.CreateInviteCodeResponse\x12c\n" +
+	"\x12ValidateInviteCode\x12%.student.v1.ValidateInviteCodeRequest\x1a&.student.v1.ValidateInviteCodeResponse\x12]\n" +
+	"\x10RedeemInviteCode\x12#.student.v1.RedeemInviteCodeRequest\x1a$.student.v1.RedeemInviteCodeResponseB>Z<github.com/HuynhHoangPhuc/myrmex/gen/go/student/v1;studentv1b\x06proto3"
 
 var (
 	file_student_v1_student_proto_rawDescOnce sync.Once
@@ -2397,7 +2753,7 @@ func file_student_v1_student_proto_rawDescGZIP() []byte {
 	return file_student_v1_student_proto_rawDescData
 }
 
-var file_student_v1_student_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
+var file_student_v1_student_proto_msgTypes = make([]protoimpl.MessageInfo, 41)
 var file_student_v1_student_proto_goTypes = []any{
 	(*Student)(nil),                        // 0: student.v1.Student
 	(*CreateStudentRequest)(nil),           // 1: student.v1.CreateStudentRequest
@@ -2434,71 +2790,84 @@ var file_student_v1_student_proto_goTypes = []any{
 	(*UpdateGradeResponse)(nil),            // 32: student.v1.UpdateGradeResponse
 	(*GetStudentTranscriptRequest)(nil),    // 33: student.v1.GetStudentTranscriptRequest
 	(*GetStudentTranscriptResponse)(nil),   // 34: student.v1.GetStudentTranscriptResponse
-	(*timestamppb.Timestamp)(nil),          // 35: google.protobuf.Timestamp
-	(*v1.PaginationRequest)(nil),           // 36: core.v1.PaginationRequest
-	(*v1.PaginationResponse)(nil),          // 37: core.v1.PaginationResponse
+	(*CreateInviteCodeRequest)(nil),        // 35: student.v1.CreateInviteCodeRequest
+	(*CreateInviteCodeResponse)(nil),       // 36: student.v1.CreateInviteCodeResponse
+	(*ValidateInviteCodeRequest)(nil),      // 37: student.v1.ValidateInviteCodeRequest
+	(*ValidateInviteCodeResponse)(nil),     // 38: student.v1.ValidateInviteCodeResponse
+	(*RedeemInviteCodeRequest)(nil),        // 39: student.v1.RedeemInviteCodeRequest
+	(*RedeemInviteCodeResponse)(nil),       // 40: student.v1.RedeemInviteCodeResponse
+	(*timestamppb.Timestamp)(nil),          // 41: google.protobuf.Timestamp
+	(*v1.PaginationRequest)(nil),           // 42: core.v1.PaginationRequest
+	(*v1.PaginationResponse)(nil),          // 43: core.v1.PaginationResponse
 }
 var file_student_v1_student_proto_depIdxs = []int32{
-	35, // 0: student.v1.Student.created_at:type_name -> google.protobuf.Timestamp
-	35, // 1: student.v1.Student.updated_at:type_name -> google.protobuf.Timestamp
+	41, // 0: student.v1.Student.created_at:type_name -> google.protobuf.Timestamp
+	41, // 1: student.v1.Student.updated_at:type_name -> google.protobuf.Timestamp
 	0,  // 2: student.v1.CreateStudentResponse.student:type_name -> student.v1.Student
 	0,  // 3: student.v1.GetStudentResponse.student:type_name -> student.v1.Student
-	36, // 4: student.v1.ListStudentsRequest.pagination:type_name -> core.v1.PaginationRequest
+	42, // 4: student.v1.ListStudentsRequest.pagination:type_name -> core.v1.PaginationRequest
 	0,  // 5: student.v1.ListStudentsResponse.students:type_name -> student.v1.Student
-	37, // 6: student.v1.ListStudentsResponse.pagination:type_name -> core.v1.PaginationResponse
+	43, // 6: student.v1.ListStudentsResponse.pagination:type_name -> core.v1.PaginationResponse
 	0,  // 7: student.v1.UpdateStudentResponse.student:type_name -> student.v1.Student
 	0,  // 8: student.v1.GetStudentByUserIDResponse.student:type_name -> student.v1.Student
 	0,  // 9: student.v1.LinkUserToStudentResponse.student:type_name -> student.v1.Student
-	35, // 10: student.v1.EnrollmentRequest.requested_at:type_name -> google.protobuf.Timestamp
-	35, // 11: student.v1.EnrollmentRequest.reviewed_at:type_name -> google.protobuf.Timestamp
+	41, // 10: student.v1.EnrollmentRequest.requested_at:type_name -> google.protobuf.Timestamp
+	41, // 11: student.v1.EnrollmentRequest.reviewed_at:type_name -> google.protobuf.Timestamp
 	15, // 12: student.v1.RequestEnrollmentResponse.enrollment:type_name -> student.v1.EnrollmentRequest
 	15, // 13: student.v1.ReviewEnrollmentResponse.enrollment:type_name -> student.v1.EnrollmentRequest
-	36, // 14: student.v1.ListEnrollmentRequestsRequest.pagination:type_name -> core.v1.PaginationRequest
+	42, // 14: student.v1.ListEnrollmentRequestsRequest.pagination:type_name -> core.v1.PaginationRequest
 	15, // 15: student.v1.ListEnrollmentRequestsResponse.enrollments:type_name -> student.v1.EnrollmentRequest
-	37, // 16: student.v1.ListEnrollmentRequestsResponse.pagination:type_name -> core.v1.PaginationResponse
+	43, // 16: student.v1.ListEnrollmentRequestsResponse.pagination:type_name -> core.v1.PaginationResponse
 	15, // 17: student.v1.GetStudentEnrollmentsResponse.enrollments:type_name -> student.v1.EnrollmentRequest
 	25, // 18: student.v1.CheckPrerequisitesResponse.missing:type_name -> student.v1.MissingPrerequisite
-	35, // 19: student.v1.Grade.graded_at:type_name -> google.protobuf.Timestamp
-	35, // 20: student.v1.TranscriptEntry.graded_at:type_name -> google.protobuf.Timestamp
+	41, // 19: student.v1.Grade.graded_at:type_name -> google.protobuf.Timestamp
+	41, // 20: student.v1.TranscriptEntry.graded_at:type_name -> google.protobuf.Timestamp
 	27, // 21: student.v1.AssignGradeResponse.grade:type_name -> student.v1.Grade
 	27, // 22: student.v1.UpdateGradeResponse.grade:type_name -> student.v1.Grade
 	0,  // 23: student.v1.GetStudentTranscriptResponse.student:type_name -> student.v1.Student
 	28, // 24: student.v1.GetStudentTranscriptResponse.entries:type_name -> student.v1.TranscriptEntry
-	1,  // 25: student.v1.StudentService.CreateStudent:input_type -> student.v1.CreateStudentRequest
-	3,  // 26: student.v1.StudentService.GetStudent:input_type -> student.v1.GetStudentRequest
-	5,  // 27: student.v1.StudentService.ListStudents:input_type -> student.v1.ListStudentsRequest
-	7,  // 28: student.v1.StudentService.UpdateStudent:input_type -> student.v1.UpdateStudentRequest
-	9,  // 29: student.v1.StudentService.DeleteStudent:input_type -> student.v1.DeleteStudentRequest
-	11, // 30: student.v1.StudentService.GetStudentByUserID:input_type -> student.v1.GetStudentByUserIDRequest
-	13, // 31: student.v1.StudentService.LinkUserToStudent:input_type -> student.v1.LinkUserToStudentRequest
-	16, // 32: student.v1.StudentService.RequestEnrollment:input_type -> student.v1.RequestEnrollmentRequest
-	18, // 33: student.v1.StudentService.ReviewEnrollment:input_type -> student.v1.ReviewEnrollmentRequest
-	20, // 34: student.v1.StudentService.ListEnrollmentRequests:input_type -> student.v1.ListEnrollmentRequestsRequest
-	22, // 35: student.v1.StudentService.GetStudentEnrollments:input_type -> student.v1.GetStudentEnrollmentsRequest
-	24, // 36: student.v1.StudentService.CheckPrerequisites:input_type -> student.v1.CheckPrerequisitesRequest
-	29, // 37: student.v1.StudentService.AssignGrade:input_type -> student.v1.AssignGradeRequest
-	31, // 38: student.v1.StudentService.UpdateGrade:input_type -> student.v1.UpdateGradeRequest
-	33, // 39: student.v1.StudentService.GetStudentTranscript:input_type -> student.v1.GetStudentTranscriptRequest
-	2,  // 40: student.v1.StudentService.CreateStudent:output_type -> student.v1.CreateStudentResponse
-	4,  // 41: student.v1.StudentService.GetStudent:output_type -> student.v1.GetStudentResponse
-	6,  // 42: student.v1.StudentService.ListStudents:output_type -> student.v1.ListStudentsResponse
-	8,  // 43: student.v1.StudentService.UpdateStudent:output_type -> student.v1.UpdateStudentResponse
-	10, // 44: student.v1.StudentService.DeleteStudent:output_type -> student.v1.DeleteStudentResponse
-	12, // 45: student.v1.StudentService.GetStudentByUserID:output_type -> student.v1.GetStudentByUserIDResponse
-	14, // 46: student.v1.StudentService.LinkUserToStudent:output_type -> student.v1.LinkUserToStudentResponse
-	17, // 47: student.v1.StudentService.RequestEnrollment:output_type -> student.v1.RequestEnrollmentResponse
-	19, // 48: student.v1.StudentService.ReviewEnrollment:output_type -> student.v1.ReviewEnrollmentResponse
-	21, // 49: student.v1.StudentService.ListEnrollmentRequests:output_type -> student.v1.ListEnrollmentRequestsResponse
-	23, // 50: student.v1.StudentService.GetStudentEnrollments:output_type -> student.v1.GetStudentEnrollmentsResponse
-	26, // 51: student.v1.StudentService.CheckPrerequisites:output_type -> student.v1.CheckPrerequisitesResponse
-	30, // 52: student.v1.StudentService.AssignGrade:output_type -> student.v1.AssignGradeResponse
-	32, // 53: student.v1.StudentService.UpdateGrade:output_type -> student.v1.UpdateGradeResponse
-	34, // 54: student.v1.StudentService.GetStudentTranscript:output_type -> student.v1.GetStudentTranscriptResponse
-	40, // [40:55] is the sub-list for method output_type
-	25, // [25:40] is the sub-list for method input_type
-	25, // [25:25] is the sub-list for extension type_name
-	25, // [25:25] is the sub-list for extension extendee
-	0,  // [0:25] is the sub-list for field type_name
+	0,  // 25: student.v1.RedeemInviteCodeResponse.student:type_name -> student.v1.Student
+	1,  // 26: student.v1.StudentService.CreateStudent:input_type -> student.v1.CreateStudentRequest
+	3,  // 27: student.v1.StudentService.GetStudent:input_type -> student.v1.GetStudentRequest
+	5,  // 28: student.v1.StudentService.ListStudents:input_type -> student.v1.ListStudentsRequest
+	7,  // 29: student.v1.StudentService.UpdateStudent:input_type -> student.v1.UpdateStudentRequest
+	9,  // 30: student.v1.StudentService.DeleteStudent:input_type -> student.v1.DeleteStudentRequest
+	11, // 31: student.v1.StudentService.GetStudentByUserID:input_type -> student.v1.GetStudentByUserIDRequest
+	13, // 32: student.v1.StudentService.LinkUserToStudent:input_type -> student.v1.LinkUserToStudentRequest
+	16, // 33: student.v1.StudentService.RequestEnrollment:input_type -> student.v1.RequestEnrollmentRequest
+	18, // 34: student.v1.StudentService.ReviewEnrollment:input_type -> student.v1.ReviewEnrollmentRequest
+	20, // 35: student.v1.StudentService.ListEnrollmentRequests:input_type -> student.v1.ListEnrollmentRequestsRequest
+	22, // 36: student.v1.StudentService.GetStudentEnrollments:input_type -> student.v1.GetStudentEnrollmentsRequest
+	24, // 37: student.v1.StudentService.CheckPrerequisites:input_type -> student.v1.CheckPrerequisitesRequest
+	29, // 38: student.v1.StudentService.AssignGrade:input_type -> student.v1.AssignGradeRequest
+	31, // 39: student.v1.StudentService.UpdateGrade:input_type -> student.v1.UpdateGradeRequest
+	33, // 40: student.v1.StudentService.GetStudentTranscript:input_type -> student.v1.GetStudentTranscriptRequest
+	35, // 41: student.v1.StudentService.CreateInviteCode:input_type -> student.v1.CreateInviteCodeRequest
+	37, // 42: student.v1.StudentService.ValidateInviteCode:input_type -> student.v1.ValidateInviteCodeRequest
+	39, // 43: student.v1.StudentService.RedeemInviteCode:input_type -> student.v1.RedeemInviteCodeRequest
+	2,  // 44: student.v1.StudentService.CreateStudent:output_type -> student.v1.CreateStudentResponse
+	4,  // 45: student.v1.StudentService.GetStudent:output_type -> student.v1.GetStudentResponse
+	6,  // 46: student.v1.StudentService.ListStudents:output_type -> student.v1.ListStudentsResponse
+	8,  // 47: student.v1.StudentService.UpdateStudent:output_type -> student.v1.UpdateStudentResponse
+	10, // 48: student.v1.StudentService.DeleteStudent:output_type -> student.v1.DeleteStudentResponse
+	12, // 49: student.v1.StudentService.GetStudentByUserID:output_type -> student.v1.GetStudentByUserIDResponse
+	14, // 50: student.v1.StudentService.LinkUserToStudent:output_type -> student.v1.LinkUserToStudentResponse
+	17, // 51: student.v1.StudentService.RequestEnrollment:output_type -> student.v1.RequestEnrollmentResponse
+	19, // 52: student.v1.StudentService.ReviewEnrollment:output_type -> student.v1.ReviewEnrollmentResponse
+	21, // 53: student.v1.StudentService.ListEnrollmentRequests:output_type -> student.v1.ListEnrollmentRequestsResponse
+	23, // 54: student.v1.StudentService.GetStudentEnrollments:output_type -> student.v1.GetStudentEnrollmentsResponse
+	26, // 55: student.v1.StudentService.CheckPrerequisites:output_type -> student.v1.CheckPrerequisitesResponse
+	30, // 56: student.v1.StudentService.AssignGrade:output_type -> student.v1.AssignGradeResponse
+	32, // 57: student.v1.StudentService.UpdateGrade:output_type -> student.v1.UpdateGradeResponse
+	34, // 58: student.v1.StudentService.GetStudentTranscript:output_type -> student.v1.GetStudentTranscriptResponse
+	36, // 59: student.v1.StudentService.CreateInviteCode:output_type -> student.v1.CreateInviteCodeResponse
+	38, // 60: student.v1.StudentService.ValidateInviteCode:output_type -> student.v1.ValidateInviteCodeResponse
+	40, // 61: student.v1.StudentService.RedeemInviteCode:output_type -> student.v1.RedeemInviteCodeResponse
+	44, // [44:62] is the sub-list for method output_type
+	26, // [26:44] is the sub-list for method input_type
+	26, // [26:26] is the sub-list for extension type_name
+	26, // [26:26] is the sub-list for extension extendee
+	0,  // [0:26] is the sub-list for field type_name
 }
 
 func init() { file_student_v1_student_proto_init() }
@@ -2516,7 +2885,7 @@ func file_student_v1_student_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_student_v1_student_proto_rawDesc), len(file_student_v1_student_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   35,
+			NumMessages:   41,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

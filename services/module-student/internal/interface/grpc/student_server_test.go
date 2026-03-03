@@ -126,6 +126,9 @@ func newTestStudentServer(
 		nil,
 		nil,
 		nil,
+		nil, // createInviteCode
+		nil, // validateInviteCode
+		nil, // redeemInviteCode
 	)
 }
 

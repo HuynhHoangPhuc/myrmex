@@ -64,6 +64,7 @@ func main() {
 	queries := sqlc.New(pool)
 	studentRepo := persistence.NewStudentRepository(queries)
 	enrollmentRepo := persistence.NewEnrollmentRepository(queries)
+	inviteCodeRepo := persistence.NewInviteCodeRepository(queries)
 
 	var publisher command.EventPublisher
 	var natsPublisher *messaging.NATSPublisher
@@ -139,6 +140,9 @@ func main() {
 	updateStudentHandler := command.NewUpdateStudentHandler(studentRepo, publisher)
 	deleteStudentHandler := command.NewDeleteStudentHandler(studentRepo, publisher)
 	linkUserToStudentHandler := command.NewLinkUserToStudentHandler(studentRepo, publisher)
+	createInviteCodeHandler := command.NewCreateInviteCodeHandler(studentRepo, inviteCodeRepo, publisher)
+	redeemInviteCodeHandler := command.NewRedeemInviteCodeHandler(inviteCodeRepo, linkUserToStudentHandler, publisher)
+	validateInviteCodeHandler := query.NewValidateInviteCodeHandler(inviteCodeRepo, studentRepo)
 	requestEnrollmentHandler := command.NewRequestEnrollmentHandler(studentRepo, enrollmentRepo, prerequisiteChecker, publisher)
 	reviewEnrollmentHandler := command.NewReviewEnrollmentHandler(enrollmentRepo, publisher)
 	assignGradeHandler := command.NewAssignGradeHandler(enrollmentRepo, gradeRepo, cacheStore, publisher)
@@ -166,6 +170,9 @@ func main() {
 		assignGradeHandler,
 		updateGradeHandler,
 		getTranscriptHandler,
+		createInviteCodeHandler,
+		validateInviteCodeHandler,
+		redeemInviteCodeHandler,
 	)
 
 	grpcServer := grpc.NewServer()
