@@ -109,7 +109,7 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 
 ## Phase 3: Advanced Features (COMPLETE)
 
-**Timeline**: Q3 2026 (4-5 weeks) | **Status**: 100% Complete (Mar 4, 2026)
+**Timeline**: Q1 2026 (3 weeks) | **Status**: 100% Complete (Mar 4, 2026)
 
 ### Goals
 - Implement advanced prerequisite conflict detection (DONE)
@@ -175,11 +175,12 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 - [x] Frontend: /admin/audit-logs page with table, row expand for diff, filters, pagination
 - [x] Graceful degradation: No-op when NATS not configured
 
-#### Notifications System
-- [ ] Email notifications: Schedule changes, assignments
-- [ ] SMS alerts: Critical schedule changes (opt-in)
-- [ ] In-app notifications: Real-time updates
-- [ ] Notification preferences: User-configurable channels
+#### Notifications System (Phase 4.4 - PLANNED)
+- [ ] Email notifications: Schedule changes, enrollments, assignments
+- [ ] In-app notifications: WebSocket push via NATS events
+- [ ] Notification preferences: User-configurable channels (opt-in/opt-out)
+- [ ] Notification queue: PostgreSQL-backed with retry logic
+- [ ] SMS alerts: Critical schedule changes (future enhancement)
 
 ### Success Criteria
 - [x] Student enrollment workflow functional (request→approve with prerequisite validation)
@@ -192,7 +193,7 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 
 ## Phase 4: Internal Pilot & Enterprise (IN PROGRESS)
 
-**Timeline**: Q1-Q4 2026+ (6+ weeks) | **Status**: Phase 4.1-4.2 Complete; Phase 4.3 (Audit Logging) Complete
+**Timeline**: Q1 2026+ (6+ weeks) | **Status**: Phase 4.1-4.3 Complete; Phase 4.4 Planned
 
 ### Phase 4.1: Advanced RBAC (COMPLETE - Mar 4)
 - [x] 6 roles: super_admin, admin, dean, dept_head, teacher, student
@@ -200,9 +201,10 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 - [x] Two-tier enforcement: Middleware (RequireDeptScope) + Handler (resource ownership checks)
 - [x] JWT claims extension: department_id + teacher_id for O(1) permission checks
 - [x] Role management API: PATCH /api/users/:id/role (admin/super_admin only)
-- [x] Admin UI: Role management page with department selector
+- [x] Admin UI: Role management page (/admin/roles) with role + department assignment
 - [x] gRPC interceptor: Role + scope context extraction
 - [x] Route guards: Protected HR/Subject routes, RequireDeptScope validation
+- [x] Admin roles UI: Batch role assignment with audit logging
 
 ### Goals (Phase 4 Overall)
 - Support multiple institutions (universities, schools, organizations)
@@ -230,9 +232,12 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 - [x] Admin API: GET /api/audit-logs with pagination (limit, offset)
 - [x] Frontend UI: /admin/audit-logs with table, row expand, filters, pagination
 
-### Phase 4.4: Notifications (PLANNED)
-- [ ] Email notifications: Schedule changes, assignments
-- [ ] In-app notifications: WebSocket push
+### Phase 4.4: Notifications System (PLANNED - Q2 2026)
+- [ ] Email notifications: Schedule changes, enrollments, assignments (SMTP backend)
+- [ ] In-app notifications: WebSocket push via NATS event consumer
+- [ ] Notification preferences: User-configurable channels + opt-out
+- [ ] Notification queue: PostgreSQL-backed with exponential backoff retry
+- [ ] Notification template system: Configurable templates per notification type
 
 #### Future: Multi-Tenancy & Scaling
 - [ ] Tenant isolation: Shared infrastructure, isolated data (row-level security)

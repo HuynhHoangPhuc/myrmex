@@ -432,12 +432,13 @@ make demo
 
 ## Known Gaps & Limitations
 
-1. **Student Module**: Full implementation complete (CRUD, enrollment, grades, transcripts); deferred: user-linking + student self-service endpoints
-2. **Auth**: No token rotation; no 2FA
-3. **Chat**: Message storage in PostgreSQL (will migrate to MongoDB)
-4. **Monitoring**: Prometheus metrics not yet integrated
-5. **Scale**: NATS single-instance (needs clustering for HA)
-6. **Tenancy**: Single-tenant MVP; multi-tenant planned for Phase 4
+1. **Notifications**: Email + in-app system architecture designed; deferred to Phase 4.4 (Q2 2026)
+2. **Auth**: No token rotation; no 2FA; password reset workflow pending
+3. **Chat**: Message storage in PostgreSQL (will migrate to MongoDB for non-critical data)
+4. **Monitoring**: Prometheus metrics not yet integrated (Phase 5)
+5. **Scale**: NATS single-instance (needs clustering for HA in Phase 4)
+6. **Tenancy**: Single-tenant MVP; multi-tenant planned for Phase 5
+7. **Mobile**: React Native app deferred to Phase 5 (post-pilot)
 
 ## Analytics & Testing Infrastructure (Feb 26)
 
@@ -470,8 +471,17 @@ make demo
 ### Go Testing
 - `make test`: Runs all backend tests (Go 1.26)
 - `make test-cover`: Generates coverage reports per service
-- Coverage: >70% across core, module-hr, module-subject, module-timetable, module-analytics
-- All services now in Makefile SERVICES list for automated testing
+- Coverage: >70% across core, module-hr, module-subject, module-timetable, module-student, module-analytics
+- All services in Makefile SERVICES list for automated testing
+
+### RBAC Implementation (Mar 4)
+- **6 Roles**: super_admin, admin, dean, dept_head, teacher, student
+- **Department Scoping**: dept_head + teacher roles bound to department_id in JWT
+- **Two-Tier Enforcement**: Middleware (RequireDeptScope) + Handler checks
+- **JWT Claims**: Extended with department_id + teacher_id for O(1) permission lookups
+- **Admin UI**: /admin/roles page for role management with batch assignment
+- **Route Guards**: Protected HR/Subject mutations based on user scope
+- **Audit Integration**: All role changes logged to core.audit_logs via middleware
 
 ### Mock LLM Provider
 - `LLM_PROVIDER=mock` option for testing without real API keys
@@ -559,6 +569,27 @@ make demo
 - **Types**: `AssignRoomInput` for timetable operations
 - **Integration**: Semester wizard step 2 includes room selection; schedule detail adds "Change Room" action
 - **User Flow**: Select rooms during semester setup → CSP respects constraints → Manual override via dialog
+
+## Audit Logging & Compliance (Mar 4)
+
+### Backend Audit System
+- **Middleware Capture**: Post-handler Gin middleware derives action from HTTP method (POST→Create, PATCH→Update, DELETE→Delete)
+- **Async NATS Pipeline**: Fire-and-forget publish to AUDIT.logs stream (non-blocking)
+- **Durable Consumer** (audit_consumer.go): JetStream consumer with ack/nack retry, preserves event ordering
+- **Audit Repository**: Raw pgx + sqlc for Insert + paginated List (nullable filters)
+- **Monthly Partitions**: core.audit_logs with 12 partitions (2026-03 through 2027-02)
+- **Indexes**: BRIN (timestamp), B-tree (user_id, resource_type, action) for efficient queries
+- **Query Filtering**: user_id, resource_type, action, date range (start_date, end_date) support
+- **Constraint Exclusion**: Monthly partition pruning for date-range query optimization
+- **Admin Enforcement**: GET /api/audit-logs restricted to admin/super_admin roles
+
+### Frontend Audit Logs UI
+- **Route**: /admin/audit-logs (admin/super_admin only)
+- **Table Columns**: User, Resource Type, Action, Timestamp (sortable)
+- **Row Expansion**: View old/new value diffs with JSON diff rendering
+- **Filters**: User selector (dropdown), resource type, action checkboxes, date picker
+- **Pagination**: Previous/next controls, total count display
+- **Non-blocking**: Graceful degradation if NATS not configured (testing/dev)
 
 ## Agent Tool Registry Expansion (Mar 2)
 

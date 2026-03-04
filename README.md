@@ -138,12 +138,20 @@ See `/docs` for comprehensive guides:
 
 ## API Overview
 
-### Authentication
+### Authentication & Authorization
 ```bash
-POST /api/auth/register          # Create account
-POST /api/auth/login             # Get access + refresh tokens
-POST /api/auth/refresh           # Refresh access token
-GET  /api/users/me               # Get current user (requires JWT)
+POST /api/auth/register                      # Create account (email/password)
+POST /api/auth/login                         # Get access + refresh tokens
+POST /api/auth/refresh                       # Refresh access token
+POST /api/auth/register-student              # Student registration with invite code
+GET  /api/auth/oauth/google/login            # Google OAuth login
+GET  /api/auth/oauth/google/callback         # Google OAuth callback
+GET  /api/auth/oauth/microsoft/login         # Microsoft OAuth login
+GET  /api/auth/oauth/microsoft/callback      # Microsoft OAuth callback
+POST /api/auth/oauth/exchange                # Exchange OAuth auth code for tokens
+GET  /api/users/me                           # Get current user (requires JWT)
+PATCH /api/users/:id/role                    # Update user role + department (admin only)
+GET  /api/audit-logs                         # View audit logs (admin only)
 ```
 
 ### HR Module
@@ -164,38 +172,94 @@ GET/POST   /api/subjects/{id}/prerequisites  # Manage DAG
 
 ### Timetable Module
 ```bash
-GET/POST   /api/timetable/semesters        # Manage semesters
-POST       /api/timetable/semesters/{id}/generate  # Trigger CSP solver
-GET        /api/timetable/schedules        # Get schedules
+GET/POST   /api/timetable/semesters                         # Manage semesters
+POST       /api/timetable/semesters/{id}/generate           # Trigger CSP solver
+GET        /api/timetable/schedules                         # Get schedules
 PUT        /api/timetable/schedules/{id}/entries/{entryId}  # Manual assignment
+GET        /api/timetable/suggest-teachers                  # Get teacher suggestions
+GET        /api/timetable/rooms                             # List available rooms
+```
+
+### Student Module & Self-Service
+```bash
+# Admin CRUD
+GET/POST   /api/students                                    # Admin list/create
+GET/PATCH  /api/students/{id}                               # Admin get/update
+POST       /api/students/{id}/invite-code                   # Generate invite code
+DELETE     /api/students/{id}                               # Admin soft delete
+
+# Student Self-Service
+GET        /api/student/me                                  # Current student profile
+GET        /api/student/enrollments                         # My enrollments
+POST       /api/student/enrollments                         # Request enrollment
+GET        /api/student/enrollments/check-prerequisites     # Check prerequisites
+GET        /api/student/transcript                          # Academic history + GPA
+POST       /api/auth/register-student                       # Register with invite code
+```
+
+### Analytics & Reporting
+```bash
+GET        /api/analytics/dashboard                         # KPI cards
+GET        /api/analytics/workload                          # Per-teacher workload
+GET        /api/analytics/utilization                       # Resource utilization
+GET        /api/analytics/department-metrics                # Department analytics
+GET        /api/analytics/schedule-metrics                  # Schedule metrics
+GET        /api/analytics/schedule-heatmap                  # Schedule density heatmap
 ```
 
 ### AI Chat
 ```bash
-WebSocket  /ws/chat?token=ACCESS_TOKEN  # Stream chat responses
+WebSocket  /ws/chat?token=ACCESS_TOKEN                      # Stream chat responses (50+ tools)
 ```
 
 ## Environment Variables
 
 ### LLM Configuration (All Providers)
 
-Set these environment variables for AI chat (optional; omit to disable):
+Set these environment variables for AI chat (optional; omit to use 'mock' provider):
 
 ```bash
-# Required: API key for your chosen LLM provider
-# OpenAI:  https://platform.openai.com/api-keys
-# Claude:  https://console.anthropic.com/
-# Gemini:  https://aistudio.google.com/app/apikey (free tier)
-LLM_API_KEY=your-api-key
+# AI Chat Provider (optional)
+LLM_PROVIDER="claude"                                   # "openai" | "claude" | "gemini" | "mock"
+LLM_MODEL="claude-haiku-4-5-20251001"                   # Provider-specific model name
 
-# Optional: Provider and model (defaults shown below)
-LLM_PROVIDER=openai              # "openai" | "claude" | "gemini"
-LLM_MODEL=gpt-4o-mini           # Provider-specific model name
+# API Keys for your chosen LLM provider
+CLAUDE_API_KEY="sk-ant-..."                             # Claude: https://console.anthropic.com/
+OPENAI_API_KEY="sk-..."                                 # OpenAI: https://platform.openai.com/api-keys
+GEMINI_API_KEY="AIzaSy..."                              # Gemini: https://aistudio.google.com/app/apikey (free)
 
 # Provider Examples:
 # OpenAI:  LLM_PROVIDER=openai  LLM_MODEL=gpt-4o-mini
 # Claude:  LLM_PROVIDER=claude  LLM_MODEL=claude-haiku-4-5-20251001
-# Gemini:  LLM_PROVIDER=gemini  LLM_MODEL=gemini-3-flash-preview  # free tier
+# Gemini:  LLM_PROVIDER=gemini  LLM_MODEL=gemini-2-flash-preview  # free tier
+```
+
+### OAuth/SSO Configuration (Optional)
+
+For institutional authentication (Google + Microsoft Entra ID):
+
+```bash
+# Google OAuth (teachers @institution.edu)
+GOOGLE_CLIENT_ID="xxxxx.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="GOCSPX-xxxxx"
+
+# Microsoft Entra ID (students @student.institution.edu)
+MICROSOFT_CLIENT_ID="xxxxx-xxxxx-xxxxx"
+MICROSOFT_CLIENT_SECRET="xxxxx~xxxxx"
+MICROSOFT_TENANT_ID="xxxxx-xxxxx-xxxxx"
+```
+
+### Notifications Configuration (Optional - Phase 4.4)
+
+For email + in-app notifications:
+
+```bash
+# SMTP (SendGrid or similar)
+SMTP_HOST="smtp.sendgrid.net"
+SMTP_PORT=587
+SMTP_USERNAME="apikey"
+SMTP_PASSWORD="SG.xxxxx"
+NOTIFICATION_FROM_EMAIL="noreply@myrmex.local"
 ```
 
 ### Core Service (services/core/config/local.yaml):

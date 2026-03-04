@@ -160,12 +160,27 @@ NATS_URL="nats://localhost:4222"
 CORE_JWT_SECRET="your-secret-key-min-32-chars-long!!"
 CORE_HTTP_PORT=8080
 CORE_GRPC_PORT=50051
-CORE_LLM_PROVIDER="claude" # or "openai"
+CORE_LLM_PROVIDER="claude"         # "openai" | "claude" | "gemini" | "mock"
 CORE_LLM_MODEL="claude-haiku-4-5-20251001"
 
-# LLM API Key (add one)
-CLAUDE_API_KEY="sk-ant-..." # If using Claude
-# OPENAI_API_KEY="sk-..." # If using OpenAI
+# LLM API Key (add one based on provider)
+CLAUDE_API_KEY="sk-ant-..."         # If using Claude
+# OPENAI_API_KEY="sk-..."           # If using OpenAI
+# GEMINI_API_KEY="AIzaSy..."        # If using Gemini (free tier)
+
+# OAuth/SSO (Optional)
+GOOGLE_CLIENT_ID="xxxxx.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="GOCSPX-xxxxx"
+MICROSOFT_CLIENT_ID="xxxxx-xxxxx-xxxxx"
+MICROSOFT_CLIENT_SECRET="xxxxx~xxxxx"
+MICROSOFT_TENANT_ID="xxxxx-xxxxx-xxxxx"
+
+# Notifications (Optional - Phase 4.4)
+SMTP_HOST="smtp.sendgrid.net"
+SMTP_PORT=587
+SMTP_USERNAME="apikey"
+SMTP_PASSWORD="SG.xxxxx"
+NOTIFICATION_FROM_EMAIL="noreply@myrmex.local"
 
 # HR Service
 HR_GRPC_PORT=50052
@@ -354,10 +369,60 @@ student:
   grpc_addr: "localhost:50055"
 
 llm:
-  provider: "${LLM_PROVIDER}"                          # "openai" | "claude" | "gemini"
+  provider: "${LLM_PROVIDER}"                          # "openai" | "claude" | "gemini" | "mock"
   model: "${LLM_MODEL}"                                # Provider-specific model name
   api_key: "${LLM_API_KEY}"                            # From env var
   base_url: "https://api.openai.com/v1"
+
+# OAuth/SSO Configuration (Optional; gracefully disabled if not set)
+oauth:
+  google:
+    client_id: "${GOOGLE_CLIENT_ID}"
+    client_secret: "${GOOGLE_CLIENT_SECRET}"
+    redirect_url: "http://localhost:8080/api/auth/oauth/google/callback"
+  microsoft:
+    client_id: "${MICROSOFT_CLIENT_ID}"
+    client_secret: "${MICROSOFT_CLIENT_SECRET}"
+    tenant_id: "${MICROSOFT_TENANT_ID}"
+    redirect_url: "http://localhost:8080/api/auth/oauth/microsoft/callback"
+
+# Notifications Configuration (Phase 4.4 - Optional; gracefully disabled if not set)
+notifications:
+  smtp:
+    host: "${SMTP_HOST}"                              # e.g., smtp.sendgrid.net
+    port: ${SMTP_PORT}                                # e.g., 587
+    username: "${SMTP_USERNAME}"                      # e.g., apikey
+    password: "${SMTP_PASSWORD}"                      # SendGrid API key
+    from_address: "${NOTIFICATION_FROM_EMAIL}"       # e.g., noreply@example.com
+  channels:
+    email_enabled: true
+    in_app_enabled: true
+    sms_enabled: false                                 # Future: requires Twilio config
+```
+
+**Required Environment Variables**:
+```bash
+# Core service
+CORE_JWT_SECRET="your-secret-key-min-32-chars!!"
+CORE_HTTP_PORT=8080
+CORE_GRPC_PORT=50051
+CORE_LLM_PROVIDER="claude"
+CORE_LLM_MODEL="claude-haiku-4-5-20251001"
+CORE_LLM_API_KEY="sk-ant-..."
+
+# OAuth (Optional)
+GOOGLE_CLIENT_ID="xxxxx.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="GOCSPX-xxxxx"
+MICROSOFT_CLIENT_ID="xxxxx-xxxxx-xxxxx"
+MICROSOFT_CLIENT_SECRET="xxxxx~xxxxx"
+MICROSOFT_TENANT_ID="xxxxx-xxxxx-xxxxx"
+
+# Notifications (Optional - Phase 4.4)
+SMTP_HOST="smtp.sendgrid.net"
+SMTP_PORT=587
+SMTP_USERNAME="apikey"
+SMTP_PASSWORD="SG.xxxxx"
+NOTIFICATION_FROM_EMAIL="noreply@myrmex.local"
 ```
 
 ### Module-Analytics Service

@@ -41,6 +41,35 @@ Audit logging is implemented as a fire-and-forget NATS pipeline with persistent 
 
 **Optional Configuration**: Audit middleware is no-op if NATS not configured; graceful degradation for testing/dev.
 
+### Notifications System (Phase 4.4 - Planned)
+
+Notifications will be implemented via an async NATS pipeline for email + in-app delivery:
+
+1. **Event Capture** (notifications_middleware.go):
+   - Post-handler middleware intercepts domain events (schedule changes, enrollments, assignments)
+   - Publishes to NATS subject `NOTIFICATIONS.events` with event type + user recipients
+   - Non-blocking fire-and-forget; failures don't affect API response
+
+2. **Notification Consumer** (notifications_consumer.go):
+   - Durable JetStream consumer listening on `NOTIFICATIONS.events` stream
+   - Routes to appropriate notification handler (email, in-app, SMS)
+   - Implements exponential backoff retry (max 5 attempts over 24h)
+
+3. **Storage Layer** (migration: notifications tables):
+   - `notifications` table: user_id, type, payload, sent_at, read_at
+   - `notification_preferences` table: user_id, channel (email|in_app|sms), enabled
+   - Indexes: (user_id, read_at) for inbox queries
+
+4. **Delivery Channels**:
+   - **Email**: SMTP backend (SendGrid/AWS SES), templated messages, rate-limited (max 10/hour per user)
+   - **In-app**: WebSocket push via NotificationService with client-side toast UI
+   - **Future**: SMS via Twilio (opt-in per user)
+
+5. **User Preferences** (notification_preferences_handler.go):
+   - Endpoint: PATCH `/api/notifications/preferences` (authenticated users)
+   - Allow opt-in/opt-out per channel and event type
+   - Default: All channels enabled; user can selectively disable
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                          Client Layer                                   │
@@ -841,10 +870,13 @@ event_store (same pattern)
 ### Authorization (RBAC)
 - **Roles**: 6 roles: `super_admin`, `admin`, `dean`, `dept_head`, `teacher`, `student`
 - **Enforcement**: Two-tier — middleware (role + dept scope) + handler (resource ownership)
+- **JWT Claims Extension**: `department_id` + `teacher_id` for O(1) permission checks
 - **Scope Binding**: `dept_head` and `teacher` roles scoped to `department_id` in JWT claims
-- **Admin-Only**: Module management, user deletion, role assignment
+- **Department Scoping**: Dept heads only manage their own departments; cross-dept access denied
+- **Role Assignment**: PATCH `/api/users/:id/role` endpoint (admin/super_admin only) with audit logging
+- **Admin UI**: `/admin/roles` page for batch role assignment with department selection
 - **Middleware Guards**: `RequireRole()` + `RequireDeptScope()` on protected routes
-- **Bypass**: `super_admin`, `admin`, `service` bypass scope checks; `dean` read-only bypass
+- **Bypass Hierarchy**: `super_admin` > `admin` > `dean` (read-only); scoped roles (dept_head, teacher) limited by department
 
 ### Data Isolation
 - **Schema-per-Module**: Reduces blast radius if one module is compromised

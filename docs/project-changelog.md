@@ -2,6 +2,106 @@
 
 All notable changes to the Myrmex project are documented here.
 
+## [2026-03-04] — Admin Roles UI & Notifications System (IN PROGRESS)
+
+**Status**: In Progress | **Partial Delivery**
+
+### Summary
+Added admin-facing UI for role management and implemented foundational notification infrastructure. Notifications system architecture designed for email + in-app delivery via NATS async pipeline.
+
+### Key Deliverables
+
+#### Admin Roles UI (COMPLETE)
+- [x] Role management page: `/admin/roles` (admin/super_admin only)
+  - [x] User list with current roles displayed
+  - [x] Role selector dropdown (super_admin, admin, dean, dept_head, teacher, student)
+  - [x] Department selector for scoped roles (dept_head, teacher)
+  - [x] Batch role assignment (select multiple users)
+  - [x] Audit trail: All role changes logged via audit middleware
+- [x] Integration: PATCH `/api/users/:id/role` endpoint enforced via auth middleware
+- [x] Frontend validation: Role assignment restricted by permission checks
+- [x] Testing: 8 frontend tests for role management UI
+
+#### Notifications System (PLANNED - Phase 4.4)
+- [ ] Email notifications: Template-driven (schedule changes, enrollments, assignments)
+- [ ] In-app notifications: WebSocket push via NATS events
+- [ ] Notification preferences: User-configurable channels (opt-in/opt-out)
+- [ ] Notification queue: PostgreSQL-backed queue for retry logic
+- [ ] NATS consumer: Subscribes to domain events and triggers notifications
+
+### Database Schema Changes (Role Management)
+- No new schema required; uses existing `core.users` role column
+- Audit logs track all role changes via `core.audit_logs` (partitioned)
+
+---
+
+## [2026-03-04] — Phase 4.1 Advanced RBAC (COMPLETE)
+
+**Status**: Complete | **Phase 4.1 Delivered**
+
+### Summary
+Implemented 6-role RBAC system with department scoping for faculty and instructors. Two-tier authorization (middleware + handler) enforces role-based access control. Extended JWT claims include `department_id` and `teacher_id` for O(1) permission checks. Route guards protect module mutations based on user role and department scope.
+
+### Key Deliverables
+
+#### Backend RBAC Infrastructure
+- [x] 6 roles: `super_admin`, `admin`, `dean`, `dept_head`, `teacher`, `student`
+- [x] Department scoping: `dept_head` + `teacher` roles bound to `department_id` via JWT claims
+- [x] Extended JWT claims: Added `department_id` + `teacher_id` fields for efficient authorization
+- [x] Middleware guards: `RequireRole()` + `RequireDeptScope()` for protected routes
+- [x] gRPC interceptor: Extracts role + department context from JWT (auth_interceptor.go)
+- [x] Database migration (006): Added `department_id` column to `core.users` + `user_id` to `hr.teachers`
+- [x] Route guards: Protected HR/Subject CRUD mutations based on department scope
+- [x] Super admin bypass: `super_admin`, `admin`, `service` roles bypass scope checks; `dean` read-only bypass
+
+#### Frontend RBAC Integration
+- [x] `usePermissions()` hook: Check user role + scope client-side
+- [x] Route guards: Protected routes (admin, finance, etc.) behind role checks
+- [x] UI visibility: Role-based UI elements (admin-only buttons, scoped module access)
+- [x] Department dropdown: Select department context for operations
+- [x] Permission enforcement: HR module mutations require `dept_head` or `admin`
+
+#### Testing & Validation
+- [x] Unit tests: Role + scope middleware validation (12 tests)
+- [x] Integration tests: End-to-end role enforcement (8 tests)
+- [x] E2E tests: Role-based access control workflows
+
+### API Reference
+
+**PATCH /api/users/:id/role** (Admin/Super Admin)
+
+Body:
+```json
+{
+  "role": "dept_head",  // One of: super_admin, admin, dean, dept_head, teacher, student
+  "department_id": "uuid"  // Required for scoped roles (dept_head, teacher)
+}
+```
+
+Response:
+```json
+{
+  "id": "uuid",
+  "email": "user@example.com",
+  "role": "dept_head",
+  "department_id": "uuid",
+  "created_at": "2026-03-04T10:00:00Z"
+}
+```
+
+### Authorization Matrix
+
+| Role | HR (CRUD) | Subject (CRUD) | Timetable (R) | Admin | Analytics |
+|------|-----------|---|---|---|---|
+| `super_admin` | Full | Full | Full | Full | Full |
+| `admin` | Full | Full | Full | Full | Full |
+| `dean` | Read | Read | Read | Read | Full |
+| `dept_head` | Scoped to dept | Scoped to dept | Full | No | Full |
+| `teacher` | Read own | Read | Full | No | Limited |
+| `student` | No | No | No | No | Limited |
+
+---
+
 ## [2026-03-04] — Phase 3 Complete: Audit Logging (COMPLETE)
 
 **Status**: Complete | **Phase 3 Fully Delivered**

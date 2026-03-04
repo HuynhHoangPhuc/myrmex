@@ -190,16 +190,24 @@ Create an extensible, AI-native ERP that lets institutions operate via conversat
 - [x] Dashboard with KPIs
 
 ### Phase 3 - Advanced Features
-- [ ] Mobile app (React Native)
-- [ ] Student enrollment & grades
-- [ ] Automatic prerequisite conflict detection
-- [ ] Real-time schedule collaboration
+- [x] Student enrollment & grades (Complete - Mar 3)
+- [x] Automatic prerequisite conflict detection (Complete - Feb 27)
+- [x] Invite codes & student self-service portal (Complete - Mar 3)
+- [x] Audit logging & compliance (Complete - Mar 4)
+- [x] Advanced RBAC with 6 roles (Complete - Mar 4)
+- [x] OAuth 2.0 / OIDC SSO (Google + Microsoft, Complete - Mar 4)
+- [ ] Mobile app (React Native) — Deferred to Phase 5
+- [ ] Real-time schedule collaboration — Deferred to Phase 5
+- [ ] Notifications system — In Progress (Phase 4.4)
 
-### Phase 4 - Enterprise
-- [ ] Multi-tenant support
-- [ ] LDAP/SAML integration
-- [ ] Advanced RBAC & permissions
-- [ ] Audit logging & compliance (GDPR, HIPAA)
+### Phase 4 - Internal Pilot & Enterprise
+- [x] Advanced RBAC & permissions (6 roles with department scoping - Complete - Mar 4)
+- [x] OAuth/SSO Integration (Google + Microsoft Entra ID - Complete - Mar 4)
+- [x] Audit logging & compliance (NATS async pipeline - Complete - Mar 4)
+- [ ] Notifications system (Email + in-app WebSocket) — Planned 4.4
+- [ ] Multi-tenant support — Planned Phase 5
+- [ ] LDAP/SAML integration — Planned Phase 5
+- [ ] Data retention & GDPR compliance — Planned Phase 5
 
 ## Technical Decisions
 
@@ -266,10 +274,11 @@ Create an extensible, AI-native ERP that lets institutions operate via conversat
 
 | Phase | Duration | Status |
 |-------|----------|--------|
-| Phase 1: MVP (Departments, Teachers, Subjects, Timetable) | 4 weeks | Complete |
-| Phase 2: Analytics & Reporting | 2 weeks | Complete |
-| Phase 3: Advanced Features | 4 weeks | In Progress |
-| Phase 4: Enterprise | 6 weeks | Planned |
+| Phase 1: MVP (Departments, Teachers, Subjects, Timetable) | 4 weeks | Complete (Feb 28) |
+| Phase 2: Analytics & Reporting | 2 weeks | Complete (Feb 26) |
+| Phase 3: Advanced Features | 4 weeks | Complete (Mar 4) |
+| Phase 4: Internal Pilot & Enterprise | 6+ weeks | In Progress (4.1-4.3 Complete) |
+| Phase 5: Multi-Tenancy & Scale | TBD | Planned |
 
 ## Glossary
 
