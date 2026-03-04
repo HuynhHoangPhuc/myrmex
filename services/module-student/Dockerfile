@@ -10,6 +10,7 @@ COPY services/module-hr/go.mod services/module-hr/go.mod
 COPY services/module-subject/go.mod services/module-subject/go.mod
 COPY services/module-timetable/go.mod services/module-timetable/go.mod
 COPY services/module-analytics/go.mod services/module-analytics/go.mod
+COPY services/module-notification/go.mod services/module-notification/go.mod
 
 WORKDIR /workspace/services/module-student
 RUN go build -o /bin/module-student ./cmd/server
