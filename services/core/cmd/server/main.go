@@ -25,6 +25,7 @@ import (
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/agent"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/auth"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/llm"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/messaging"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/persistence"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/persistence/sqlc"
 	httpif "github.com/HuynhHoangPhuc/myrmex/services/core/internal/interface/http"
@@ -89,6 +90,30 @@ func main() {
 	jwtSvc := auth.NewJWTService(v.GetString("jwt.secret"), accessExpiry, refreshExpiry)
 	passwordSvc := auth.NewPasswordService()
 
+	// 6b. OAuth service (optional — only initialized when client IDs are configured)
+	var oauthSvc *auth.OAuthService
+	if gClientID := v.GetString("oauth.google.client_id"); gClientID != "" {
+		oauthCfg := auth.OAuthConfig{
+			GoogleClientID:        gClientID,
+			GoogleClientSecret:    v.GetString("oauth.google.client_secret"),
+			GoogleRedirectURL:     v.GetString("oauth.google.redirect_url"),
+			MicrosoftClientID:     v.GetString("oauth.microsoft.client_id"),
+			MicrosoftClientSecret: v.GetString("oauth.microsoft.client_secret"),
+			MicrosoftTenantID:     v.GetString("oauth.microsoft.tenant_id"),
+			MicrosoftRedirectURL:  v.GetString("oauth.microsoft.redirect_url"),
+			FrontendCallbackURL:   v.GetString("oauth.frontend_callback_url"),
+		}
+		svc, err := auth.NewOAuthService(ctx, oauthCfg)
+		if err != nil {
+			zapLog.Warn("oauth service init failed, continuing without OAuth", zap.Error(err))
+		} else {
+			oauthSvc = svc
+			zapLog.Info("oauth service initialized")
+		}
+	} else {
+		zapLog.Info("oauth not configured (set oauth.google.client_id to enable)")
+	}
+
 	// 6a. Generate internal service JWT for tool executor HTTP dispatch
 	internalJWT, err := jwtSvc.GenerateInternalToken()
 	if err != nil {
@@ -103,11 +128,13 @@ func main() {
 	queries := sqlc.New(pool)
 	userRepo := persistence.NewUserRepository(queries)
 	moduleRepo := persistence.NewModuleRepository(queries)
+	auditRepo := persistence.NewAuditLogRepository(pool)
 
 	// 8. Command handlers
 	registerUserHandler := command.NewRegisterUserHandler(userRepo, es, publisher, passwordSvc)
 	updateUserHandler := command.NewUpdateUserHandler(userRepo)
 	deleteUserHandler := command.NewDeleteUserHandler(userRepo)
+	updateUserRoleHandler := command.NewUpdateUserRoleHandler(userRepo)
 	registerModuleHandler := command.NewRegisterModuleHandler(moduleRepo)
 
 	// 9. Query handlers
@@ -127,7 +154,24 @@ func main() {
 	defer modHandlers.Close()
 
 	authHandler := httpif.NewAuthHandler(registerUserHandler, loginHandler, jwtSvc,
-		updateUserHandler, deleteUserHandler, modHandlers.StudentClient)
+		userRepo, updateUserHandler, deleteUserHandler, modHandlers.StudentClient)
+	adminRoleHandler := httpif.NewAdminRoleHandler(updateUserRoleHandler)
+
+	var oauthHandler *httpif.OAuthHandler
+	if oauthSvc != nil {
+		oauthHandler = httpif.NewOAuthHandler(oauthSvc, jwtSvc, userRepo)
+	}
+
+	// Audit consumer: only start when NATS is available
+	auditHandler := httpif.NewAuditHandler(auditRepo)
+	if js != nil {
+		auditConsumer := messaging.NewAuditConsumer(js, auditRepo, zapLog)
+		if err := auditConsumer.Start(ctx); err != nil {
+			zapLog.Warn("audit consumer failed to start", zap.Error(err))
+		} else {
+			defer auditConsumer.Stop()
+		}
+	}
 
 	// 10b. AI Chat: LLM provider + tool registry + executor + handler
 	llmProvider := buildLLMProvider(v)
@@ -140,6 +184,10 @@ func main() {
 	// 11. Router
 	router := httpif.NewRouter(httpif.RouterConfig{
 		AuthHandler:       authHandler,
+		OAuthHandler:      oauthHandler,
+		AdminRoleHandler:  adminRoleHandler,
+		AuditHandler:      auditHandler,
+		NATSConn:          nc, // nil when NATS unavailable → audit middleware no-ops
 		UserHandler:       userHandler,
 		ModuleHandler:     moduleHandler,
 		GatewayProxy:      gatewayProxy,

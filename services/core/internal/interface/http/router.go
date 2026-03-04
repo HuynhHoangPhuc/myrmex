@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nats-io/nats.go"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/auth"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/interface/middleware"
 	"go.uber.org/zap"
@@ -14,6 +15,10 @@ import (
 
 type RouterConfig struct {
 	AuthHandler          *AuthHandler
+	OAuthHandler         *OAuthHandler
+	AdminRoleHandler     *AdminRoleHandler
+	AuditHandler         *AuditHandler
+	NATSConn             *nats.Conn // nil → audit middleware disabled
 	UserHandler          *UserHandler
 	ModuleHandler        *ModuleHandler
 	GatewayProxy         *GatewayProxy
@@ -56,11 +61,22 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 		authGroup.POST("/register-student", cfg.AuthHandler.RegisterStudent)
 		authGroup.POST("/login", cfg.AuthHandler.Login)
 		authGroup.POST("/refresh", cfg.AuthHandler.Refresh)
+
+		// OAuth/OIDC routes — only registered when OAuthHandler is configured
+		if cfg.OAuthHandler != nil {
+			oauth := authGroup.Group("/oauth")
+			oauth.GET("/google/login", cfg.OAuthHandler.GoogleLogin)
+			oauth.GET("/google/callback", cfg.OAuthHandler.GoogleCallback)
+			oauth.GET("/microsoft/login", cfg.OAuthHandler.MicrosoftLogin)
+			oauth.GET("/microsoft/callback", cfg.OAuthHandler.MicrosoftCallback)
+			oauth.POST("/exchange", cfg.OAuthHandler.ExchangeAuthCode)
+		}
 	}
 
 	// Protected routes
 	protected := api.Group("")
 	protected.Use(middleware.AuthMiddleware(cfg.JWTService))
+	protected.Use(middleware.AuditMiddleware(cfg.NATSConn))
 	{
 		// Current user profile
 		protected.GET("/auth/me", cfg.UserHandler.Me)
@@ -76,7 +92,18 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 			users.GET("", cfg.UserHandler.ListUsers)
 			users.GET("/:id", cfg.UserHandler.GetUser)
 			users.PUT("/:id", cfg.UserHandler.UpdateUser)
-			users.DELETE("/:id", middleware.RequireRole("admin"), cfg.UserHandler.DeleteUser)
+			users.DELETE("/:id", middleware.RequireRole("admin", "super_admin"), cfg.UserHandler.DeleteUser)
+			// Role management: admin/super_admin only
+			if cfg.AdminRoleHandler != nil {
+				users.PATCH("/:id/role", middleware.RequireRole("admin", "super_admin"), cfg.AdminRoleHandler.UpdateUserRole)
+			}
+		}
+
+		// Audit logs: admin/super_admin read-only
+		if cfg.AuditHandler != nil {
+			auditGroup := protected.Group("/audit-logs")
+			auditGroup.Use(middleware.RequireRole("admin", "super_admin"))
+			auditGroup.GET("", cfg.AuditHandler.ListAuditLogs)
 		}
 
 		// Module routes (admin only)
@@ -90,19 +117,21 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 			}
 		}
 
-		// HR module routes
+		// HR module routes — dept_head/teacher require dept scope
 		if cfg.HRHandler != nil {
 			hr := protected.Group("/hr")
+			hr.Use(middleware.RequireRole("admin", "super_admin", "dean", "dept_head", "manager"))
+			hr.Use(middleware.RequireDeptScope())
 			{
 				hr.GET("/teachers", cfg.HRHandler.ListTeachers)
-				hr.POST("/teachers", cfg.HRHandler.CreateTeacher)
+				hr.POST("/teachers", middleware.RequireRole("admin", "super_admin", "dept_head"), cfg.HRHandler.CreateTeacher)
 				hr.GET("/teachers/:id", cfg.HRHandler.GetTeacher)
-				hr.PATCH("/teachers/:id", cfg.HRHandler.UpdateTeacher)
-				hr.DELETE("/teachers/:id", cfg.HRHandler.DeleteTeacher)
+				hr.PATCH("/teachers/:id", middleware.RequireRole("admin", "super_admin", "dept_head"), cfg.HRHandler.UpdateTeacher)
+				hr.DELETE("/teachers/:id", middleware.RequireRole("admin", "super_admin"), cfg.HRHandler.DeleteTeacher)
 				hr.GET("/teachers/:id/availability", cfg.HRHandler.GetTeacherAvailability)
-				hr.PUT("/teachers/:id/availability", cfg.HRHandler.UpdateTeacherAvailability)
+				hr.PUT("/teachers/:id/availability", middleware.RequireRole("admin", "super_admin", "dept_head"), cfg.HRHandler.UpdateTeacherAvailability)
 				hr.GET("/departments", cfg.HRHandler.ListDepartments)
-				hr.POST("/departments", cfg.HRHandler.CreateDepartment)
+				hr.POST("/departments", middleware.RequireRole("admin", "super_admin"), cfg.HRHandler.CreateDepartment)
 			}
 		}
 

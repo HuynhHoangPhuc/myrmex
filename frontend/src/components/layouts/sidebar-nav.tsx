@@ -7,8 +7,10 @@ import {
   Building2,
   BarChart3,
   GraduationCap,
+  ShieldCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { usePermissions } from '@/lib/hooks/use-permissions'
 
 export interface NavItem {
   label: string
@@ -16,51 +18,6 @@ export interface NavItem {
   icon: React.ElementType
   children?: { label: string; to: string }[]
 }
-
-export const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-  {
-    label: 'HR',
-    to: '/hr',
-    icon: Users,
-    children: [
-      { label: 'Teachers', to: '/hr/teachers' },
-      { label: 'Departments', to: '/hr/departments' },
-    ],
-  },
-  {
-    label: 'Subjects',
-    to: '/subjects',
-    icon: BookOpen,
-    children: [
-      { label: 'All Subjects', to: '/subjects' },
-      { label: 'Prerequisites', to: '/subjects/prerequisites' },
-      { label: 'Offerings', to: '/subjects/offerings' },
-    ],
-  },
-  {
-    label: 'Timetable',
-    to: '/timetable',
-    icon: Calendar,
-    children: [
-      { label: 'Semesters', to: '/timetable/semesters' },
-      { label: 'Schedules', to: '/timetable/schedules' },
-      { label: 'Generate', to: '/timetable/generate' },
-      { label: 'Assign Teachers', to: '/timetable/assign' },
-    ],
-  },
-  {
-    label: 'Students',
-    to: '/students',
-    icon: GraduationCap,
-    children: [
-      { label: 'Students', to: '/students' },
-      { label: 'Enrollments', to: '/enrollments' },
-      { label: 'Grades', to: '/grades' },
-    ],
-  },
-  { label: 'Analytics', to: '/analytics', icon: BarChart3 },
-]
 
 interface SidebarNavProps {
   onNavigate?: () => void
@@ -71,10 +28,89 @@ function matchesPath(pathname: string, path: string): boolean {
   return pathname === path || pathname === path + '/' || pathname.startsWith(path + '/')
 }
 
-// Sidebar navigation with active-state highlighting and nested items
+// Sidebar navigation with role-based visibility and active-state highlighting
 export function SidebarNav({ onNavigate }: SidebarNavProps) {
   const router = useRouterState()
   const pathname = router.location.pathname
+  const { isAdmin, isSuperAdmin, isDeptHead, isTeacher, canGrade } = usePermissions()
+
+  // Determine which nav sections this role can see
+  const canAccessHR = isAdmin || isSuperAdmin || isDeptHead
+  const canAccessAdmin = isAdmin || isSuperAdmin
+
+  const navItems: NavItem[] = [
+    { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
+    ...(canAccessHR
+      ? [
+          {
+            label: 'HR',
+            to: '/hr',
+            icon: Users,
+            children: [
+              { label: 'Teachers', to: '/hr/teachers' },
+              { label: 'Departments', to: '/hr/departments' },
+            ],
+          },
+        ]
+      : []),
+    {
+      label: 'Subjects',
+      to: '/subjects',
+      icon: BookOpen,
+      children: [
+        { label: 'All Subjects', to: '/subjects' },
+        { label: 'Prerequisites', to: '/subjects/prerequisites' },
+        { label: 'Offerings', to: '/subjects/offerings' },
+      ],
+    },
+    {
+      label: 'Timetable',
+      to: '/timetable',
+      icon: Calendar,
+      children: [
+        { label: 'Semesters', to: '/timetable/semesters' },
+        { label: 'Schedules', to: '/timetable/schedules' },
+        ...(isAdmin || isSuperAdmin
+          ? [
+              { label: 'Generate', to: '/timetable/generate' },
+              { label: 'Assign Teachers', to: '/timetable/assign' },
+            ]
+          : []),
+      ],
+    },
+    ...(isAdmin || isSuperAdmin || canGrade
+      ? [
+          {
+            label: 'Students',
+            to: '/students',
+            icon: GraduationCap,
+            children: [
+              ...(isAdmin || isSuperAdmin
+                ? [
+                    { label: 'Students', to: '/students' },
+                    { label: 'Enrollments', to: '/enrollments' },
+                  ]
+                : []),
+              ...(canGrade ? [{ label: 'Grades', to: '/grades' }] : []),
+            ],
+          },
+        ]
+      : []),
+    { label: 'Analytics', to: '/analytics', icon: BarChart3 },
+    ...(canAccessAdmin
+      ? [
+          {
+            label: 'Admin',
+            to: '/admin',
+            icon: ShieldCheck,
+            children: [
+              { label: 'Role Management', to: '/admin/roles' },
+              { label: 'Audit Logs', to: '/admin/audit-logs' },
+            ],
+          },
+        ]
+      : []),
+  ]
 
   return (
     <nav className="flex flex-col gap-1 px-3 py-4">
@@ -83,9 +119,8 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
         <span className="text-lg font-bold text-sidebar-foreground">Myrmex ERP</span>
       </div>
 
-      {NAV_ITEMS.map((item) => {
+      {navItems.map((item) => {
         const Icon = item.icon
-        // Section is open when current path matches the parent OR any of its children
         const isActive =
           matchesPath(pathname, item.to) ||
           !!item.children?.some((c) => matchesPath(pathname, c.to))
@@ -115,8 +150,6 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
                     onClick={onNavigate}
                     className={cn(
                       'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-                      // Child items use exact match to prevent e.g. "All Subjects" (/subjects)
-                      // from matching when on /subjects/prerequisites
                       pathname === child.to || pathname === child.to + '/'
                         ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                         : 'text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
