@@ -1,0 +1,39 @@
+<mjml>
+  <mj-head>
+    <mj-font name="Inter" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <mj-attributes>
+      <mj-all font-family="Inter, Arial, sans-serif" />
+      <mj-text font-size="15px" line-height="1.6" color="#374151" />
+      <mj-button background-color="#4F46E5" color="#ffffff" font-size="14px" font-weight="600" border-radius="6px" padding="12px 24px" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#F9FAFB">
+    <mj-section background-color="#4F46E5" padding="24px 32px">
+      <mj-column>
+        <mj-text color="#ffffff" font-size="22px" font-weight="700" align="center">Myrmex ERP</mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section background-color="#FEF2F2" padding="16px 32px">
+      <mj-column>
+        <mj-text font-size="14px" font-weight="600" color="#991B1B" align="center">✗ Enrollment Not Approved</mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section background-color="#ffffff" padding="32px">
+      <mj-column>
+        <mj-text font-size="24px" font-weight="700" color="#111827">{{.Title}}</mj-text>
+        <mj-divider border-color="#E5E7EB" border-width="1px" padding="8px 0" />
+        <mj-text>{{.Body}}</mj-text>
+        <mj-text>If you believe this is an error or would like more information, please contact the academic department.</mj-text>
+        <mj-button href="{{.ActionURL}}" align="left">View Details</mj-button>
+      </mj-column>
+    </mj-section>
+
+    <mj-section background-color="#F3F4F6" padding="24px 32px">
+      <mj-column>
+        <mj-text font-size="12px" color="#9CA3AF" align="center">You are receiving this email from Myrmex ERP. &copy; {{.Year}} Myrmex ERP.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

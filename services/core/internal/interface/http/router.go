@@ -31,6 +31,7 @@ type RouterConfig struct {
 	StudentPortalHandler    *StudentPortalHandler
 	DashboardHandler        *DashboardHandler
 	AnalyticsHTTPAddr       string // e.g. "http://module-analytics:8055"
+	NotificationHTTPAddr    string // e.g. "http://module-notification:8056"
 	JWTService              *auth.JWTService
 	Logger                  *zap.Logger
 }
@@ -110,17 +111,12 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 			auditGroup.GET("", cfg.AuditHandler.ListAuditLogs)
 		}
 
-		// Notification REST endpoints — available to all authenticated users
-		if cfg.NotificationHandler != nil {
+		// Notification REST endpoints — proxied to module-notification
+		if cfg.NotificationHTTPAddr != "" {
+			notifProxy := newNotificationProxy(cfg.NotificationHTTPAddr)
 			notifs := protected.Group("/notifications")
-			{
-				notifs.GET("", cfg.NotificationHandler.List)
-				notifs.GET("/unread-count", cfg.NotificationHandler.UnreadCount)
-				notifs.POST("/mark-all-read", cfg.NotificationHandler.MarkAllRead)
-				notifs.PATCH("/:id/read", cfg.NotificationHandler.MarkRead)
-				notifs.GET("/preferences", cfg.NotificationHandler.GetPreferences)
-				notifs.PUT("/preferences", cfg.NotificationHandler.UpdatePreferences)
-			}
+			notifs.Any("", notifProxy)
+			notifs.Any("/*path", notifProxy)
 		}
 
 		// Module routes (admin only)
@@ -256,6 +252,27 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 	}
 
 	return r
+}
+
+// newNotificationProxy creates a gin handler that reverse-proxies to module-notification.
+// It injects X-User-ID and X-User-Role headers from the validated JWT claims in the gin context.
+func newNotificationProxy(targetAddr string) gin.HandlerFunc {
+	target, err := url.Parse(targetAddr)
+	if err != nil {
+		panic(fmt.Sprintf("invalid notification target URL %q: %v", targetAddr, err))
+	}
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	return func(c *gin.Context) {
+		// Inject user identity headers so module-notification can identify the caller
+		c.Request.Header.Set("X-User-ID", c.GetString("user_id"))
+		c.Request.Header.Set("X-User-Role", c.GetString("user_role"))
+		c.Request.Header.Set("X-Department-ID", c.GetString("department_id"))
+
+		// Rewrite path: /api/notifications/... → /notifications/...
+		c.Request.URL.Path = "/notifications" + c.Param("path")
+		c.Request.Host = target.Host
+		proxy.ServeHTTP(c.Writer, c.Request)
+	}
 }
 
 // newAnalyticsProxy creates a gin handler that reverse-proxies to the analytics HTTP service.

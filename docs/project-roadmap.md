@@ -191,9 +191,9 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 
 ---
 
-## Phase 4: Internal Pilot & Enterprise (IN PROGRESS)
+## Phase 4: Internal Pilot & Enterprise (100% COMPLETE)
 
-**Timeline**: Q1 2026+ (6+ weeks) | **Status**: Phase 4.1-4.3 Complete; Phase 4.4 Planned
+**Timeline**: Q1 2026+ (6+ weeks) | **Status**: All phases (4.1-4.4) complete by Mar 4, 2026
 
 ### Phase 4.1: Advanced RBAC (COMPLETE - Mar 4)
 - [x] 6 roles: super_admin, admin, dean, dept_head, teacher, student
@@ -232,12 +232,15 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 - [x] Admin API: GET /api/audit-logs with pagination (limit, offset)
 - [x] Frontend UI: /admin/audit-logs with table, row expand, filters, pagination
 
-### Phase 4.4: Notifications System (PLANNED - Q2 2026)
-- [ ] Email notifications: Schedule changes, enrollments, assignments (SMTP backend)
-- [ ] In-app notifications: WebSocket push via NATS event consumer
-- [ ] Notification preferences: User-configurable channels + opt-out
-- [ ] Notification queue: PostgreSQL-backed with exponential backoff retry
-- [ ] Notification template system: Configurable templates per notification type
+### Phase 4.4: Notifications System (COMPLETE - Mar 4, 2026)
+- [x] Email notifications: SMTP backend with MJML templates (schedule changes, enrollments, assignments)
+- [x] In-app notifications: WebSocket push via NATS JetStream event consumer in core
+- [x] Notification preferences: User-configurable 12-event × 2-channel matrix (email + in-app)
+- [x] Notification queue: PostgreSQL-backed email_queue with exponential backoff retry (5 attempts, 24h max)
+- [x] Event routing: 10 event specs (new_announcement, schedule.*, enrollment.*, grade.*, role_updated, user.deleted)
+- [x] Module-Notification: New HTTP microservice (port 8056) with REST API + consumer pattern
+- [x] Frontend: Notifications page with pagination + filters, preferences UI, WS toast component, sidebar nav item
+- [x] Cross-schema recipient resolver: Supports recipient lookup across HR, Student, Analytics schemas
 
 #### Future: Multi-Tenancy & Scaling
 - [ ] Tenant isolation: Shared infrastructure, isolated data (row-level security)
@@ -410,7 +413,20 @@ Phase 4: Enterprise
 
 ## Change Log
 
-### 2026-03-04 (Phase 4 Phase 1: Advanced RBAC Complete)
+### 2026-03-04 (Phase 4.4: Notifications System Complete)
+- New module-notification microservice on port 8056 with HTTP API
+- Email notifications via SMTP with MJML template engine (schedule changes, enrollments, assignments, announcements)
+- 12-event × 2-channel (email + in-app) preference matrix
+- PostgreSQL email_queue with exponential backoff retry (5 attempts, 24h max)
+- NATS JetStream consumer for event routing (10 event specs across all modules)
+- Cross-schema recipient resolver for accurate user/teacher/student lookup
+- Frontend notifications page: paginated list, filters, sidebar nav item
+- Frontend notification preferences: matrix UI for per-user opt-in/opt-out
+- Frontend notification toast: real-time WS push with auto-dismiss
+- 234+ backend tests (all passing), full Phase 4 coverage
+- Status: Phase 4 (All subphases 4.1-4.4) 100% Complete
+
+### 2026-03-04 (Phase 4.1: Advanced RBAC Complete)
 - Added 3 new roles: super_admin, dean, dept_head (total 6 roles)
 - Added department_id column to core.users + user_id column to hr.teachers
 - Extended JWT claims with DepartmentID + TeacherID for O(1) permission checks

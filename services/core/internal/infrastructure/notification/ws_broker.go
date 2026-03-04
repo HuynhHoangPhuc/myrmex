@@ -1,19 +1,20 @@
 package notification
 
 import (
-	"encoding/json"
+	"strings"
 	"sync"
 	"time"
 
+	natsgo "github.com/nats-io/nats.go"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
-
-	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/persistence"
 )
 
 const wsBrokerWriteTimeout = 5 * time.Second
 
-// WSBroker manages active WebSocket connections per user and pushes notifications.
+// WSBroker manages active WebSocket connections per user and relays NATS push events.
+// module-notification publishes to NOTIFICATION.push.{userID}; the broker forwards
+// the raw JSON payload to all connected WebSocket clients for that user.
 type WSBroker struct {
 	mu          sync.RWMutex
 	connections map[string][]*websocket.Conn // userID → open connections
@@ -52,20 +53,8 @@ func (b *WSBroker) Unregister(userID string, conn *websocket.Conn) {
 	}
 }
 
-// wsPushEvent is the JSON payload sent over the notification WebSocket.
-type wsPushEvent struct {
-	Type         string          `json:"type"` // "notification"
-	ID           string          `json:"id"`
-	NotifType    string          `json:"notif_type"`
-	Title        string          `json:"title"`
-	Body         string          `json:"body"`
-	Data         json.RawMessage `json:"data,omitempty"`
-	CreatedAt    time.Time       `json:"created_at"`
-	UnreadCount  int64           `json:"unread_count"`
-}
-
-// Push sends a notification to all open connections for a user.
-func (b *WSBroker) Push(userID string, n persistence.NotificationRow, unreadCount int64) {
+// send delivers a raw JSON payload to all open connections for a user, cleaning up dead ones.
+func (b *WSBroker) send(userID string, payload []byte) {
 	b.mu.RLock()
 	conns := b.connections[userID]
 	b.mu.RUnlock()
@@ -74,22 +63,9 @@ func (b *WSBroker) Push(userID string, n persistence.NotificationRow, unreadCoun
 		return
 	}
 
-	event := wsPushEvent{
-		Type:        "notification",
-		ID:          n.ID,
-		NotifType:   n.Type,
-		Title:       n.Title,
-		Body:        n.Body,
-		Data:        n.Data,
-		CreatedAt:   n.CreatedAt,
-		UnreadCount: unreadCount,
-	}
-	payload, _ := json.Marshal(event)
-
-	// Dead connections discovered during write are cleaned up
 	var dead []*websocket.Conn
 	for _, conn := range conns {
-		conn.SetWriteDeadline(time.Now().Add(wsBrokerWriteTimeout))
+		conn.SetWriteDeadline(time.Now().Add(wsBrokerWriteTimeout)) //nolint:errcheck
 		if err := conn.WriteMessage(websocket.TextMessage, payload); err != nil {
 			b.log.Debug("ws push failed, marking dead", zap.String("user_id", userID), zap.Error(err))
 			dead = append(dead, conn)
@@ -98,4 +74,28 @@ func (b *WSBroker) Push(userID string, n persistence.NotificationRow, unreadCoun
 	for _, c := range dead {
 		b.Unregister(userID, c)
 	}
+}
+
+// StartNATSRelay subscribes to NOTIFICATION.push.* and forwards each message
+// to connected WebSocket clients for the target user. nc may be nil (no-op).
+func (b *WSBroker) StartNATSRelay(nc *natsgo.Conn) {
+	if nc == nil {
+		b.log.Warn("NATS not available, WS push relay disabled")
+		return
+	}
+
+	_, err := nc.Subscribe("NOTIFICATION.push.*", func(msg *natsgo.Msg) {
+		// Subject format: NOTIFICATION.push.{userID}
+		parts := strings.Split(msg.Subject, ".")
+		if len(parts) < 3 {
+			return
+		}
+		userID := parts[2]
+		b.send(userID, msg.Data)
+	})
+	if err != nil {
+		b.log.Error("failed to subscribe to NOTIFICATION.push.*", zap.Error(err))
+		return
+	}
+	b.log.Info("NATS → WS relay started on NOTIFICATION.push.*")
 }

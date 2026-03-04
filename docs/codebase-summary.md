@@ -2,17 +2,18 @@
 
 ## Overview
 
-Myrmex is a Go monorepo with 8 modules using `go.work`:
+Myrmex is a Go monorepo with 9 modules using `go.work`:
 - `gen/go` - Generated protobuf code (buf generate)
 - `pkg` - Shared packages (logger, config, cache Redis abstraction, eventstore, nats, middleware)
-- `services/core` - HTTP gateway, auth, module registry, AI chat
+- `services/core` - HTTP gateway, auth, module registry, AI chat, audit logging, WebSocket notifications relay
 - `services/module-hr` - Department & teacher management
 - `services/module-subject` - Subject & prerequisite DAG
 - `services/module-timetable` - Semester, room, schedule management & CSP solver
 - `services/module-student` - Student CRUD, enrollment workflow, grades, transcripts
 - `services/module-analytics` - Analytics dashboard, KPIs, reporting (PDF/Excel export)
+- `services/module-notification` - Email + in-app notifications, preferences, event routing, email queue (NEW)
 
-**Total Codebase**: ~254K tokens (321 files, 985K chars)
+**Total Codebase**: ~280K tokens (350+ files, 1.1M+ chars)
 
 ## Repomix Snapshot
 
@@ -156,19 +157,36 @@ myrmex/
 │   │   ├── go.mod
 │   │   └── Dockerfile
 │   │
-│   └── module-analytics/    # Analytics, reporting, dashboards
-│       ├── cmd/server/main.go
+│   ├── module-analytics/    # Analytics, reporting, dashboards
+│   │   ├── cmd/server/main.go
+│   │   ├── internal/
+│   │   │   ├── application/
+│   │   │   │   ├── query/ # GetWorkloadHandler, GetUtilizationHandler, GetDashboardSummaryHandler
+│   │   │   │   └── export/ # PDF/Excel generators
+│   │   │   ├── infrastructure/
+│   │   │   │   ├── persistence/ # AnalyticsRepository (star-schema queries)
+│   │   │   │   └── messaging/ # NATS consumer for ETL
+│   │   │   ├── interface/
+│   │   │   │   ├── grpc/ # AnalyticsService gRPC
+│   │   │   │   └── http/ # Dashboard + export HTTP handlers
+│   │   │   ├── migrations/
+│   │   │   ├── sql/queries/
+│   │   │   └── config/
+│   │   ├── go.mod
+│   │   └── Dockerfile
+│   │
+│   └── module-notification/  # Email + in-app notifications (NEW)
+│       ├── cmd/server/main.go (port 8056)
 │       ├── internal/
-│       │   ├── application/
-│       │   │   ├── query/ # GetWorkloadHandler, GetUtilizationHandler, GetDashboardSummaryHandler
-│       │   │   └── export/ # PDF/Excel generators
+│       │   ├── domain/       # Notification, Preference aggregates, repositories
+│       │   ├── application/  # DispatchNotification, ListNotifications commands
 │       │   ├── infrastructure/
-│       │   │   ├── persistence/ # AnalyticsRepository (star-schema queries)
-│       │   │   └── messaging/ # NATS consumer for ETL
-│       │   ├── interface/
-│       │   │   ├── grpc/ # AnalyticsService gRPC
-│       │   │   └── http/ # Dashboard + export HTTP handlers
-│       │   ├── migrations/
+│       │   │   ├── persistence/ # notification, preference, email_queue repositories
+│       │   │   ├── messaging/   # NATS publisher, event consumer, event router
+│       │   │   ├── email/       # SMTP service, MJML template renderer
+│       │   │   └── recipient/   # Cross-schema recipient resolver (HR, Student, Analytics)
+│       │   ├── interface/http/   # NotificationHandler, PreferenceHandler, AnnouncementHandler
+│       │   ├── migrations/       # notification, preference, email_queue schemas
 │       │   ├── sql/queries/
 │       │   └── config/
 │       ├── go.mod
@@ -197,6 +215,9 @@ myrmex/
 │   │   │   ├── components/ # ChatPanel (fixed right-side panel with expand/fullscreen), ChatMessage, ChatInput
 │   │   │   ├── hooks/      # use-chat.ts (WebSocket + auto-reconnect)
 │   │   │   └── types.ts    # WsServerEvent, WsClientMessage
+│   │   ├── notifications/  # In-app notifications (NEW)
+│   │   │   ├── components/ # notification-panel.tsx, notification-toast.tsx, notification-preferences.tsx
+│   │   │   └── hooks/      # use-notifications.ts, use-notification-ws.ts
 │   │   ├── modules/
 │   │   │   ├── hr/         # Teacher + Department (components, hooks, types)
 │   │   │   ├── subject/    # Subject + Prerequisites (React Flow DAG viz, conflict detection)
@@ -290,6 +311,8 @@ myrmex/
 - `services/module-subject/cmd/server/main.go` - gRPC (port 50053)
 - `services/module-timetable/cmd/server/main.go` - gRPC (port 50054)
 - `services/module-student/cmd/server/main.go` - gRPC (port 50055) — student CRUD, enrollment, grades, transcripts
+- `services/module-analytics/cmd/server/main.go` - HTTP (port 8055) — analytics KPIs, workload, utilization, export
+- `services/module-notification/cmd/server/main.go` - HTTP (port 8056) — notifications, preferences, email queue
 
 ### Gateway Proxies
 - `services/core/internal/interface/http/student_handler.go` - Admin-only `/api/students` CRUD proxy to module-student
@@ -473,6 +496,17 @@ make demo
 - `make test-cover`: Generates coverage reports per service
 - Coverage: >70% across core, module-hr, module-subject, module-timetable, module-student, module-analytics
 - All services in Makefile SERVICES list for automated testing
+
+### Notifications System (Mar 4 - Phase 4.4 COMPLETE)
+- **Module-Notification Service**: New HTTP microservice on port 8056 with 50+ endpoints
+- **Email Notifications**: SMTP backend (go-mail) with MJML templating engine
+- **In-App Notifications**: WebSocket push via NATS JetStream consumer in core service
+- **Preference Matrix**: 12 events × 2 channels (email + in-app) per user, stored in PostgreSQL
+- **Event Routing**: 10 event types (new_announcement, schedule.*, enrollment.*, grade.*, role_updated, user.deleted)
+- **Email Queue**: PostgreSQL-backed queue with exponential backoff (5 attempts, 24h max retry window)
+- **Cross-Schema Resolver**: Smart recipient lookup across HR (teachers), Student, and Analytics schemas
+- **Frontend Notifications**: Pagination + filters, preferences matrix UI, WS toast component, sidebar nav item
+- **234+ Backend Tests**: All passing (event consumer, email queue, preferences, routing)
 
 ### RBAC Implementation (Mar 4)
 - **6 Roles**: super_admin, admin, dean, dept_head, teacher, student

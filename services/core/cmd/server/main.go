@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -83,6 +82,13 @@ func main() {
 		}); err != nil {
 			zapLog.Warn("create TIMETABLE stream failed", zap.Error(err))
 		}
+		// Ensure CORE_EVENTS stream exists for notification consumer
+		if _, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
+			Name:     "CORE_EVENTS",
+			Subjects: []string{"core.>"},
+		}); err != nil {
+			zapLog.Warn("create CORE_EVENTS stream failed", zap.Error(err))
+		}
 		zapLog.Info("connected to NATS")
 	}
 
@@ -131,13 +137,12 @@ func main() {
 	userRepo := persistence.NewUserRepository(queries)
 	moduleRepo := persistence.NewModuleRepository(queries)
 	auditRepo := persistence.NewAuditLogRepository(pool)
-	notifRepo := persistence.NewNotificationRepository(pool)
 
 	// 8. Command handlers
 	registerUserHandler := command.NewRegisterUserHandler(userRepo, es, publisher, passwordSvc)
 	updateUserHandler := command.NewUpdateUserHandler(userRepo)
 	deleteUserHandler := command.NewDeleteUserHandler(userRepo)
-	updateUserRoleHandler := command.NewUpdateUserRoleHandler(userRepo)
+	updateUserRoleHandler := command.NewUpdateUserRoleHandler(userRepo, publisher)
 	registerModuleHandler := command.NewRegisterModuleHandler(moduleRepo)
 
 	// 9. Query handlers
@@ -176,34 +181,10 @@ func main() {
 		}
 	}
 
-	// Notification infrastructure: WS broker + email service + NATS consumer
+	// Notification infrastructure: WS broker relays NATS push events from module-notification
 	wsBroker := notifinfra.NewWSBroker(zapLog)
-	emailSvc := notifinfra.NewEmailService(
-		v.GetString("resend.api_key"),
-		v.GetString("resend.from_addr"),
-		zapLog,
-	)
-	// Wire user email lookup for the email service
-	notifinfra.GetUserEmail = func(userID string) (string, error) {
-		uid, err := uuid.Parse(userID)
-		if err != nil {
-			return "", err
-		}
-		u, err := userRepo.GetByID(ctx, uid)
-		if err != nil {
-			return "", err
-		}
-		return u.Email, nil
-	}
-	notifHandler := httpif.NewNotificationHandler(notifRepo, wsBroker, jwtSvc, zapLog)
-	if js != nil {
-		notifConsumer := messaging.NewNotificationConsumer(js, notifRepo, wsBroker, emailSvc, zapLog)
-		if err := notifConsumer.Start(ctx); err != nil {
-			zapLog.Warn("notification consumer failed to start", zap.Error(err))
-		} else {
-			defer notifConsumer.Stop()
-		}
-	}
+	wsBroker.StartNATSRelay(nc)
+	notifHandler := httpif.NewNotificationHandler(wsBroker, jwtSvc, zapLog)
 
 	// 10b. AI Chat: LLM provider + tool registry + executor + handler
 	llmProvider := buildLLMProvider(v)
@@ -231,6 +212,7 @@ func main() {
 		StudentHandler:      modHandlers.Student,
 		DashboardHandler:    modHandlers.Dashboard,
 		AnalyticsHTTPAddr:   v.GetString("analytics.http_addr"),
+		NotificationHTTPAddr: v.GetString("notification.http_addr"),
 		JWTService:          jwtSvc,
 		Logger:              zapLog,
 	})

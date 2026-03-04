@@ -1,6 +1,12 @@
-.PHONY: proto build test lint up down migrate seed reset-db demo demo-down demo-logs demo-reset
+.PHONY: proto build test lint up down migrate seed reset-db demo demo-down demo-logs demo-reset email-templates
 
-SERVICES := core module-hr module-student module-subject module-timetable module-analytics
+NOTIF_TMPL_SRC := services/module-notification/templates/src
+NOTIF_TMPL_OUT := services/module-notification/internal/infrastructure/email/compiled
+
+email-templates:
+	npx mjml $(NOTIF_TMPL_SRC)/*.mjml -o $(NOTIF_TMPL_OUT)/
+
+SERVICES := core module-hr module-student module-subject module-timetable module-analytics module-notification
 export PATH := $(HOME)/go/bin:$(PATH)
 
 # Pass root .env to docker compose (compose file lives in a subdirectory)

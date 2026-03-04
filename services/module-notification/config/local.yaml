@@ -1,0 +1,16 @@
+database:
+  url: "postgres://myrmex:myrmex_dev@localhost:5432/myrmex?sslmode=disable&search_path=notification"
+
+nats:
+  url: "nats://localhost:4222"
+
+server:
+  http_port: 8056
+
+smtp:
+  host: ""           # set to enable email (e.g. smtp.sendgrid.net); empty = disabled
+  port: 587
+  username: "apikey"
+  password: ""       # override via SMTP_PASSWORD env var
+  from_email: "noreply@myrmex.local"
+  from_name: "Myrmex ERP"

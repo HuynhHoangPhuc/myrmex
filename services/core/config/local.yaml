@@ -17,6 +17,9 @@ jwt:
 log:
   level: "development"
 
+notification:
+  http_addr: "http://localhost:8056"
+
 hr:
   grpc_addr: "localhost:50052"
 subject:

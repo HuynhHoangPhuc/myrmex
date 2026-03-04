@@ -59,6 +59,7 @@ services:
       TIMETABLE_GRPC_ADDR: "module-timetable:50054"
       STUDENT_GRPC_ADDR: "module-student:50055"
       ANALYTICS_HTTP_ADDR: "http://module-analytics:8055"
+      NOTIFICATION_HTTP_ADDR: "http://module-notification:8056"
       LLM_API_KEY: "${LLM_API_KEY:-}"
       LLM_PROVIDER: "${LLM_PROVIDER:-}"
       LLM_MODEL: "${LLM_MODEL:-}"
@@ -121,6 +122,21 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+
+  module-notification:
+    build:
+      context: ../..
+      dockerfile: services/module-notification/Dockerfile
+    ports:
+      - "8056:8056"
+    environment:
+      DATABASE_URL: "postgres://myrmex:myrmex_dev@postgres:5432/myrmex?sslmode=disable&search_path=notification"
+      NATS_URL: "nats://nats:4222"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      nats:
+        condition: service_started
 
   module-student:
     build:

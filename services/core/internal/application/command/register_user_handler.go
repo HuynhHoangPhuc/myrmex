@@ -147,16 +147,30 @@ type UpdateUserRoleCommand struct {
 }
 
 type UpdateUserRoleHandler struct {
-	userRepo repository.UserRepository
+	userRepo  repository.UserRepository
+	publisher *pkgnats.Publisher
 }
 
-func NewUpdateUserRoleHandler(userRepo repository.UserRepository) *UpdateUserRoleHandler {
-	return &UpdateUserRoleHandler{userRepo: userRepo}
+func NewUpdateUserRoleHandler(userRepo repository.UserRepository, publisher *pkgnats.Publisher) *UpdateUserRoleHandler {
+	return &UpdateUserRoleHandler{userRepo: userRepo, publisher: publisher}
 }
 
 func (h *UpdateUserRoleHandler) Handle(ctx context.Context, cmd UpdateUserRoleCommand) (*entity.User, error) {
 	if _, err := valueobject.ParseRole(cmd.Role); err != nil {
 		return nil, err
 	}
-	return h.userRepo.UpdateRole(ctx, cmd.ID, cmd.Role, cmd.DepartmentID)
+	user, err := h.userRepo.UpdateRole(ctx, cmd.ID, cmd.Role, cmd.DepartmentID)
+	if err != nil {
+		return nil, err
+	}
+
+	if h.publisher != nil {
+		payload, _ := json.Marshal(map[string]string{
+			"user_id": user.ID.String(),
+			"email":   user.Email,
+			"role":    string(user.Role),
+		})
+		_ = h.publisher.Publish(ctx, "core.user.role_updated", payload)
+	}
+	return user, nil
 }
