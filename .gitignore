@@ -38,3 +38,6 @@ nats_data/
 /services/*/core
 /services/*/module-*
 repomix-output.xml
+
+# Claude Code local config
+.claude/
