@@ -4,10 +4,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	studentv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/student/v1"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/command"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/query"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/repository"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/auth"
 )
 
@@ -15,6 +17,7 @@ type AuthHandler struct {
 	registerHandler   *command.RegisterUserHandler
 	loginHandler      *query.LoginHandler
 	jwtSvc            *auth.JWTService
+	userRepo          repository.UserRepository   // for refresh token re-validation
 	updateUserHandler *command.UpdateUserHandler
 	deleteUserHandler *command.DeleteUserHandler
 	studentClient     studentv1.StudentServiceClient // nil if student module not configured
@@ -24,6 +27,7 @@ func NewAuthHandler(
 	registerHandler *command.RegisterUserHandler,
 	loginHandler *query.LoginHandler,
 	jwtSvc *auth.JWTService,
+	userRepo repository.UserRepository,
 	updateUserHandler *command.UpdateUserHandler,
 	deleteUserHandler *command.DeleteUserHandler,
 	studentClient studentv1.StudentServiceClient,
@@ -32,6 +36,7 @@ func NewAuthHandler(
 		registerHandler:   registerHandler,
 		loginHandler:      loginHandler,
 		jwtSvc:            jwtSvc,
+		userRepo:          userRepo,
 		updateUserHandler: updateUserHandler,
 		deleteUserHandler: deleteUserHandler,
 		studentClient:     studentClient,
@@ -62,7 +67,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	accessToken, _ := h.jwtSvc.GenerateAccessToken(user.ID.String(), string(user.Role))
+	// New users have no dept scope yet
+	accessToken, _ := h.jwtSvc.GenerateAccessToken(user.ID.String(), string(user.Role), "", "")
 	refreshToken, _ := h.jwtSvc.GenerateRefreshToken(user.ID.String())
 
 	c.JSON(http.StatusCreated, gin.H{
@@ -118,6 +124,8 @@ type refreshRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
+// Refresh validates the refresh token, re-fetches the user from DB (to get current
+// role and dept scope), then issues a new access + refresh token pair.
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	var req refreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -131,8 +139,23 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
-	accessToken, _ := h.jwtSvc.GenerateAccessToken(claims.UserID, claims.Role)
-	refreshToken, _ := h.jwtSvc.GenerateRefreshToken(claims.UserID)
+	// Re-fetch user to get current role and department scope (refresh token only carries userID)
+	ctx := c.Request.Context()
+	userID, parseErr := uuid.Parse(claims.UserID)
+	if parseErr != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		return
+	}
+	user, err := h.userRepo.GetByID(ctx, userID)
+	if err != nil || !user.IsActive {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found or inactive"})
+		return
+	}
+
+	deptID, teacherID := query.ResolveTokenClaims(ctx, user, h.userRepo)
+
+	accessToken, _ := h.jwtSvc.GenerateAccessToken(user.ID.String(), string(user.Role), deptID, teacherID)
+	refreshToken, _ := h.jwtSvc.GenerateRefreshToken(user.ID.String())
 
 	c.JSON(http.StatusOK, gin.H{
 		"access_token":  accessToken,
@@ -215,7 +238,8 @@ func (h *AuthHandler) RegisterStudent(c *gin.Context) {
 		updated = user
 	}
 
-	accessToken, _ := h.jwtSvc.GenerateAccessToken(updated.ID.String(), string(updated.Role))
+	// Students have no dept scope
+	accessToken, _ := h.jwtSvc.GenerateAccessToken(updated.ID.String(), string(updated.Role), "", "")
 	refreshToken, _ := h.jwtSvc.GenerateRefreshToken(updated.ID.String())
 
 	c.JSON(http.StatusCreated, gin.H{
@@ -231,4 +255,3 @@ func (h *AuthHandler) RegisterStudent(c *gin.Context) {
 		},
 	})
 }
-

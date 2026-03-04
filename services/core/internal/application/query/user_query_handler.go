@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/entity"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/repository"
+	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/valueobject"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/auth"
 )
 
@@ -98,7 +99,9 @@ func (h *LoginHandler) Handle(ctx context.Context, q LoginQuery) (*LoginResult, 
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	accessToken, err := h.jwtSvc.GenerateAccessToken(user.ID.String(), string(user.Role))
+	deptID, teacherID := ResolveTokenClaims(ctx, user, h.userRepo)
+
+	accessToken, err := h.jwtSvc.GenerateAccessToken(user.ID.String(), string(user.Role), deptID, teacherID)
 	if err != nil {
 		return nil, fmt.Errorf("generate access token: %w", err)
 	}
@@ -117,4 +120,21 @@ func (h *LoginHandler) Handle(ctx context.Context, q LoginQuery) (*LoginResult, 
 		Role:         string(user.Role),
 		CreatedAt:    user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}, nil
+}
+
+// ResolveTokenClaims returns the department_id and teacher_id strings for JWT generation.
+// department_id comes from the user record; teacher_id from the linked hr.teachers record.
+// Exported so auth_handler can reuse it during token refresh.
+func ResolveTokenClaims(ctx context.Context, user *entity.User, repo repository.UserRepository) (deptID, teacherID string) {
+	if user.DepartmentID != nil {
+		deptID = user.DepartmentID.String()
+	}
+	// Only teachers and dept_heads have linked teacher records
+	role := valueobject.Role(user.Role)
+	if role.HasDeptScope() {
+		if tid, err := repo.GetTeacherIDByUserID(ctx, user.ID); err == nil {
+			teacherID = tid
+		}
+	}
+	return
 }

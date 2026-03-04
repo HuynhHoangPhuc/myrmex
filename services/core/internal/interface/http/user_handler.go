@@ -142,7 +142,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 }
 
 func userResponse(u *entity.User) gin.H {
-	return gin.H{
+	resp := gin.H{
 		"id":         u.ID.String(),
 		"email":      u.Email,
 		"full_name":  u.FullName,
@@ -151,4 +151,8 @@ func userResponse(u *entity.User) gin.H {
 		"created_at": u.CreatedAt,
 		"updated_at": u.UpdatedAt,
 	}
+	if u.DepartmentID != nil {
+		resp["department_id"] = u.DepartmentID.String()
+	}
+	return resp
 }

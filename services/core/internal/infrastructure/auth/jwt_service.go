@@ -8,14 +8,16 @@ import (
 )
 
 type JWTService struct {
-	secret          []byte
-	accessExpiry    time.Duration
-	refreshExpiry   time.Duration
+	secret        []byte
+	accessExpiry  time.Duration
+	refreshExpiry time.Duration
 }
 
 type Claims struct {
-	UserID string `json:"user_id"`
-	Role   string `json:"role"`
+	UserID       string `json:"user_id"`
+	Role         string `json:"role"`
+	DepartmentID string `json:"department_id,omitempty"` // set for dept_head, teacher
+	TeacherID    string `json:"teacher_id,omitempty"`    // set when user has linked teacher record
 	jwt.RegisteredClaims
 }
 
@@ -27,10 +29,14 @@ func NewJWTService(secret string, accessExpiry, refreshExpiry time.Duration) *JW
 	}
 }
 
-func (s *JWTService) GenerateAccessToken(userID, role string) (string, error) {
+// GenerateAccessToken creates an access token with role and optional dept/teacher scope.
+// Pass empty strings for departmentID/teacherID when not applicable.
+func (s *JWTService) GenerateAccessToken(userID, role, departmentID, teacherID string) (string, error) {
 	claims := Claims{
-		UserID: userID,
-		Role:   role,
+		UserID:       userID,
+		Role:         role,
+		DepartmentID: departmentID,
+		TeacherID:    teacherID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.accessExpiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -91,4 +97,14 @@ func (s *JWTService) Validate(token string) (string, error) {
 		return "", err
 	}
 	return claims.UserID, nil
+}
+
+// ExtractClaims implements the pkg/middleware ClaimsExtractor interface.
+// Returns userID, role, departmentID for richer gRPC context injection.
+func (s *JWTService) ExtractClaims(token string) (userID, role, departmentID string, err error) {
+	claims, err := s.ValidateToken(token)
+	if err != nil {
+		return "", "", "", err
+	}
+	return claims.UserID, claims.Role, claims.DepartmentID, nil
 }

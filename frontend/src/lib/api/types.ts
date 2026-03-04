@@ -13,14 +13,25 @@ export interface ApiError {
   details?: Record<string, string[]>
 }
 
-export type UserRole = 'admin' | 'manager' | 'viewer' | 'student'
+export type UserRole =
+  | 'super_admin'
+  | 'admin'
+  | 'dean'
+  | 'dept_head'
+  | 'manager'
+  | 'viewer'
+  | 'student'
+  | 'teacher'
 
 export interface User {
   id: string
   email: string
   full_name: string
   role: UserRole
+  department_id?: string
+  is_active?: boolean
   created_at: string
+  updated_at?: string
 }
 
 export interface AuthResponse {

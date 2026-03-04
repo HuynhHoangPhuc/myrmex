@@ -9,7 +9,7 @@ import (
 
 func TestJWTService_AccessToken_RoundTrip(t *testing.T) {
 	svc := NewJWTService("test-secret", 15*time.Minute, 7*24*time.Hour)
-	tok, err := svc.GenerateAccessToken("user-1", "admin")
+	tok, err := svc.GenerateAccessToken("user-1", "admin", "", "")
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestJWTService_RefreshToken_NoRole(t *testing.T) {
 
 func TestJWTService_Expired(t *testing.T) {
 	svc := NewJWTService("secret", -1*time.Second, time.Hour)
-	tok, err := svc.GenerateAccessToken("u", "admin")
+	tok, err := svc.GenerateAccessToken("u", "admin", "", "")
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestJWTService_Expired(t *testing.T) {
 func TestJWTService_WrongSecret(t *testing.T) {
 	svc1 := NewJWTService("secret-a", time.Hour, time.Hour)
 	svc2 := NewJWTService("secret-b", time.Hour, time.Hour)
-	tok, err := svc1.GenerateAccessToken("u", "admin")
+	tok, err := svc1.GenerateAccessToken("u", "admin", "", "")
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestJWTService_WrongSecret(t *testing.T) {
 
 func TestJWTService_TamperedPayload(t *testing.T) {
 	svc := NewJWTService("secret", time.Hour, time.Hour)
-	tok, err := svc.GenerateAccessToken("user-1", "admin")
+	tok, err := svc.GenerateAccessToken("user-1", "admin", "", "")
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}
@@ -104,7 +104,7 @@ func TestJWTService_AlgorithmConfusion(t *testing.T) {
 
 func TestJWTService_Validate_Wrapper(t *testing.T) {
 	svc := NewJWTService("secret", time.Hour, time.Hour)
-	tok, err := svc.GenerateAccessToken("user-42", "viewer")
+	tok, err := svc.GenerateAccessToken("user-42", "viewer", "", "")
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}

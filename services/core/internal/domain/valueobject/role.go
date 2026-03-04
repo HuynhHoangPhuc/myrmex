@@ -5,19 +5,33 @@ import "fmt"
 type Role string
 
 const (
-	RoleAdmin   Role = "admin"
-	RoleManager Role = "manager"
-	RoleViewer  Role = "viewer"
-	RoleStudent Role = "student"
-	RoleTeacher Role = "teacher"
+	RoleSuperAdmin Role = "super_admin" // unrestricted access
+	RoleAdmin      Role = "admin"
+	RoleDean       Role = "dean"      // read-all, edit own faculty
+	RoleDeptHead   Role = "dept_head" // CRUD teachers/subjects in own dept
+	RoleManager    Role = "manager"
+	RoleViewer     Role = "viewer"
+	RoleStudent    Role = "student"
+	RoleTeacher    Role = "teacher" // grade subjects they're assigned to
 )
 
 func (r Role) IsValid() bool {
 	switch r {
-	case RoleAdmin, RoleManager, RoleViewer, RoleStudent, RoleTeacher:
+	case RoleSuperAdmin, RoleAdmin, RoleDean, RoleDeptHead,
+		RoleManager, RoleViewer, RoleStudent, RoleTeacher:
 		return true
 	}
 	return false
+}
+
+// HasDeptScope returns true for roles that require department-level enforcement.
+func (r Role) HasDeptScope() bool {
+	return r == RoleDeptHead || r == RoleTeacher
+}
+
+// BypassesScope returns true for roles that skip department scope checks.
+func (r Role) BypassesScope() bool {
+	return r == RoleSuperAdmin || r == RoleAdmin || r == RoleDean || r == "service"
 }
 
 func ParseRole(s string) (Role, error) {

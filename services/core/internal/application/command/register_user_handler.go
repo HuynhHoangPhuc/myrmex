@@ -137,3 +137,26 @@ func NewDeleteUserHandler(userRepo repository.UserRepository) *DeleteUserHandler
 func (h *DeleteUserHandler) Handle(ctx context.Context, cmd DeleteUserCommand) error {
 	return h.userRepo.Delete(ctx, cmd.ID)
 }
+
+// UpdateUserRoleCommand sets a user's role and optional department scope.
+// Used by the admin role management API (PATCH /api/users/:id/role).
+type UpdateUserRoleCommand struct {
+	ID           uuid.UUID
+	Role         string
+	DepartmentID *uuid.UUID // nil clears dept scope
+}
+
+type UpdateUserRoleHandler struct {
+	userRepo repository.UserRepository
+}
+
+func NewUpdateUserRoleHandler(userRepo repository.UserRepository) *UpdateUserRoleHandler {
+	return &UpdateUserRoleHandler{userRepo: userRepo}
+}
+
+func (h *UpdateUserRoleHandler) Handle(ctx context.Context, cmd UpdateUserRoleCommand) (*entity.User, error) {
+	if _, err := valueobject.ParseRole(cmd.Role); err != nil {
+		return nil, err
+	}
+	return h.userRepo.UpdateRole(ctx, cmd.ID, cmd.Role, cmd.DepartmentID)
+}
