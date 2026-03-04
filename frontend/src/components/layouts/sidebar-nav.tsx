@@ -8,6 +8,7 @@ import {
   BarChart3,
   GraduationCap,
   ShieldCheck,
+  Bell,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { usePermissions } from '@/lib/hooks/use-permissions'
@@ -97,6 +98,7 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
         ]
       : []),
     { label: 'Analytics', to: '/analytics', icon: BarChart3 },
+    { label: 'Notifications', to: '/notifications', icon: Bell },
     ...(canAccessAdmin
       ? [
           {

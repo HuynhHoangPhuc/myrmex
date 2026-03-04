@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, Link } from '@tanstack/react-router'
 import { CheckCheck, Inbox } from 'lucide-react'
 
 // Simple relative time without external deps
@@ -88,6 +88,16 @@ export function NotificationPanel() {
             <NotificationItem key={n.id} notification={n} onRead={markRead} />
           ))
         )}
+      </div>
+
+      <DropdownMenuSeparator className="my-0" />
+      <div className="px-4 py-2">
+        <Link
+          to="/notifications"
+          className="block text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
+        >
+          View all notifications
+        </Link>
       </div>
     </DropdownMenuContent>
   )

@@ -80,6 +80,7 @@ export const ENDPOINTS = {
     markRead: (id: string) => `/notifications/${id}/read`,
     markAllRead: '/notifications/mark-all-read',
     preferences: '/notifications/preferences',
+    announce: '/notifications/announce',
   },
   dashboard: {
     stats: '/dashboard/stats',

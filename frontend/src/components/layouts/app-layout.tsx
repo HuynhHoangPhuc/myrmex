@@ -4,6 +4,7 @@ import { TopBar } from '@/components/layouts/top-bar'
 import { MobileSidebarDrawer } from '@/components/layouts/mobile-sidebar-drawer'
 import { CommandPalette } from '@/components/shared/command-palette'
 import { ChatPanel } from '@/chat/components/chat-panel'
+import { NotificationToast } from '@/notifications/components/notification-toast'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -48,6 +49,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
       <ChatPanel isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+      <NotificationToast />
     </div>
   )
 }

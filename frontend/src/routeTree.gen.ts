@@ -21,6 +21,7 @@ import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authentic
 import { Route as AuthenticatedTimetableIndexRouteImport } from './routes/_authenticated/timetable/index'
 import { Route as AuthenticatedSubjectsIndexRouteImport } from './routes/_authenticated/subjects/index'
 import { Route as AuthenticatedStudentsIndexRouteImport } from './routes/_authenticated/students/index'
+import { Route as AuthenticatedNotificationsIndexRouteImport } from './routes/_authenticated/notifications/index'
 import { Route as AuthenticatedHrIndexRouteImport } from './routes/_authenticated/hr/index'
 import { Route as AuthenticatedGradesIndexRouteImport } from './routes/_authenticated/grades/index'
 import { Route as AuthenticatedEnrollmentsIndexRouteImport } from './routes/_authenticated/enrollments/index'
@@ -111,6 +112,12 @@ const AuthenticatedStudentsIndexRoute =
   AuthenticatedStudentsIndexRouteImport.update({
     id: '/students/',
     path: '/students/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedNotificationsIndexRoute =
+  AuthenticatedNotificationsIndexRouteImport.update({
+    id: '/notifications/',
+    path: '/notifications/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedHrIndexRoute = AuthenticatedHrIndexRouteImport.update({
@@ -302,6 +309,7 @@ export interface FileRoutesByFullPath {
   '/enrollments/': typeof AuthenticatedEnrollmentsIndexRoute
   '/grades/': typeof AuthenticatedGradesIndexRoute
   '/hr/': typeof AuthenticatedHrIndexRoute
+  '/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/students/': typeof AuthenticatedStudentsIndexRoute
   '/subjects/': typeof AuthenticatedSubjectsIndexRoute
   '/timetable/': typeof AuthenticatedTimetableIndexRoute
@@ -342,6 +350,7 @@ export interface FileRoutesByTo {
   '/enrollments': typeof AuthenticatedEnrollmentsIndexRoute
   '/grades': typeof AuthenticatedGradesIndexRoute
   '/hr': typeof AuthenticatedHrIndexRoute
+  '/notifications': typeof AuthenticatedNotificationsIndexRoute
   '/students': typeof AuthenticatedStudentsIndexRoute
   '/subjects': typeof AuthenticatedSubjectsIndexRoute
   '/timetable': typeof AuthenticatedTimetableIndexRoute
@@ -386,6 +395,7 @@ export interface FileRoutesById {
   '/_authenticated/enrollments/': typeof AuthenticatedEnrollmentsIndexRoute
   '/_authenticated/grades/': typeof AuthenticatedGradesIndexRoute
   '/_authenticated/hr/': typeof AuthenticatedHrIndexRoute
+  '/_authenticated/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/_authenticated/students/': typeof AuthenticatedStudentsIndexRoute
   '/_authenticated/subjects/': typeof AuthenticatedSubjectsIndexRoute
   '/_authenticated/timetable/': typeof AuthenticatedTimetableIndexRoute
@@ -429,6 +439,7 @@ export interface FileRouteTypes {
     | '/enrollments/'
     | '/grades/'
     | '/hr/'
+    | '/notifications/'
     | '/students/'
     | '/subjects/'
     | '/timetable/'
@@ -469,6 +480,7 @@ export interface FileRouteTypes {
     | '/enrollments'
     | '/grades'
     | '/hr'
+    | '/notifications'
     | '/students'
     | '/subjects'
     | '/timetable'
@@ -512,6 +524,7 @@ export interface FileRouteTypes {
     | '/_authenticated/enrollments/'
     | '/_authenticated/grades/'
     | '/_authenticated/hr/'
+    | '/_authenticated/notifications/'
     | '/_authenticated/students/'
     | '/_authenticated/subjects/'
     | '/_authenticated/timetable/'
@@ -629,6 +642,13 @@ declare module '@tanstack/react-router' {
       path: '/students'
       fullPath: '/students/'
       preLoaderRoute: typeof AuthenticatedStudentsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/notifications/': {
+      id: '/_authenticated/notifications/'
+      path: '/notifications'
+      fullPath: '/notifications/'
+      preLoaderRoute: typeof AuthenticatedNotificationsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/hr/': {
@@ -877,6 +897,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEnrollmentsIndexRoute: typeof AuthenticatedEnrollmentsIndexRoute
   AuthenticatedGradesIndexRoute: typeof AuthenticatedGradesIndexRoute
   AuthenticatedHrIndexRoute: typeof AuthenticatedHrIndexRoute
+  AuthenticatedNotificationsIndexRoute: typeof AuthenticatedNotificationsIndexRoute
   AuthenticatedStudentsIndexRoute: typeof AuthenticatedStudentsIndexRoute
   AuthenticatedSubjectsIndexRoute: typeof AuthenticatedSubjectsIndexRoute
   AuthenticatedTimetableIndexRoute: typeof AuthenticatedTimetableIndexRoute
@@ -910,6 +931,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEnrollmentsIndexRoute: AuthenticatedEnrollmentsIndexRoute,
   AuthenticatedGradesIndexRoute: AuthenticatedGradesIndexRoute,
   AuthenticatedHrIndexRoute: AuthenticatedHrIndexRoute,
+  AuthenticatedNotificationsIndexRoute: AuthenticatedNotificationsIndexRoute,
   AuthenticatedStudentsIndexRoute: AuthenticatedStudentsIndexRoute,
   AuthenticatedSubjectsIndexRoute: AuthenticatedSubjectsIndexRoute,
   AuthenticatedTimetableIndexRoute: AuthenticatedTimetableIndexRoute,
