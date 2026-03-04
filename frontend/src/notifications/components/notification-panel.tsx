@@ -94,6 +94,7 @@ export function NotificationPanel() {
       <div className="px-4 py-2">
         <Link
           to="/notifications"
+          search={{ page: 1, unreadOnly: false, tab: 'all' }}
           className="block text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           View all notifications
