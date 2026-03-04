@@ -2,7 +2,44 @@
 
 ## High-Level Overview
 
-Myrmex is a microservice architecture with modular services communicating via gRPC and event streaming through NATS JetStream. The HTTP gateway (Core) proxies requests to gRPC services; the AI chat agent orchestrates operations via a dynamic tool registry.
+Myrmex is a microservice architecture with modular services communicating via gRPC and event streaming through NATS JetStream. The HTTP gateway (Core) proxies requests to gRPC services; the AI chat agent orchestrates operations via a dynamic tool registry. Audit logging captures mutations asynchronously via NATS → PostgreSQL for compliance and forensics.
+
+### Audit Logging Pipeline
+
+Audit logging is implemented as a fire-and-forget NATS pipeline with persistent storage:
+
+1. **Middleware Capture** (audit_middleware.go):
+   - Post-handler Gin middleware intercepts responses
+   - Derives action from HTTP method + endpoint pattern: POST→Create, PATCH→Update, DELETE→Delete, GET→Read (skipped)
+   - Skips internal service calls (X-Internal-Service header)
+   - Publishes to NATS subject `AUDIT.logs` with user_id, resource_type, action, old/new values
+   - Fire-and-forget; failures don't block API response
+
+2. **Async Consumer** (audit_consumer.go):
+   - Durable JetStream consumer listening on `AUDIT.logs` stream
+   - Receives audit events in order (NATS ordering guarantee)
+   - Writes to `core.audit_logs` partitioned table with user_id, resource_type, action, timestamp
+   - Acknowledges on successful insert; nack on error (retry with exponential backoff)
+
+3. **Storage Layer** (migration/008):
+   - Partitioned table `core.audit_logs` with 12 monthly partitions (2026-03 through 2027-02)
+   - Columns: id, user_id, resource_type, action, old_value, new_value, timestamp
+   - Indexes: BRIN (timestamp range), B-tree (user_id, resource_type) for fast filtering
+   - Queries scan individual partitions via constraint exclusion (efficient for date ranges)
+
+4. **Query API** (audit_handler.go):
+   - Endpoint: GET `/api/audit-logs` (admin/super_admin only)
+   - Filters: user_id, resource_type, action, date range (start_date, end_date)
+   - Pagination: limit, offset (default 100 records per page)
+   - Response: Array of audit entries with human-readable action labels
+
+5. **Frontend** (/admin/audit-logs):
+   - Table UI with sortable columns: User, Resource Type, Action, Timestamp
+   - Row expansion to view old/new value diffs (JSON diff rendering)
+   - Filter toolbar: User selector, resource type dropdown, action checkboxes, date picker
+   - Pagination controls with total count
+
+**Optional Configuration**: Audit middleware is no-op if NATS not configured; graceful degradation for testing/dev.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -35,6 +72,7 @@ Myrmex is a microservice architecture with modular services communicating via gR
 │  │  Middleware:                                                   │   │
 │  │  ├─ CORS (origin validation)                                  │   │
 │  │  ├─ Auth (JWT extraction + validation)                        │   │
+│  │  ├─ Audit Logging (capture mutations → NATS)                  │   │
 │  │  ├─ Rate Limiting (configurable per endpoint)                 │   │
 │  │  └─ Request/Response logging                                  │   │
 │  └────────────────────────────────────────────────────────────────┘   │
@@ -77,13 +115,13 @@ Myrmex is a microservice architecture with modular services communicating via gR
                           │
          NATS JetStream (Event Bus, port 4222)
                           │
-         ┌────────────────┴────────────────────────────────────┐
-         │                                                     │
-    ┌────▼─────┐  ┌──────────┐  ┌────────────┐  ┌──────────┐
-    │ Event    │  │ Async    │  │ Frontend   │  │ Analytics│
-    │ Store    │  │ Consumers│  │ WebSocket  │  │ Consumer │
-    │ (Append) │  │ (Listen) │  │ (Stream)   │  │ (ETL)    │
-    └──────────┘  └──────────┘  └────────────┘  └──────────┘
+         ┌────────────────┴────────────────────────────────────────────┐
+         │                                                             │
+    ┌────▼─────┐  ┌──────────┐  ┌────────────┐  ┌──────────┐  ┌────────┐
+    │ Event    │  │ Async    │  │ Frontend   │  │ Analytics│  │ Audit  │
+    │ Store    │  │ Consumers│  │ WebSocket  │  │ Consumer │  │Consumer│
+    │ (Append) │  │ (Listen) │  │ (Stream)   │  │ (ETL)    │  │(Log DB)│
+    └──────────┘  └──────────┘  └────────────┘  └──────────┘  └────────┘
          │                                            │
 ┌────────▼─────────────────────────────────────────────────────────┐
 │     PostgreSQL (Shared Database)                                  │
@@ -92,6 +130,7 @@ Myrmex is a microservice architecture with modular services communicating via gR
 │ Operational Schemas:                                             │
 │ ├─ core                                                          │
 │ │  ├─ users, module_registry, conversations, event_store        │
+│ │  └─ audit_logs (12 monthly partitions 2026-03→2027-02)        │
 │ ├─ hr (departments, teachers, availability, specializations)    │
 │ ├─ subject (subjects, prerequisites, event_store)               │
 │ ├─ timetable (semesters, offerings, rooms, schedules, events)   │
@@ -122,10 +161,11 @@ Myrmex is a microservice architecture with modular services communicating via gR
 
 **Key Responsibilities**:
 1. **HTTP Gateway**: Proxy requests to gRPC modules (HR, Subject, Timetable, Student)
-2. **Authentication**: JWT generation + validation (15min access, 7day refresh)
-3. **User Management**: User CRUD, roles (admin, manager, viewer, student)
-4. **Module Registry**: Service discovery + health checks
-5. **AI Chat**: WebSocket endpoint, tool execution (50+ tools), LLM integration
+2. **Authentication**: JWT generation + validation (15min access, 7day refresh) with extended claims (role, department_id, teacher_id)
+3. **User Management**: User CRUD, 6-role RBAC (super_admin, admin, dean, dept_head, teacher, student), role assignment API
+4. **Authorization**: Two-tier enforcement (middleware + handler), department-scoped access for dept_head/teacher
+5. **Module Registry**: Service discovery + health checks
+6. **AI Chat**: WebSocket endpoint, tool execution (50+ tools), LLM integration
 
 **Outbound**: PostgreSQL (core schema), NATS JetStream, LLM API (OpenAI/Claude/Gemini)
 
@@ -439,10 +479,16 @@ Note: maxToolIterations=10 enables complex workflows requiring multiple tool cal
 
 | Method | Endpoint | Service | Notes |
 |--------|----------|---------|-------|
-| POST | `/api/auth/login` | Core | Returns access_token + refresh_token |
+| POST | `/api/auth/login` | Core | Email/password login; returns access_token + refresh_token |
 | POST | `/api/auth/register` | Core | Creates user with email/password |
 | POST | `/api/auth/refresh` | Core | Refresh access token |
 | GET | `/api/auth/me` | Core | Current user profile |
+| GET | `/api/auth/oauth/google/login` | Core | Redirect to Google OAuth consent screen |
+| GET | `/api/auth/oauth/google/callback` | Core | Google OAuth callback; validates code + exchanges for tokens |
+| GET | `/api/auth/oauth/microsoft/login` | Core | Redirect to Microsoft OAuth consent screen |
+| GET | `/api/auth/oauth/microsoft/callback` | Core | Microsoft OAuth callback; validates code + exchanges for tokens |
+| POST | `/api/auth/oauth/exchange` | Core | Frontend exchanges short-lived auth code for access/refresh tokens |
+| PATCH | `/api/users/:id/role` | Core | Admin/super_admin only: update user role + department_id |
 | GET | `/api/dashboard/stats` | Core | Aggregate counts (teachers, departments, subjects) |
 | **HR Module** | | | |
 | GET | `/api/hr/teachers` | Module-HR | Paginated list: `{ data, total, page, page_size }` |
@@ -502,6 +548,8 @@ Note: maxToolIterations=10 enables complex workflows requiring multiple tool cal
 | GET | `/api/analytics/schedule-metrics` | Module-Analytics | Schedule metrics (completion rate, conflicts, constraints) |
 | GET | `/api/analytics/schedule-heatmap` | Module-Analytics | Schedule density heatmap (day/period utilization) |
 | GET | `/api/analytics/export` | Core proxy route reserved for future analytics export surface |
+| **Audit & Compliance** | | | |
+| GET | `/api/audit-logs` | Core | Admin/super_admin only: paginated audit logs with filters (user_id, resource_type, action, date range) |
 | **Chat** | | | |
 | WebSocket | `/ws/chat?token=ACCESS_TOKEN` | Core | Streaming chat interface |
 
@@ -512,10 +560,15 @@ Note: maxToolIterations=10 enables complex workflows requiring multiple tool cal
 users (
   id: uuid primary key,
   email: string unique,
-  password_hash: string,
-  role: enum(admin, manager, viewer, student),
+  password_hash: string nullable,  -- NULL for OAuth-only accounts
+  role: enum(super_admin, admin, dean, dept_head, teacher, student),
+  department_id: uuid nullable,  -- Foreign ref to hr.departments (app-level validation)
+  oauth_provider: string nullable,  -- "google" or "microsoft"
+  oauth_subject: string nullable,  -- Provider's unique user ID (sub claim)
+  avatar_url: text nullable,  -- Profile picture from OAuth provider
   created_at: timestamp,
-  deleted_at: timestamp nullable
+  deleted_at: timestamp nullable,
+  unique index: (oauth_provider, oauth_subject) where oauth_provider is not null
 )
 
 module_registry (
@@ -560,6 +613,7 @@ teachers (
   id: uuid primary key,
   name: string,
   email: string unique,
+  user_id: uuid nullable fk core.users,  -- Links teacher to authenticated user for login
   department_id: uuid fk departments,
   created_at: timestamp,
   deleted_at: timestamp nullable
@@ -649,6 +703,18 @@ grades (
 )
 
 event_store (same pattern)
+
+audit_logs (
+  id: bigint primary key auto,
+  user_id: uuid fk core.users,
+  resource_type: string,  -- "teacher", "subject", "semester", "enrollment", "grade", etc.
+  action: enum(create, read, update, delete),
+  old_value: jsonb nullable,  -- Previous state (null for creates)
+  new_value: jsonb,  -- Current state (null for deletes)
+  timestamp: timestamp,
+  -- 12 monthly partitions: 2026-03 through 2027-02
+  -- BRIN index on timestamp, B-tree on (user_id, resource_type) for filtering
+)
 ```
 
 ### Timetable Schema
@@ -749,14 +815,36 @@ event_store (same pattern)
 ## Security Boundaries
 
 ### Authentication
+
+#### Traditional JWT Auth
 - **Boundary**: JWT token validation at Core gateway + gRPC interceptor
 - **Token Lifetime**: 15min access + 7day refresh
 - **Refresh Flow**: Client sends refresh token → Core issues new access token
+- **Claims Extension**: JWT includes `user_id`, `role`, `department_id` (scope), `teacher_id` for O(1) permission checks
+
+#### OAuth 2.0 / OIDC Integration
+- **Providers**: Google (teachers @hcmus.edu.vn), Microsoft Entra ID (students @student.hcmus.edu.vn)
+- **Flow**: PKCE-secured authorization code flow
+  1. Frontend: User clicks "Login with [Google/Microsoft]" → redirects to backend `/api/auth/oauth/{provider}/login`
+  2. Backend: Generate state + PKCE verifier, store in secure httpOnly cookie, redirect to provider consent screen
+  3. Provider: User grants permissions, redirects to callback with auth code
+  4. Backend: Validate state, exchange code for ID token (PKCE), validate ID token (issuer, audience, nonce)
+  5. Validate domain claim: `hd` (Google) or `tid` (Microsoft) server-side — reject if not institutional domain
+  6. Lookup or upsert user by email: pre-existing teacher/student record required (admin must pre-create)
+  7. Generate short-lived auth code (UUID, 60s TTL) in in-memory store, redirect frontend to `/auth/callback?code=X`
+  8. Frontend: Exchange code via `POST /api/auth/oauth/exchange` → returns access + refresh tokens
+- **User Linking**: Email-based matching; OAuth account linked to existing teacher/student on first login
+- **Token Security**: Auth codes never in response body; all tokens in secure httpOnly cookies
+- **Optional Initialization**: OAuthService only initialized if `oauth.google.client_id` set in config (graceful disable if not configured)
+- **Config**: Stored in `config/local.yaml` (secrets via env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `MICROSOFT_TENANT_ID`)
 
 ### Authorization (RBAC)
-- **Roles**: admin, manager, viewer, student
-- **Enforcement**: Per gRPC method in interceptor (future: fine-grained)
-- **Admin-Only**: Module management, user deletion
+- **Roles**: 6 roles: `super_admin`, `admin`, `dean`, `dept_head`, `teacher`, `student`
+- **Enforcement**: Two-tier — middleware (role + dept scope) + handler (resource ownership)
+- **Scope Binding**: `dept_head` and `teacher` roles scoped to `department_id` in JWT claims
+- **Admin-Only**: Module management, user deletion, role assignment
+- **Middleware Guards**: `RequireRole()` + `RequireDeptScope()` on protected routes
+- **Bypass**: `super_admin`, `admin`, `service` bypass scope checks; `dean` read-only bypass
 
 ### Data Isolation
 - **Schema-per-Module**: Reduces blast radius if one module is compromised

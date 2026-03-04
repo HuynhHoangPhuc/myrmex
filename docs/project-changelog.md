@@ -2,6 +2,220 @@
 
 All notable changes to the Myrmex project are documented here.
 
+## [2026-03-04] — Phase 3 Complete: Audit Logging (COMPLETE)
+
+**Status**: Complete | **Phase 3 Fully Delivered**
+
+### Summary
+Completed Phase 3 (Advanced Features) with audit logging implementation. Async NATS pipeline captures all mutations at middleware level, streams to durable consumer, and persists to monthly-partitioned PostgreSQL table. Admin API provides comprehensive audit trail querying with flexible filters. Frontend admin dashboard displays logs with row expansion for before/after value diffs.
+
+### Key Deliverables
+
+#### Backend Audit System
+- [x] Migration (008): Partitioned `core.audit_logs` with 12 monthly partitions (2026-03 → 2027-02)
+  - Columns: id, user_id, resource_type, action, old_value, new_value, timestamp
+  - Indexes: BRIN (timestamp), B-tree (user_id, resource_type, action)
+- [x] Audit middleware (audit_middleware.go): Post-handler Gin middleware
+  - Derives action from HTTP method + endpoint pattern (POST→Create, PATCH→Update, DELETE→Delete)
+  - Skips GET/internal-service requests
+  - Fire-and-forget NATS publish; non-blocking
+- [x] Audit consumer (audit_consumer.go): Durable JetStream consumer
+  - Listens on AUDIT.logs stream
+  - Writes to core.audit_logs with ack/nack retry
+  - Preserves event order via NATS ordering guarantees
+- [x] Audit repository (audit_log_repository.go): Raw pgx + sqlc
+  - Insert: Write audit event to DB
+  - List: Paginated query with nullable filters (user_id, resource_type, action, date range)
+  - Constraint exclusion: Monthly partition pruning for efficient date-range queries
+- [x] Audit handler (audit_handler.go): GET /api/audit-logs
+  - Admin/super_admin role enforcement
+  - Pagination: limit (default 100), offset
+  - Filters: user_id, resource_type, action, start_date, end_date (query params)
+  - Response: Array of audit entries with human-readable labels
+
+#### Optional Configuration
+- NATS-optional: Audit middleware is no-op if NATS not configured (graceful degradation for testing)
+
+#### Frontend Audit Logs UI
+- [x] Route: `/admin/audit-logs` (admin/super_admin only)
+- [x] Table: Columns: User, Resource Type, Action, Timestamp (sortable)
+- [x] Row expansion: View old/new value diffs with JSON diff rendering
+- [x] Filters: User selector (dropdown), resource type, action checkboxes, date picker
+- [x] Pagination: Previous/next, total count display
+
+#### Testing
+- Comprehensive backend unit tests for audit flow (middleware → consumer → queries)
+- Frontend rendering tests for table + row expansion
+
+### API Reference
+
+**GET /api/audit-logs** (Admin/super_admin)
+
+Query Parameters:
+- `limit` (default: 100) — Records per page
+- `offset` (default: 0) — Pagination offset
+- `user_id` (optional) — Filter by user
+- `resource_type` (optional) — Filter by resource (teacher, subject, semester, etc.)
+- `action` (optional) — Filter by action (create, update, delete)
+- `start_date` (optional) — ISO 8601 start timestamp
+- `end_date` (optional) — ISO 8601 end timestamp
+
+Response:
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "user_id": "uuid",
+      "resource_type": "teacher",
+      "action": "create",
+      "old_value": null,
+      "new_value": {"id": "...", "name": "John", ...},
+      "timestamp": "2026-03-04T10:30:00Z"
+    }
+  ],
+  "total": 1234,
+  "page": 0,
+  "page_size": 100
+}
+```
+
+### Database Schema
+
+```sql
+audit_logs (
+  id: bigint primary key auto,
+  user_id: uuid fk core.users,
+  resource_type: string,  -- teacher, subject, semester, enrollment, grade, etc.
+  action: enum(create, update, delete, read),
+  old_value: jsonb nullable,  -- Previous state (null for creates)
+  new_value: jsonb,  -- Current state (null for deletes)
+  timestamp: timestamp
+)
+-- Partitioned: 12 monthly partitions (2026-03 through 2027-02)
+-- Indexes: BRIN(timestamp), B-tree(user_id, resource_type)
+-- Constraint exclusion enabled for date-range queries
+```
+
+### NATS Integration
+
+Stream: `AUDIT.EVENTS`
+Subject: `AUDIT.logs`
+
+Event format:
+```json
+{
+  "user_id": "uuid",
+  "resource_type": "teacher",
+  "action": "update",
+  "old_value": {...},
+  "new_value": {...},
+  "timestamp": "2026-03-04T10:30:00Z"
+}
+```
+
+### Roadmap Impact
+- **Phase 3 Status**: 100% Complete (all advanced features delivered)
+- **Phase 4 Status**: 4.1 (RBAC) + 4.2 (OAuth) + 4.3 (Audit Logging) Complete
+- **Next Phase**: 4.4 (Notifications) — Email + In-app WebSocket notifications
+
+---
+
+## [2026-03-04] — Phase 4.2 OAuth/SSO Integration (COMPLETE)
+
+**Status**: Complete | **Phase 4.2 Delivered**
+
+### Summary
+Implemented Google and Microsoft OAuth 2.0 / OIDC authentication for institutional users. Teachers authenticate via Google (@hcmus.edu.vn), students via Microsoft Entra ID (@student.hcmus.edu.vn). Pre-existing teacher/student records required; admin must pre-create accounts. Email-based linking auto-associates OAuth accounts with existing users. PKCE-secured authorization code flow with server-side domain validation (hd/tid claims).
+
+### Key Deliverables
+
+#### Backend OAuth Service
+- [x] Dependencies: `golang.org/x/oauth2` + `github.com/coreos/go-oidc/v3` (standard, minimal)
+- [x] DB migration (007): Added `oauth_provider`, `oauth_subject`, `avatar_url` to `core.users`; made `password_hash` nullable
+- [x] OAuthService: Provider initialization (Google + Microsoft), PKCE verifier generation, state/nonce validation
+- [x] OAuthHandler: 4 endpoints (google/microsoft login + callback) + POST exchange
+- [x] User upsert logic: Email-based matching with role auto-assignment (teacher vs student)
+- [x] Student auto-linking: OAuth credentials linked to existing student record on first login
+- [x] Config: OAuth secrets in `config/local.yaml` (env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `MICROSOFT_TENANT_ID`)
+- [x] Optional init: OAuthService gracefully disabled if `oauth.google.client_id` not configured
+- [x] In-memory auth code store: 60-second TTL, one-time use (prevents token replay)
+
+#### Security & Validation
+- [x] PKCE code verifier: Client-stored, validated on callback
+- [x] State parameter: Secure httpOnly cookie (CSRF protection)
+- [x] Nonce validation: OIDC ID token nonce claim verified
+- [x] Domain validation: `hd` claim (Google) + `tid` claim (Microsoft) validated server-side
+- [x] Pre-existing account: Login rejected if no matching teacher/student email in system
+- [x] Token in URL prevention: Auth code in callback, tokens exchanged via secure POST (never in URL)
+
+#### Frontend OAuth Integration
+- [x] `/auth/callback` route: Handles OAuth callback, exchanges code for tokens
+- [x] Login page OAuth buttons: "Login with Google" + "Login with Microsoft"
+- [x] Domain-based provider hint: Auto-suggest correct provider based on email domain
+- [x] Provider detection: `detectProvider(email)` → "google" / "microsoft" / "password"
+- [x] Register page: OAuth option for students (replaces invite code for @student.hcmus.edu.vn)
+
+#### Testing & Validation
+- [x] OAuth callback flow tests: Mock provider + code exchange validation
+- [x] User upsert tests: Role assignment (teacher vs student) via email domain
+- [x] State/nonce validation tests: CSRF + OIDC security checks
+- [x] Domain validation tests: hd/tid claim enforcement
+
+### New API Endpoints
+```
+GET  /api/auth/oauth/google/login          → Redirect to Google consent
+GET  /api/auth/oauth/google/callback        → Exchange code, validate, issue JWT
+GET  /api/auth/oauth/microsoft/login        → Redirect to Microsoft Entra ID consent
+GET  /api/auth/oauth/microsoft/callback     → Exchange code, validate, issue JWT
+POST /api/auth/oauth/exchange               → Exchange short-lived code for tokens
+```
+
+### Database Schema Changes
+```sql
+ALTER TABLE core.users ADD COLUMN oauth_provider VARCHAR(50);    -- "google", "microsoft", NULL
+ALTER TABLE core.users ADD COLUMN oauth_subject VARCHAR(255);    -- Provider's unique user ID (sub)
+ALTER TABLE core.users ADD COLUMN avatar_url TEXT;               -- Profile picture URL
+ALTER TABLE core.users ALTER COLUMN password_hash DROP NOT NULL; -- OAuth users have no password
+
+CREATE UNIQUE INDEX idx_users_oauth ON core.users(oauth_provider, oauth_subject)
+  WHERE oauth_provider IS NOT NULL;
+```
+
+### User Linking & Role Assignment
+- **Google** (@hcmus.edu.vn): `hd` claim validation → auto-assign `teacher` role
+- **Microsoft** (@student.hcmus.edu.vn): `tid` claim validation → auto-assign `student` role
+- **Email matching**: OAuth provider's email matched against existing teacher/student record
+- **Rejection logic**: Login rejected if email not found in system (admin must pre-create)
+
+### Configuration
+```yaml
+oauth:
+  google:
+    client_id: ${GOOGLE_CLIENT_ID}
+    client_secret: ${GOOGLE_CLIENT_SECRET}
+    redirect_url: http://localhost:8080/api/auth/oauth/google/callback
+  microsoft:
+    client_id: ${MICROSOFT_CLIENT_ID}
+    client_secret: ${MICROSOFT_CLIENT_SECRET}
+    tenant_id: ${MICROSOFT_TENANT_ID}
+    redirect_url: http://localhost:8080/api/auth/oauth/microsoft/callback
+```
+
+### Impact
+- **Teachers**: Can login with HCMUS Gmail (@hcmus.edu.vn) instead of username/password
+- **Students**: Can login with HCMUS student email (@student.hcmus.edu.vn) via Microsoft Entra ID
+- **Admin burden**: Reduced — OAuth auto-links to pre-created teacher/student records
+- **Security**: Institutional domain validation prevents OAuth account takeover
+- **Flexibility**: Password login still works for admin accounts; OAuth optional (graceful degradation)
+
+### Roadmap Impact
+- Phase 4 progress: Phase 4.1 (RBAC) + Phase 4.2 (OAuth) both complete
+- Next: Phase 4.3 (Audit Logging) + Phase 4.4 (Notifications)
+- Timeline: On track for Q1-Q2 2026 Phase 4 delivery
+
+---
+
 ## [2026-03-03] — Student Self-Service Portal & Invite Code System (COMPLETE)
 
 **Status**: Complete | **All 5 Phases Delivered**

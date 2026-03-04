@@ -107,9 +107,9 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 
 ---
 
-## Phase 3: Advanced Features (IN PROGRESS)
+## Phase 3: Advanced Features (COMPLETE)
 
-**Timeline**: Q3 2026 (4-5 weeks) | **Status**: ~85% Complete (Advanced Prerequisites + frontend UX polish + room assignment + full student module + agent tool expansion + student self-service portal done, Mar 3)
+**Timeline**: Q3 2026 (4-5 weeks) | **Status**: 100% Complete (Mar 4, 2026)
 
 ### Goals
 - Implement advanced prerequisite conflict detection (DONE)
@@ -165,6 +165,16 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 - [ ] Offline mode: Cache schedules for offline access
 - [ ] Push notifications: Schedule changes, new messages
 
+#### Audit Logging (COMPLETE - Mar 4)
+- [x] Middleware-level capture: Post-handler middleware derives action from HTTP method
+- [x] Async NATS pipeline: Fire-and-forget publish to AUDIT.logs stream
+- [x] Database schema: Partitioned core.audit_logs (12 monthly partitions 2026-03→2027-02)
+- [x] Consumer: Durable JetStream consumer with ack/nack retry
+- [x] Repository: audit_log_repository with Insert + List (nullable filters)
+- [x] Handler: GET /api/audit-logs with admin/super_admin enforcement
+- [x] Frontend: /admin/audit-logs page with table, row expand for diff, filters, pagination
+- [x] Graceful degradation: No-op when NATS not configured
+
 #### Notifications System
 - [ ] Email notifications: Schedule changes, assignments
 - [ ] SMS alerts: Critical schedule changes (opt-in)
@@ -180,25 +190,57 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 
 ---
 
-## Phase 4: Enterprise & Multi-Tenancy (PLANNED)
+## Phase 4: Internal Pilot & Enterprise (IN PROGRESS)
 
-**Timeline**: Q4 2026+ (6+ weeks) | **Status**: Vision
+**Timeline**: Q1-Q4 2026+ (6+ weeks) | **Status**: Phase 4.1-4.2 Complete; Phase 4.3 (Audit Logging) Complete
 
-### Goals
+### Phase 4.1: Advanced RBAC (COMPLETE - Mar 4)
+- [x] 6 roles: super_admin, admin, dean, dept_head, teacher, student
+- [x] Department scoping: dept_head + teacher roles bound to department_id via JWT claims
+- [x] Two-tier enforcement: Middleware (RequireDeptScope) + Handler (resource ownership checks)
+- [x] JWT claims extension: department_id + teacher_id for O(1) permission checks
+- [x] Role management API: PATCH /api/users/:id/role (admin/super_admin only)
+- [x] Admin UI: Role management page with department selector
+- [x] gRPC interceptor: Role + scope context extraction
+- [x] Route guards: Protected HR/Subject routes, RequireDeptScope validation
+
+### Goals (Phase 4 Overall)
 - Support multiple institutions (universities, schools, organizations)
-- Enable advanced RBAC and permission management
+- Enable advanced RBAC and permission management for institutional pilots (HCMUS)
 - Achieve enterprise SLA (99.9% uptime, HA/DR)
 - Implement audit logging and compliance features
 
 ### Deliverables
 
-#### Multi-Tenancy
+#### Phase 4.2: OAuth/SSO (COMPLETE - Mar 4)
+- [x] OAuth/SSO: Google OIDC (teachers @hcmus.edu.vn) + Microsoft OIDC (students @student.hcmus.edu.vn)
+  - [x] Google provider: PKCE + hd claim validation for @hcmus.edu.vn domain restriction
+  - [x] Microsoft provider: Entra ID single-tenant endpoint + tid claim validation
+  - [x] User upsert: Pre-existing account required (admin must pre-create teacher/student record)
+  - [x] Email-based linking: OAuth auto-links to existing teacher/student on first login
+  - [x] Short-lived auth code: One-time exchange (tokens never in URL)
+  - [x] Domain-based provider detection: Auto-suggest correct OAuth provider on login page
+  - [x] Optional initialization: Graceful disable if oauth config not provided
+  - [x] State/PKCE/nonce validation: Full OIDC security enforcement
+
+### Phase 4.3: Audit Logging (COMPLETE - Mar 4)
+- [x] Async NATS pipeline: Post-handler middleware → NATS → DurableConsumer → PostgreSQL
+- [x] Monthly partitions: core.audit_logs partitioned 2026-03 through 2027-02
+- [x] Query filtering: user_id, resource_type, action, date range support
+- [x] Admin API: GET /api/audit-logs with pagination (limit, offset)
+- [x] Frontend UI: /admin/audit-logs with table, row expand, filters, pagination
+
+### Phase 4.4: Notifications (PLANNED)
+- [ ] Email notifications: Schedule changes, assignments
+- [ ] In-app notifications: WebSocket push
+
+#### Future: Multi-Tenancy & Scaling
 - [ ] Tenant isolation: Shared infrastructure, isolated data (row-level security)
 - [ ] Tenant management: Admin UI for creating/managing tenants
 - [ ] Billing integration: Stripe/Paddle for subscription management
 - [ ] SLA tiers: Basic, Pro, Enterprise with feature gates
 
-#### Advanced RBAC
+#### Advanced Features (Future)
 - [ ] Permission model: Fine-grained permissions per resource (CRUDX)
 - [ ] Role templates: Pre-built roles (admin, dean, department_head, instructor, student)
 - [ ] Custom roles: Ability to define custom roles + permissions
@@ -362,6 +404,20 @@ Phase 4: Enterprise
 ---
 
 ## Change Log
+
+### 2026-03-04 (Phase 4 Phase 1: Advanced RBAC Complete)
+- Added 3 new roles: super_admin, dean, dept_head (total 6 roles)
+- Added department_id column to core.users + user_id column to hr.teachers
+- Extended JWT claims with DepartmentID + TeacherID for O(1) permission checks
+- Implemented RequireDeptScope() middleware for department-scoped access control
+- Created scope_middleware.go with role/department validation
+- Implemented PATCH /api/users/:id/role endpoint for role management
+- Updated auth handlers to populate extended JWT claims from user + teacher data
+- Updated gRPC interceptor (auth_interceptor.go) to extract role + department context
+- Created admin role management page (React) with department selector
+- Updated route guards to enforce scope on HR/Subject mutations
+- Added usePermissions hook on frontend for role-based UI visibility
+- Status: Phase 4.1 (Advanced RBAC) 100% Complete
 
 ### 2026-03-01 (Student Foundation + Cache + Room Assignment)
 - Added `pkg/cache` shared Redis cache abstraction with cursor-based SCAN invalidation
