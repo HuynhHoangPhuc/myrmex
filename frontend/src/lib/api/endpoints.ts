@@ -74,6 +74,13 @@ export const ENDPOINTS = {
   auditLogs: {
     list: '/audit-logs',
   },
+  notifications: {
+    list: '/notifications',
+    unreadCount: '/notifications/unread-count',
+    markRead: (id: string) => `/notifications/${id}/read`,
+    markAllRead: '/notifications/mark-all-read',
+    preferences: '/notifications/preferences',
+  },
   dashboard: {
     stats: '/dashboard/stats',
   },

@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -26,6 +27,7 @@ import (
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/auth"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/llm"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/messaging"
+	notifinfra "github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/notification"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/persistence"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/persistence/sqlc"
 	httpif "github.com/HuynhHoangPhuc/myrmex/services/core/internal/interface/http"
@@ -129,6 +131,7 @@ func main() {
 	userRepo := persistence.NewUserRepository(queries)
 	moduleRepo := persistence.NewModuleRepository(queries)
 	auditRepo := persistence.NewAuditLogRepository(pool)
+	notifRepo := persistence.NewNotificationRepository(pool)
 
 	// 8. Command handlers
 	registerUserHandler := command.NewRegisterUserHandler(userRepo, es, publisher, passwordSvc)
@@ -173,6 +176,35 @@ func main() {
 		}
 	}
 
+	// Notification infrastructure: WS broker + email service + NATS consumer
+	wsBroker := notifinfra.NewWSBroker(zapLog)
+	emailSvc := notifinfra.NewEmailService(
+		v.GetString("resend.api_key"),
+		v.GetString("resend.from_addr"),
+		zapLog,
+	)
+	// Wire user email lookup for the email service
+	notifinfra.GetUserEmail = func(userID string) (string, error) {
+		uid, err := uuid.Parse(userID)
+		if err != nil {
+			return "", err
+		}
+		u, err := userRepo.GetByID(ctx, uid)
+		if err != nil {
+			return "", err
+		}
+		return u.Email, nil
+	}
+	notifHandler := httpif.NewNotificationHandler(notifRepo, wsBroker, jwtSvc, zapLog)
+	if js != nil {
+		notifConsumer := messaging.NewNotificationConsumer(js, notifRepo, wsBroker, emailSvc, zapLog)
+		if err := notifConsumer.Start(ctx); err != nil {
+			zapLog.Warn("notification consumer failed to start", zap.Error(err))
+		} else {
+			defer notifConsumer.Stop()
+		}
+	}
+
 	// 10b. AI Chat: LLM provider + tool registry + executor + handler
 	llmProvider := buildLLMProvider(v)
 	toolRegistry := agent.NewToolRegistry()
@@ -183,23 +215,24 @@ func main() {
 
 	// 11. Router
 	router := httpif.NewRouter(httpif.RouterConfig{
-		AuthHandler:       authHandler,
-		OAuthHandler:      oauthHandler,
-		AdminRoleHandler:  adminRoleHandler,
-		AuditHandler:      auditHandler,
-		NATSConn:          nc, // nil when NATS unavailable → audit middleware no-ops
-		UserHandler:       userHandler,
-		ModuleHandler:     moduleHandler,
-		GatewayProxy:      gatewayProxy,
-		ChatHandler:       chatHandler,
-		HRHandler:         modHandlers.HR,
-		SubjectHandler:    modHandlers.Subject,
-		TimetableHandler:  modHandlers.Timetable,
-		StudentHandler:    modHandlers.Student,
-		DashboardHandler:  modHandlers.Dashboard,
-		AnalyticsHTTPAddr: v.GetString("analytics.http_addr"),
-		JWTService:        jwtSvc,
-		Logger:            zapLog,
+		AuthHandler:         authHandler,
+		OAuthHandler:        oauthHandler,
+		AdminRoleHandler:    adminRoleHandler,
+		AuditHandler:        auditHandler,
+		NATSConn:            nc, // nil when NATS unavailable → audit middleware no-ops
+		UserHandler:         userHandler,
+		ModuleHandler:       moduleHandler,
+		GatewayProxy:        gatewayProxy,
+		ChatHandler:         chatHandler,
+		NotificationHandler: notifHandler,
+		HRHandler:           modHandlers.HR,
+		SubjectHandler:      modHandlers.Subject,
+		TimetableHandler:    modHandlers.Timetable,
+		StudentHandler:      modHandlers.Student,
+		DashboardHandler:    modHandlers.Dashboard,
+		AnalyticsHTTPAddr:   v.GetString("analytics.http_addr"),
+		JWTService:          jwtSvc,
+		Logger:              zapLog,
 	})
 
 	// 12. gRPC server (placeholder for module registry)

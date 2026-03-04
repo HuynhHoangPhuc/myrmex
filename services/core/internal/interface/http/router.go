@@ -14,24 +14,25 @@ import (
 )
 
 type RouterConfig struct {
-	AuthHandler          *AuthHandler
-	OAuthHandler         *OAuthHandler
-	AdminRoleHandler     *AdminRoleHandler
-	AuditHandler         *AuditHandler
-	NATSConn             *nats.Conn // nil → audit middleware disabled
-	UserHandler          *UserHandler
-	ModuleHandler        *ModuleHandler
-	GatewayProxy         *GatewayProxy
-	ChatHandler          *ChatHandler
-	HRHandler            *HRHandler
-	SubjectHandler       *SubjectHandler
-	TimetableHandler     *TimetableHandler
-	StudentHandler       *StudentHandler
-	StudentPortalHandler *StudentPortalHandler
-	DashboardHandler     *DashboardHandler
-	AnalyticsHTTPAddr    string // e.g. "http://module-analytics:8055"
-	JWTService           *auth.JWTService
-	Logger               *zap.Logger
+	AuthHandler             *AuthHandler
+	OAuthHandler            *OAuthHandler
+	AdminRoleHandler        *AdminRoleHandler
+	AuditHandler            *AuditHandler
+	NATSConn                *nats.Conn // nil → audit middleware disabled
+	UserHandler             *UserHandler
+	ModuleHandler           *ModuleHandler
+	GatewayProxy            *GatewayProxy
+	ChatHandler             *ChatHandler
+	NotificationHandler     *NotificationHandler
+	HRHandler               *HRHandler
+	SubjectHandler          *SubjectHandler
+	TimetableHandler        *TimetableHandler
+	StudentHandler          *StudentHandler
+	StudentPortalHandler    *StudentPortalHandler
+	DashboardHandler        *DashboardHandler
+	AnalyticsHTTPAddr       string // e.g. "http://module-analytics:8055"
+	JWTService              *auth.JWTService
+	Logger                  *zap.Logger
 }
 
 func NewRouter(cfg RouterConfig) *gin.Engine {
@@ -46,9 +47,12 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	// WebSocket chat endpoint — auth via ?token= query param
+	// WebSocket endpoints — auth via ?token= query param
 	if cfg.ChatHandler != nil {
 		r.GET("/ws/chat", cfg.ChatHandler.HandleWebSocket)
+	}
+	if cfg.NotificationHandler != nil {
+		r.GET("/ws/notifications", cfg.NotificationHandler.HandleWebSocket)
 	}
 
 	api := r.Group("/api")
@@ -104,6 +108,19 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 			auditGroup := protected.Group("/audit-logs")
 			auditGroup.Use(middleware.RequireRole("admin", "super_admin"))
 			auditGroup.GET("", cfg.AuditHandler.ListAuditLogs)
+		}
+
+		// Notification REST endpoints — available to all authenticated users
+		if cfg.NotificationHandler != nil {
+			notifs := protected.Group("/notifications")
+			{
+				notifs.GET("", cfg.NotificationHandler.List)
+				notifs.GET("/unread-count", cfg.NotificationHandler.UnreadCount)
+				notifs.POST("/mark-all-read", cfg.NotificationHandler.MarkAllRead)
+				notifs.PATCH("/:id/read", cfg.NotificationHandler.MarkRead)
+				notifs.GET("/preferences", cfg.NotificationHandler.GetPreferences)
+				notifs.PUT("/preferences", cfg.NotificationHandler.UpdatePreferences)
+			}
 		}
 
 		// Module routes (admin only)

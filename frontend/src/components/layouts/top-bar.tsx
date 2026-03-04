@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useRouterState, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { LogOut, User, ChevronRight, Bot, Menu } from 'lucide-react'
@@ -15,6 +16,8 @@ import { useCurrentUser } from '@/lib/hooks/use-current-user'
 import { useLogout } from '@/lib/hooks/use-auth'
 import { apiClient } from '@/lib/api/client'
 import { ENDPOINTS } from '@/lib/api/endpoints'
+import { NotificationBell } from '@/notifications/components/notification-bell'
+import { NotificationPanel } from '@/notifications/components/notification-panel'
 import type { Subject } from '@/modules/subject/types'
 import type { Teacher } from '@/modules/hr/types'
 import type { Semester } from '@/modules/timetable/types'
@@ -125,11 +128,12 @@ function BreadcrumbLink({ crumb }: { crumb: Crumb }) {
   )
 }
 
-// Top bar: breadcrumbs on left, theme + AI toggle + user dropdown on right
+// Top bar: breadcrumbs on left, theme + notifications + AI toggle + user dropdown on right
 export function TopBar({ chatOpen, onToggleChat, onOpenMobileNav }: TopBarProps) {
   const breadcrumbs = useBreadcrumbs()
   const { data: user } = useCurrentUser()
   const logout = useLogout()
+  const [notifOpen, setNotifOpen] = useState(false)
 
   const firstCrumb = breadcrumbs[0]
   const lastCrumb = breadcrumbs[breadcrumbs.length - 1]
@@ -187,6 +191,15 @@ export function TopBar({ chatOpen, onToggleChat, onOpenMobileNav }: TopBarProps)
 
       <div className="flex items-center gap-1 sm:gap-2">
         <ThemeToggle />
+
+        <DropdownMenu open={notifOpen} onOpenChange={setNotifOpen}>
+          <DropdownMenuTrigger asChild>
+            <span>
+              <NotificationBell open={notifOpen} onToggle={() => setNotifOpen((v) => !v)} />
+            </span>
+          </DropdownMenuTrigger>
+          <NotificationPanel />
+        </DropdownMenu>
 
         {onToggleChat && (
           <Button

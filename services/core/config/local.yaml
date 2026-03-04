@@ -43,3 +43,8 @@ llm:
   api_key: ""                 # set via LLM_API_KEY env var in production
   model: "gpt-4o-mini"        # use claude-haiku-4-5 for claude provider
   base_url: "https://api.openai.com/v1"  # override for Ollama: http://localhost:11434/v1
+
+
+resend:
+  api_key: ""                 # set via RESEND_API_KEY env var in production
+  from_addr: "Myrmex <noreply@myrmex.edu.vn>"
