@@ -15,13 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 
 export const Route = createFileRoute('/_authenticated/admin/audit-logs/')({
   component: AuditLogsPage,
@@ -96,17 +89,16 @@ function AuditLogsPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <Select value={filters.resource_type} onValueChange={(v) => setFilter('resource_type', v === '_all' ? '' : v)}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Resource type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="_all">All resources</SelectItem>
-            {RESOURCE_TYPES.filter(Boolean).map((r) => (
-              <SelectItem key={r} value={r}>{r}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <select
+          className="h-9 w-40 rounded-md border border-input bg-background px-3 text-sm"
+          value={filters.resource_type}
+          onChange={(e) => setFilter('resource_type', e.target.value === '_all' ? '' : e.target.value)}
+        >
+          <option value="_all">All resources</option>
+          {RESOURCE_TYPES.filter(Boolean).map((r) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
 
         <Input
           placeholder="Filter by action..."

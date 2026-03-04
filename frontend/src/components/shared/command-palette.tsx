@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { NAV_ITEMS } from '@/components/layouts/sidebar-nav'
 import { apiClient } from '@/lib/api/client'
 import { ENDPOINTS } from '@/lib/api/endpoints'
 import type { ListResponse } from '@/lib/api/types'
@@ -22,27 +21,24 @@ interface CommandItem {
   path: string
 }
 
-const STATIC_PAGES: CommandItem[] = NAV_ITEMS.flatMap((item) => {
-  const pages: CommandItem[] = [
-    {
-      id: item.to,
-      label: item.label,
-      hint: 'Page',
-      path: item.to,
-    },
-  ]
-
-  item.children?.forEach((child) => {
-    pages.push({
-      id: child.to,
-      label: child.label,
-      hint: item.label,
-      path: child.to,
-    })
-  })
-
-  return pages
-})
+const STATIC_PAGES: CommandItem[] = [
+  { id: '/dashboard', label: 'Dashboard', hint: 'Page', path: '/dashboard' },
+  { id: '/hr/teachers', label: 'Teachers', hint: 'HR', path: '/hr/teachers' },
+  { id: '/hr/departments', label: 'Departments', hint: 'HR', path: '/hr/departments' },
+  { id: '/subjects', label: 'All Subjects', hint: 'Subjects', path: '/subjects' },
+  { id: '/subjects/prerequisites', label: 'Prerequisites', hint: 'Subjects', path: '/subjects/prerequisites' },
+  { id: '/subjects/offerings', label: 'Offerings', hint: 'Subjects', path: '/subjects/offerings' },
+  { id: '/timetable/semesters', label: 'Semesters', hint: 'Timetable', path: '/timetable/semesters' },
+  { id: '/timetable/schedules', label: 'Schedules', hint: 'Timetable', path: '/timetable/schedules' },
+  { id: '/timetable/generate', label: 'Generate', hint: 'Timetable', path: '/timetable/generate' },
+  { id: '/timetable/assign', label: 'Assign Teachers', hint: 'Timetable', path: '/timetable/assign' },
+  { id: '/students', label: 'Students', hint: 'Students', path: '/students' },
+  { id: '/enrollments', label: 'Enrollments', hint: 'Students', path: '/enrollments' },
+  { id: '/grades', label: 'Grades', hint: 'Students', path: '/grades' },
+  { id: '/analytics', label: 'Analytics', hint: 'Page', path: '/analytics' },
+  { id: '/admin/roles', label: 'Role Management', hint: 'Admin', path: '/admin/roles' },
+  { id: '/admin/audit-logs', label: 'Audit Logs', hint: 'Admin', path: '/admin/audit-logs' },
+]
 
 function filterItems(items: CommandItem[], query: string): CommandItem[] {
   const normalized = query.trim().toLowerCase()

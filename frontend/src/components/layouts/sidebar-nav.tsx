@@ -32,7 +32,7 @@ function matchesPath(pathname: string, path: string): boolean {
 export function SidebarNav({ onNavigate }: SidebarNavProps) {
   const router = useRouterState()
   const pathname = router.location.pathname
-  const { isAdmin, isSuperAdmin, isDeptHead, isTeacher, canGrade } = usePermissions()
+  const { isAdmin, isSuperAdmin, isDeptHead, canGrade } = usePermissions()
 
   // Determine which nav sections this role can see
   const canAccessHR = isAdmin || isSuperAdmin || isDeptHead
