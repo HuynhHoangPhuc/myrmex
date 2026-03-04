@@ -2,9 +2,11 @@ package persistence
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/entity"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/domain/valueobject"
@@ -65,13 +67,17 @@ func (r *UserRepositoryImpl) Count(ctx context.Context) (int64, error) {
 }
 
 func (r *UserRepositoryImpl) Update(ctx context.Context, user *entity.User) (*entity.User, error) {
-	row, err := r.queries.UpdateUser(ctx, sqlc.UpdateUserParams{
+	params := sqlc.UpdateUserParams{
 		ID:       uuidToPgtype(user.ID),
 		FullName: pgtype.Text{String: user.FullName, Valid: user.FullName != ""},
 		Email:    pgtype.Text{String: user.Email, Valid: user.Email != ""},
 		Role:     pgtype.Text{String: string(user.Role), Valid: user.Role != ""},
 		IsActive: pgtype.Bool{Bool: user.IsActive, Valid: true},
-	})
+	}
+	if user.DepartmentID != nil {
+		params.DepartmentID = pgtype.UUID{Bytes: *user.DepartmentID, Valid: true}
+	}
+	row, err := r.queries.UpdateUser(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("update user: %w", err)
 	}
@@ -82,8 +88,70 @@ func (r *UserRepositoryImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.queries.DeleteUser(ctx, uuidToPgtype(id))
 }
 
+func (r *UserRepositoryImpl) UpdateRole(ctx context.Context, userID uuid.UUID, role string, departmentID *uuid.UUID) (*entity.User, error) {
+	params := sqlc.UpdateUserRoleParams{
+		ID:   uuidToPgtype(userID),
+		Role: role,
+	}
+	if departmentID != nil {
+		params.DepartmentID = pgtype.UUID{Bytes: *departmentID, Valid: true}
+	}
+	row, err := r.queries.UpdateUserRole(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("update user role: %w", err)
+	}
+	return coreUserToEntity(row), nil
+}
+
+// GetTeacherIDByUserID looks up the teacher record linked to this user.
+// Returns ("", nil) when no teacher record exists (user is not a teacher).
+func (r *UserRepositoryImpl) GetTeacherIDByUserID(ctx context.Context, userID uuid.UUID) (string, error) {
+	teacherID, err := r.queries.GetTeacherIDByUserID(ctx, uuidToPgtype(userID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", nil
+		}
+		return "", fmt.Errorf("get teacher id by user id: %w", err)
+	}
+	if !teacherID.Valid {
+		return "", nil
+	}
+	return uuid.UUID(teacherID.Bytes).String(), nil
+}
+
+// GetByOAuth finds a user by their provider+subject. Returns nil, nil if not found.
+func (r *UserRepositoryImpl) GetByOAuth(ctx context.Context, provider, subject string) (*entity.User, error) {
+	row, err := r.queries.GetUserByOAuth(ctx, sqlc.GetUserByOAuthParams{
+		OauthProvider: pgtype.Text{String: provider, Valid: true},
+		OauthSubject:  pgtype.Text{String: subject, Valid: true},
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get user by oauth: %w", err)
+	}
+	return coreUserToEntity(row), nil
+}
+
+// UpsertOAuthUser creates or links an OAuth user by email.
+func (r *UserRepositoryImpl) UpsertOAuthUser(ctx context.Context, email, fullName, role, provider, subject, avatarURL string) (*entity.User, error) {
+	row, err := r.queries.UpsertOAuthUser(ctx, sqlc.UpsertOAuthUserParams{
+		Email:         email,
+		FullName:      fullName,
+		Role:          role,
+		OauthProvider: pgtype.Text{String: provider, Valid: true},
+		OauthSubject:  pgtype.Text{String: subject, Valid: true},
+		AvatarUrl:     pgtype.Text{String: avatarURL, Valid: avatarURL != ""},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("upsert oauth user: %w", err)
+	}
+	return coreUserToEntity(row), nil
+}
+
 func coreUserToEntity(u sqlc.CoreUser) *entity.User {
-	return &entity.User{
+	e := &entity.User{
 		ID:           pgtypeToUUID(u.ID),
 		Email:        u.Email,
 		PasswordHash: u.PasswordHash,
@@ -93,6 +161,20 @@ func coreUserToEntity(u sqlc.CoreUser) *entity.User {
 		CreatedAt:    u.CreatedAt.Time,
 		UpdatedAt:    u.UpdatedAt.Time,
 	}
+	if u.DepartmentID.Valid {
+		id := uuid.UUID(u.DepartmentID.Bytes)
+		e.DepartmentID = &id
+	}
+	if u.OauthProvider.Valid {
+		e.OAuthProvider = u.OauthProvider.String
+	}
+	if u.OauthSubject.Valid {
+		e.OAuthSubject = u.OauthSubject.String
+	}
+	if u.AvatarUrl.Valid {
+		e.AvatarURL = u.AvatarUrl.String
+	}
+	return e
 }
 
 func uuidToPgtype(id uuid.UUID) pgtype.UUID {

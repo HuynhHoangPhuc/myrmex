@@ -24,7 +24,7 @@ func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO core.users (email, password_hash, full_name, role)
-VALUES ($1, $2, $3, $4) RETURNING id, email, password_hash, full_name, role, is_active, created_at, updated_at
+VALUES ($1, $2, $3, $4) RETURNING id, email, password_hash, full_name, role, is_active, department_id, oauth_provider, oauth_subject, avatar_url, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -49,6 +49,10 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CoreUse
 		&i.FullName,
 		&i.Role,
 		&i.IsActive,
+		&i.DepartmentID,
+		&i.OauthProvider,
+		&i.OauthSubject,
+		&i.AvatarUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -65,7 +69,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id pgtype.UUID) error {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password_hash, full_name, role, is_active, created_at, updated_at FROM core.users WHERE email = $1
+SELECT id, email, password_hash, full_name, role, is_active, department_id, oauth_provider, oauth_subject, avatar_url, created_at, updated_at FROM core.users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (CoreUser, error) {
@@ -78,6 +82,10 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (CoreUser, e
 		&i.FullName,
 		&i.Role,
 		&i.IsActive,
+		&i.DepartmentID,
+		&i.OauthProvider,
+		&i.OauthSubject,
+		&i.AvatarUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -85,7 +93,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (CoreUser, e
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, password_hash, full_name, role, is_active, created_at, updated_at FROM core.users WHERE id = $1
+SELECT id, email, password_hash, full_name, role, is_active, department_id, oauth_provider, oauth_subject, avatar_url, created_at, updated_at FROM core.users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (CoreUser, error) {
@@ -98,6 +106,10 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (CoreUser, er
 		&i.FullName,
 		&i.Role,
 		&i.IsActive,
+		&i.DepartmentID,
+		&i.OauthProvider,
+		&i.OauthSubject,
+		&i.AvatarUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -105,7 +117,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (CoreUser, er
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, password_hash, full_name, role, is_active, created_at, updated_at FROM core.users ORDER BY created_at DESC LIMIT $1 OFFSET $2
+SELECT id, email, password_hash, full_name, role, is_active, department_id, oauth_provider, oauth_subject, avatar_url, created_at, updated_at FROM core.users ORDER BY created_at DESC LIMIT $1 OFFSET $2
 `
 
 type ListUsersParams struct {
@@ -129,6 +141,10 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]CoreUse
 			&i.FullName,
 			&i.Role,
 			&i.IsActive,
+			&i.DepartmentID,
+			&i.OauthProvider,
+			&i.OauthSubject,
+			&i.AvatarUrl,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -148,16 +164,18 @@ SET full_name = COALESCE($1, full_name),
     email = COALESCE($2, email),
     role = COALESCE($3, role),
     is_active = COALESCE($4, is_active),
+    department_id = COALESCE($5, department_id),
     updated_at = NOW()
-WHERE id = $5 RETURNING id, email, password_hash, full_name, role, is_active, created_at, updated_at
+WHERE id = $6 RETURNING id, email, password_hash, full_name, role, is_active, department_id, oauth_provider, oauth_subject, avatar_url, created_at, updated_at
 `
 
 type UpdateUserParams struct {
-	FullName pgtype.Text `json:"full_name"`
-	Email    pgtype.Text `json:"email"`
-	Role     pgtype.Text `json:"role"`
-	IsActive pgtype.Bool `json:"is_active"`
-	ID       pgtype.UUID `json:"id"`
+	FullName     pgtype.Text `json:"full_name"`
+	Email        pgtype.Text `json:"email"`
+	Role         pgtype.Text `json:"role"`
+	IsActive     pgtype.Bool `json:"is_active"`
+	DepartmentID pgtype.UUID `json:"department_id"`
+	ID           pgtype.UUID `json:"id"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (CoreUser, error) {
@@ -166,6 +184,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (CoreUse
 		arg.Email,
 		arg.Role,
 		arg.IsActive,
+		arg.DepartmentID,
 		arg.ID,
 	)
 	var i CoreUser
@@ -176,6 +195,135 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (CoreUse
 		&i.FullName,
 		&i.Role,
 		&i.IsActive,
+		&i.DepartmentID,
+		&i.OauthProvider,
+		&i.OauthSubject,
+		&i.AvatarUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateUserRole = `-- name: UpdateUserRole :one
+UPDATE core.users
+SET role = $1,
+    department_id = $2,
+    updated_at = NOW()
+WHERE id = $3
+RETURNING id, email, password_hash, full_name, role, is_active, department_id, oauth_provider, oauth_subject, avatar_url, created_at, updated_at
+`
+
+type UpdateUserRoleParams struct {
+	Role         string      `json:"role"`
+	DepartmentID pgtype.UUID `json:"department_id"`
+	ID           pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) (CoreUser, error) {
+	row := q.db.QueryRow(ctx, updateUserRole, arg.Role, arg.DepartmentID, arg.ID)
+	var i CoreUser
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.FullName,
+		&i.Role,
+		&i.IsActive,
+		&i.DepartmentID,
+		&i.OauthProvider,
+		&i.OauthSubject,
+		&i.AvatarUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getTeacherIDByUserID = `-- name: GetTeacherIDByUserID :one
+SELECT id FROM hr.teachers WHERE user_id = $1 LIMIT 1
+`
+
+func (q *Queries) GetTeacherIDByUserID(ctx context.Context, userID pgtype.UUID) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, getTeacherIDByUserID, userID)
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const getUserByOAuth = `-- name: GetUserByOAuth :one
+SELECT id, email, password_hash, full_name, role, is_active, department_id,
+       oauth_provider, oauth_subject, avatar_url, created_at, updated_at
+FROM core.users WHERE oauth_provider = $1 AND oauth_subject = $2
+`
+
+type GetUserByOAuthParams struct {
+	OauthProvider pgtype.Text `json:"oauth_provider"`
+	OauthSubject  pgtype.Text `json:"oauth_subject"`
+}
+
+func (q *Queries) GetUserByOAuth(ctx context.Context, arg GetUserByOAuthParams) (CoreUser, error) {
+	row := q.db.QueryRow(ctx, getUserByOAuth, arg.OauthProvider, arg.OauthSubject)
+	var i CoreUser
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.FullName,
+		&i.Role,
+		&i.IsActive,
+		&i.DepartmentID,
+		&i.OauthProvider,
+		&i.OauthSubject,
+		&i.AvatarUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const upsertOAuthUser = `-- name: UpsertOAuthUser :one
+INSERT INTO core.users (email, password_hash, full_name, role, oauth_provider, oauth_subject, avatar_url)
+VALUES ($1, '', $2, $3, $4, $5, $6)
+ON CONFLICT (email) DO UPDATE SET
+    oauth_provider = EXCLUDED.oauth_provider,
+    oauth_subject  = EXCLUDED.oauth_subject,
+    avatar_url     = COALESCE(EXCLUDED.avatar_url, core.users.avatar_url),
+    updated_at     = NOW()
+RETURNING id, email, password_hash, full_name, role, is_active, department_id,
+          oauth_provider, oauth_subject, avatar_url, created_at, updated_at
+`
+
+type UpsertOAuthUserParams struct {
+	Email         string      `json:"email"`
+	FullName      string      `json:"full_name"`
+	Role          string      `json:"role"`
+	OauthProvider pgtype.Text `json:"oauth_provider"`
+	OauthSubject  pgtype.Text `json:"oauth_subject"`
+	AvatarUrl     pgtype.Text `json:"avatar_url"`
+}
+
+func (q *Queries) UpsertOAuthUser(ctx context.Context, arg UpsertOAuthUserParams) (CoreUser, error) {
+	row := q.db.QueryRow(ctx, upsertOAuthUser,
+		arg.Email,
+		arg.FullName,
+		arg.Role,
+		arg.OauthProvider,
+		arg.OauthSubject,
+		arg.AvatarUrl,
+	)
+	var i CoreUser
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.FullName,
+		&i.Role,
+		&i.IsActive,
+		&i.DepartmentID,
+		&i.OauthProvider,
+		&i.OauthSubject,
+		&i.AvatarUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

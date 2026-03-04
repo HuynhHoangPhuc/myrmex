@@ -9,14 +9,18 @@ import (
 )
 
 type User struct {
-	ID           uuid.UUID
-	Email        string
-	PasswordHash string
-	FullName     string
-	Role         valueobject.Role
-	IsActive     bool
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID            uuid.UUID
+	Email         string
+	PasswordHash  string
+	FullName      string
+	Role          valueobject.Role
+	IsActive      bool
+	DepartmentID  *uuid.UUID // nil for users without dept scope
+	OAuthProvider string     // "google", "microsoft", or "" for password users
+	OAuthSubject  string     // provider-issued stable user ID
+	AvatarURL     string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 func (u *User) Validate() error {
@@ -34,4 +38,8 @@ func (u *User) Validate() error {
 
 func (u *User) CanLogin() bool {
 	return u.IsActive && u.PasswordHash != ""
+}
+
+func (u *User) IsOAuthUser() bool {
+	return u.OAuthProvider != ""
 }

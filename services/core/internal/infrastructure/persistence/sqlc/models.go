@@ -38,12 +38,16 @@ type CoreSnapshot struct {
 }
 
 type CoreUser struct {
-	ID           pgtype.UUID        `json:"id"`
-	Email        string             `json:"email"`
-	PasswordHash string             `json:"password_hash"`
-	FullName     string             `json:"full_name"`
-	Role         string             `json:"role"`
-	IsActive     bool               `json:"is_active"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ID            pgtype.UUID        `json:"id"`
+	Email         string             `json:"email"`
+	PasswordHash  string             `json:"password_hash"`
+	FullName      string             `json:"full_name"`
+	Role          string             `json:"role"`
+	IsActive      bool               `json:"is_active"`
+	DepartmentID  pgtype.UUID        `json:"department_id"`
+	OauthProvider pgtype.Text        `json:"oauth_provider"`
+	OauthSubject  pgtype.Text        `json:"oauth_subject"`
+	AvatarUrl     pgtype.Text        `json:"avatar_url"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 }

@@ -15,14 +15,18 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (CoreUser, error)
 	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	GetModuleByName(ctx context.Context, name string) (CoreModuleRegistry, error)
+	GetTeacherIDByUserID(ctx context.Context, userID pgtype.UUID) (pgtype.UUID, error)
 	GetUserByEmail(ctx context.Context, email string) (CoreUser, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (CoreUser, error)
+	GetUserByOAuth(ctx context.Context, arg GetUserByOAuthParams) (CoreUser, error)
 	ListModules(ctx context.Context) ([]CoreModuleRegistry, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]CoreUser, error)
 	RegisterModule(ctx context.Context, arg RegisterModuleParams) (CoreModuleRegistry, error)
 	UnregisterModule(ctx context.Context, name string) error
 	UpdateModuleHealth(ctx context.Context, arg UpdateModuleHealthParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (CoreUser, error)
+	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) (CoreUser, error)
+	UpsertOAuthUser(ctx context.Context, arg UpsertOAuthUserParams) (CoreUser, error)
 }
 
 var _ Querier = (*Queries)(nil)

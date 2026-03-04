@@ -7,6 +7,9 @@ export const ENDPOINTS = {
     refresh: '/auth/refresh',
     me: '/auth/me',
     logout: '/auth/logout',
+    oauthGoogleLogin: '/auth/oauth/google/login',
+    oauthMicrosoftLogin: '/auth/oauth/microsoft/login',
+    oauthExchange: '/auth/oauth/exchange',
   },
   hr: {
     teachers: '/hr/teachers',
@@ -41,6 +44,11 @@ export const ENDPOINTS = {
     offeredSubjects: (semesterId: string) =>
       `/timetable/semesters/${semesterId}/offered-subjects`,
   },
+  users: {
+    list: '/users',
+    detail: (id: string) => `/users/${id}`,
+    updateRole: (id: string) => `/users/${id}/role`,
+  },
   students: {
     list: '/students',
     detail: (id: string) => `/students/${id}`,
@@ -62,6 +70,9 @@ export const ENDPOINTS = {
     checkPrerequisites: '/student/enrollments/check-prerequisites',
     myTranscript: '/student/transcript',
     exportTranscript: '/student/transcript/export',
+  },
+  auditLogs: {
+    list: '/audit-logs',
   },
   dashboard: {
     stats: '/dashboard/stats',

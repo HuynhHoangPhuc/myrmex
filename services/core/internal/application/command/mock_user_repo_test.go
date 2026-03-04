@@ -80,3 +80,19 @@ func (m *mockUserRepo) Delete(_ context.Context, id uuid.UUID) error {
 	m.deletedID = id
 	return m.deleteErr
 }
+
+func (m *mockUserRepo) UpdateRole(_ context.Context, _ uuid.UUID, _ string, _ *uuid.UUID) (*entity.User, error) {
+	panic("not implemented")
+}
+
+func (m *mockUserRepo) GetTeacherIDByUserID(_ context.Context, _ uuid.UUID) (string, error) {
+	return "", nil
+}
+
+func (m *mockUserRepo) GetByOAuth(_ context.Context, _, _ string) (*entity.User, error) {
+	return nil, nil
+}
+
+func (m *mockUserRepo) UpsertOAuthUser(_ context.Context, _, _, _, _, _, _ string) (*entity.User, error) {
+	panic("not implemented")
+}
