@@ -1,14 +1,11 @@
 import { test as base, expect, type Page } from '@playwright/test'
 
-// Unique user per test run to avoid conflicts
-const testId = Date.now().toString(36)
-
 // Seeded admin credentials (from deploy/docker/seed.sql)
 const ADMIN_EMAIL = 'admin@myrmex.dev'
 const ADMIN_PASSWORD = 'demo1234'
 
 interface AuthFixtures {
-  /** Pre-authenticated page (registered + logged in as viewer) */
+  /** Pre-authenticated page (logged in as seeded admin) */
   authedPage: Page
   /** Admin bearer token for setup API calls requiring elevated permissions */
   adminToken: string
@@ -27,17 +24,10 @@ export const test = base.extend<AuthFixtures>({
   },
 
   authedPage: async ({ page }, use) => {
-    const email = `e2e-${testId}@test.com`
-    const password = 'Test123456'
-
-    // Register
-    const regRes = await page.request.post('/api/auth/register', {
-      data: { full_name: 'E2E Test User', email, password },
-    })
-    // If already registered (409) or rate-limited (429), continue to login
-    if (!regRes.ok() && regRes.status() !== 409 && regRes.status() !== 429) {
-      throw new Error(`Registration failed: ${regRes.status()} ${await regRes.text()}`)
-    }
+    // Use seeded admin account so HR/department routes are accessible in tests
+    // (GET /api/hr/departments requires admin/dept_head role)
+    const email = ADMIN_EMAIL
+    const password = ADMIN_PASSWORD
 
     // Login
     const loginRes = await page.request.post('/api/auth/login', {
