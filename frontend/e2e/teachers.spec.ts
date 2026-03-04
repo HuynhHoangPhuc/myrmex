@@ -4,22 +4,20 @@ import { test, expect } from './fixtures/app-fixture'
 const runId = Date.now().toString(36)
 
 test.describe('Teachers CRUD', () => {
-  test('create and view a teacher', async ({ authedPage: page }) => {
+  test('create and view a teacher', async ({ authedPage: page, adminToken }) => {
     await page.goto('/hr/teachers')
     await expect(page).toHaveURL(/hr\/teachers/)
 
     // Create a department first (required for teacher creation)
-    // Use page.evaluate so the fetch runs in the browser context with the correct token
-    const dept = await page.evaluate(async (id) => {
-      const token = localStorage.getItem('access_token')
-      const res = await fetch('/api/hr/departments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: `E2E Teachers Dept ${id}`, code: `TEACH${id}` }),
-      })
-      if (!res.ok) throw new Error(`Dept creation failed: ${res.status} ${await res.text()}`)
-      return (await res.json()) as { id: string }
-    }, runId)
+    // Uses admin token since POST /hr/departments requires admin/super_admin role
+    const deptRes = await page.request.post('/api/hr/departments', {
+      headers: { Authorization: `Bearer ${adminToken}` },
+      data: { name: `E2E Teachers Dept ${runId}`, code: `TEACH${runId}` },
+    })
+    if (!deptRes.ok()) {
+      throw new Error(`Dept creation failed: ${deptRes.status()} ${await deptRes.text()}`)
+    }
+    const dept = (await deptRes.json()) as { id: string }
 
     await page.getByRole('link', { name: /new|add|create/i }).click()
     await expect(page).toHaveURL(/hr\/teachers\/new/)
