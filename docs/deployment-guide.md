@@ -337,126 +337,27 @@ npm run dev
 
 ## Environment Variables
 
-### Core Service (`services/core/config/local.yaml`)
-
-```yaml
-server:
-  http_port: 8080          # HTTP gateway port
-  grpc_port: 50051         # gRPC server port
-  self_url: "http://localhost:8080"
-
-database:
-  url: "postgres://myrmex:myrmex_dev@localhost:5432/myrmex?sslmode=disable&search_path=core"
-
-nats:
-  url: "nats://localhost:4222"
-
-jwt:
-  secret: "your-secret-key-min-32-chars!!"
-  access_expiry: "15m"
-  refresh_expiry: "168h"
-
-log:
-  level: "development"
-
-hr:
-  grpc_addr: "localhost:50052"
-subject:
-  grpc_addr: "localhost:50053"
-timetable:
-  grpc_addr: "localhost:50054"
-student:
-  grpc_addr: "localhost:50055"
-
-llm:
-  provider: "${LLM_PROVIDER}"                          # "openai" | "claude" | "gemini" | "mock"
-  model: "${LLM_MODEL}"                                # Provider-specific model name
-  api_key: "${LLM_API_KEY}"                            # From env var
-  base_url: "https://api.openai.com/v1"
-
-# OAuth/SSO Configuration (Optional; gracefully disabled if not set)
-oauth:
-  google:
-    client_id: "${GOOGLE_CLIENT_ID}"
-    client_secret: "${GOOGLE_CLIENT_SECRET}"
-    redirect_url: "http://localhost:8080/api/auth/oauth/google/callback"
-  microsoft:
-    client_id: "${MICROSOFT_CLIENT_ID}"
-    client_secret: "${MICROSOFT_CLIENT_SECRET}"
-    tenant_id: "${MICROSOFT_TENANT_ID}"
-    redirect_url: "http://localhost:8080/api/auth/oauth/microsoft/callback"
-
-# Notifications Configuration (Phase 4.4 - Optional; gracefully disabled if not set)
-notifications:
-  smtp:
-    host: "${SMTP_HOST}"                              # e.g., smtp.sendgrid.net
-    port: ${SMTP_PORT}                                # e.g., 587
-    username: "${SMTP_USERNAME}"                      # e.g., apikey
-    password: "${SMTP_PASSWORD}"                      # SendGrid API key
-    from_address: "${NOTIFICATION_FROM_EMAIL}"       # e.g., noreply@example.com
-  channels:
-    email_enabled: true
-    in_app_enabled: true
-    sms_enabled: false                                 # Future: requires Twilio config
-```
-
-**Required Environment Variables**:
+### Core Service
 ```bash
-# Core service
-CORE_JWT_SECRET="your-secret-key-min-32-chars!!"
+CORE_JWT_SECRET="your-32-char-min-secret!!"
 CORE_HTTP_PORT=8080
 CORE_GRPC_PORT=50051
 CORE_LLM_PROVIDER="claude"
 CORE_LLM_MODEL="claude-haiku-4-5-20251001"
 CORE_LLM_API_KEY="sk-ant-..."
-
-# OAuth (Optional)
-GOOGLE_CLIENT_ID="xxxxx.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET="GOCSPX-xxxxx"
-MICROSOFT_CLIENT_ID="xxxxx-xxxxx-xxxxx"
-MICROSOFT_CLIENT_SECRET="xxxxx~xxxxx"
-MICROSOFT_TENANT_ID="xxxxx-xxxxx-xxxxx"
-
-# Notifications (Optional - Phase 4.4)
-SMTP_HOST="smtp.sendgrid.net"
-SMTP_PORT=587
-SMTP_USERNAME="apikey"
-SMTP_PASSWORD="SG.xxxxx"
-NOTIFICATION_FROM_EMAIL="noreply@myrmex.local"
+GOOGLE_CLIENT_ID="xxxxx.apps.googleusercontent.com"  # Optional
+MICROSOFT_CLIENT_ID="xxxxx"                           # Optional
+SMTP_HOST="smtp.sendgrid.net"                         # Optional
 ```
 
-### Module-Analytics Service
-
-```yaml
-server:
-  http_port: 8055         # HTTP server port
-
-database:
-  url: "postgres://myrmex:myrmex_dev@localhost:5432/myrmex?sslmode=disable"
-  max_connections: 20
-
-nats:
-  url: "nats://localhost:4222"
-
-logging:
-  level: "info"
-```
-
-**Event Consumption**:
-- Subscribes to: `hr.teacher.>`, `subject.>`, `schedule.generation_completed`
-- Processes events → Updates analytics schema (dim_teacher, fact_schedule_entry, etc.)
-- Real-time ETL: Events processed immediately upon receipt
-
-### Module Services (HR, Subject, Timetable, Student)
-
-Similar YAML structure for each module gRPC service (port varies: 50052, 50053, 50054, 50055).
-
-### Frontend (`frontend/.env.local`)
-
-```env
-VITE_API_URL=http://localhost:8080
-VITE_CHAT_WS_URL=ws://localhost:8080/ws/chat
-```
+### Module Services
+- `HR_GRPC_PORT=50052`
+- `SUBJECT_GRPC_PORT=50053`
+- `TIMETABLE_GRPC_PORT=50054`
+- `STUDENT_GRPC_PORT=50055`
+- `ANALYTICS_HTTP_ADDR=http://localhost:8055`
+- `DATABASE_URL=postgres://user:pass@host:5432/myrmex`
+- `NATS_URL=nats://localhost:4222`
 
 ---
 
@@ -610,6 +511,147 @@ docker compose -f deploy/docker/compose.yml logs -f
 # Stop all
 docker compose -f deploy/docker/compose.yml down
 ```
+
+---
+
+## GCP Cloud Run Deployment (Production)
+
+### Architecture Overview
+
+Production deployment uses Google Cloud Platform with:
+- **Cloud SQL**: PostgreSQL 16 (managed, SSL enforced)
+- **Memorystore**: Redis 7 (managed cache)
+- **Cloud Run**: Serverless compute (7 services with auto-scaling)
+- **Pub/Sub**: Managed message broker (replaces NATS)
+- **Artifact Registry**: Docker image repository
+- **Secret Manager**: Centralized secrets
+- **VPC**: Network isolation + Cloud NAT
+- **Cloud Monitoring**: Observability + alerts
+
+### Prerequisites
+
+- GCP project with billing enabled
+- `gcloud` CLI installed and authenticated
+- Terraform 1.5+ installed
+- GitHub repository with secrets configured (for WIF auth)
+
+### Step 1: Terraform Setup
+
+```bash
+cd deploy/terraform
+terraform init
+terraform plan -var="project_id=YOUR_GCP_PROJECT" -var="region=us-central1"
+terraform apply -var="project_id=YOUR_GCP_PROJECT" -var="region=us-central1"
+```
+
+Creates: VPC, Cloud NAT, Cloud SQL (PostgreSQL 16), Memorystore (Redis 7), Artifact Registry, Cloud Run services, Pub/Sub topics, monitoring.
+
+### Step 2: Populate Secret Manager
+
+```bash
+gcloud secrets create myrmex-db-password --data-file=- <<< "your-secure-password"
+gcloud secrets create myrmex-jwt-secret --data-file=- <<< "your-32-char-min-jwt-secret"
+gcloud secrets create myrmex-claude-api-key --data-file=- <<< "sk-ant-xxxxx"
+gcloud secrets create myrmex-google-client-id --data-file=- <<< "xxxxx.apps.googleusercontent.com"
+gcloud secrets create myrmex-google-client-secret --data-file=- <<< "GOCSPX-xxxxx"
+gcloud secrets create myrmex-microsoft-client-id --data-file=- <<< "xxxxx"
+gcloud secrets create myrmex-microsoft-client-secret --data-file=- <<< "xxxxx~xxxxx"
+gcloud secrets create myrmex-microsoft-tenant-id --data-file=- <<< "xxxxx"
+```
+
+Grant Cloud Run service account access:
+
+```bash
+PROJECT_ID=$(gcloud config get-value project)
+SERVICE_ACCOUNT="myrmex-cloud-run@${PROJECT_ID}.iam.gserviceaccount.com"
+
+# Grant secret accessor role
+gcloud secrets add-iam-policy-binding myrmex-db-password \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
+  --role="roles/secretmanager.secretAccessor"
+# ... repeat for other secrets
+```
+
+### Step 3: Workload Identity Federation (WIF) Setup
+
+Enable GitHub Actions to deploy without long-lived secrets:
+
+```bash
+PROJECT_ID=$(gcloud config get-value project)
+
+# Create OIDC workload identity pool
+gcloud iam workload-identity-pools create github --project="${PROJECT_ID}" --location=global
+gcloud iam workload-identity-pools providers create-oidc github \
+  --project="${PROJECT_ID}" --location=global --workload-identity-pool=github \
+  --issuer-uri="https://token.actions.githubusercontent.com" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor"
+
+# Create service account
+gcloud iam service-accounts create github-actions --project="${PROJECT_ID}"
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:github-actions@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/run.admin"
+```
+
+Add to GitHub Actions `.env`: `GCP_PROJECT_ID`, `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT`
+
+### Step 4: Run Database Migrations
+
+```bash
+# Create Cloud Run Job for migrations
+gcloud run jobs create myrmex-migrate \
+  --image="us-central1-docker.pkg.dev/${PROJECT_ID}/myrmex/myrmex-core:latest" \
+  --task-count=1 \
+  --set-env-vars="DATABASE_URL=postgres://...@/myrmex" \
+  --service-account="myrmex-cloud-run@${PROJECT_ID}.iam.gserviceaccount.com"
+
+# Execute migrations
+gcloud run jobs execute myrmex-migrate
+
+# Monitor status
+gcloud run jobs describe myrmex-migrate
+```
+
+### Step 5: Deploy Services
+
+Automated via `.github/workflows/deploy.yml`: WIF auth → Docker build/push → migrations → Cloud Run deployment → smoke tests.
+
+Manual deployment:
+```bash
+docker build -t us-central1-docker.pkg.dev/${PROJECT_ID}/myrmex/myrmex-core:latest ./services/core
+docker push us-central1-docker.pkg.dev/${PROJECT_ID}/myrmex/myrmex-core:latest
+gcloud run deploy myrmex-core \
+  --image="us-central1-docker.pkg.dev/${PROJECT_ID}/myrmex/myrmex-core:latest" \
+  --region=us-central1 --memory=512Mi --cpu=1 --max-instances=10 \
+  --service-account="myrmex-cloud-run@${PROJECT_ID}.iam.gserviceaccount.com"
+```
+
+### Step 6: Verify Deployment
+
+```bash
+curl https://myrmex-core-xxxxx.run.app/health
+gcloud run services list --region=us-central1
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=myrmex-core" --limit=50
+```
+
+### Load Testing
+
+Verify deployment with k6 scripts:
+
+```bash
+k6 run deploy/load-tests/auth-flow.js        # 100 VUs auth flow
+k6 run deploy/load-tests/api-crud.js         # 200 VUs CRUD ops
+k6 run deploy/load-tests/mixed-workload.js   # 500 VUs realistic traffic
+```
+
+### Production Checklist
+
+- [ ] Secrets in Secret Manager, WIF configured
+- [ ] Terraform applied + migrations executed
+- [ ] All 7 Cloud Run services deployed + health checks passing
+- [ ] Cloud Monitoring alerts configured
+- [ ] Load tests pass (p95 <500ms)
+- [ ] SSL + custom domain, backups enabled
 
 ---
 

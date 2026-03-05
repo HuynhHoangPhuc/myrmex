@@ -196,18 +196,27 @@ Create an extensible, AI-native ERP that lets institutions operate via conversat
 - [x] Audit logging & compliance (Complete - Mar 4)
 - [x] Advanced RBAC with 6 roles (Complete - Mar 4)
 - [x] OAuth 2.0 / OIDC SSO (Google + Microsoft, Complete - Mar 4)
-- [ ] Mobile app (React Native) — Deferred to Phase 5
-- [ ] Real-time schedule collaboration — Deferred to Phase 5
-- [ ] Notifications system — In Progress (Phase 4.4)
+- [ ] Mobile app (React Native) — Deferred to Phase 6+
+- [ ] Real-time schedule collaboration — Deferred to Phase 6+
 
 ### Phase 4 - Internal Pilot & Enterprise
 - [x] Advanced RBAC & permissions (6 roles with department scoping - Complete - Mar 4)
 - [x] OAuth/SSO Integration (Google + Microsoft Entra ID - Complete - Mar 4)
 - [x] Audit logging & compliance (NATS async pipeline - Complete - Mar 4)
-- [ ] Notifications system (Email + in-app WebSocket) — Planned 4.4
-- [ ] Multi-tenant support — Planned Phase 5
-- [ ] LDAP/SAML integration — Planned Phase 5
-- [ ] Data retention & GDPR compliance — Planned Phase 5
+- [x] Notifications system (Email + in-app WebSocket) — Complete - Mar 4
+- [ ] Multi-tenant support — Planned Phase 6+
+- [ ] LDAP/SAML integration — Planned Phase 6+
+- [ ] Data retention & GDPR compliance — Planned Phase 6+
+
+### Phase 5 - Production Pilot (COMPLETE - Mar 5)
+- [x] Messaging abstraction layer (NATS/Pub/Sub pluggable backend)
+- [x] GCP Terraform IaC (Cloud Run, Cloud SQL, Memorystore, Pub/Sub, monitoring)
+- [x] CI/CD pipeline with WIF auth (GitHub Actions → Cloud Run)
+- [x] Security hardening (CORS control, rate limiting, SSL enforcement)
+- [x] CSV bulk user import (teachers & students with row-level error reporting)
+- [x] Observability (health checks, X-Request-ID tracing, monitoring alerts)
+- [x] Quality assurance (gosec fixes, npm audit, k6 load tests)
+- [x] User guides (5 markdown files + in-app help page)
 
 ## Technical Decisions
 

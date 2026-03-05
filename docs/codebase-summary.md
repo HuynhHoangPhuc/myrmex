@@ -306,13 +306,13 @@ myrmex/
 ## Key Files & Their Purposes
 
 ### Backend Entry Points
-- `services/core/cmd/server/main.go` - HTTP gateway + gRPC server (port 8080/50051)
-- `services/module-hr/cmd/server/main.go` - gRPC (port 50052)
-- `services/module-subject/cmd/server/main.go` - gRPC (port 50053)
-- `services/module-timetable/cmd/server/main.go` - gRPC (port 50054)
+- `services/core/cmd/server/main.go` - HTTP gateway + gRPC server (port 8080/50051) — auth, module registry, chat, audit, rate limiting
+- `services/module-hr/cmd/server/main.go` - gRPC (port 50052) — departments, teachers, availability
+- `services/module-subject/cmd/server/main.go` - gRPC (port 50053) — subjects, prerequisites, DAG validation
+- `services/module-timetable/cmd/server/main.go` - gRPC (port 50054) — semesters, rooms, CSP scheduling
 - `services/module-student/cmd/server/main.go` - gRPC (port 50055) — student CRUD, enrollment, grades, transcripts
 - `services/module-analytics/cmd/server/main.go` - HTTP (port 8055) — analytics KPIs, workload, utilization, export
-- `services/module-notification/cmd/server/main.go` - HTTP (port 8056) — notifications, preferences, email queue
+- `services/module-notification/cmd/server/main.go` - HTTP (port 8056) — notifications, preferences, email queue, NATS consumer
 
 ### Gateway Proxies
 - `services/core/internal/interface/http/student_handler.go` - Admin-only `/api/students` CRUD proxy to module-student
@@ -354,15 +354,17 @@ myrmex/
 
 | Metric | Value |
 |--------|-------|
-| Total Files | 350+ |
-| Total Tokens | ~300K+ |
-| Total Characters | ~1.1M+ |
+| Total Files | 380+ |
+| Total Tokens | ~320K+ |
+| Total Characters | ~1.2M+ |
 | Largest Files | Protobuf generated (teacher.pb.go: 9.8K tokens) |
-| Services | 6 (core, hr, subject, timetable, student, analytics) |
-| Shared Packages | 6 (logger, config, cache, eventstore, nats, middleware) |
-| Go Modules | 8 (gen, pkg, core, hr, subject, timetable, student, analytics) |
-| Frontend Components | 11 Shadcn/ui + 5+ custom |
+| Services | 7 (core, hr, subject, timetable, student, analytics, notification) |
+| Shared Packages | 8 (logger, config, cache, eventstore, nats, middleware, messaging) |
+| Go Modules | 9 (gen, pkg, core, hr, subject, timetable, student, analytics, notification) |
+| Frontend Components | 11 Shadcn/ui + 8+ custom |
 | Proto Definitions | 11 files across 5 services |
+| Terraform Modules | 8 (networking, cloud-sql, artifact-registry, cloud-run, pubsub, iam, cicd-iam, monitoring) |
+| CI/CD Workflows | 3 (.github/workflows/ci.yml, deploy.yml, test.yml) |
 
 ## Dependencies per Service
 
@@ -453,15 +455,25 @@ make demo
 - **Event Store**: Optimistic concurrency (version column)
 - **Frontend SPA**: Vite + tree-shaking; ~80KB gzipped initial bundle
 
+## Production Deployment Status (Mar 5, 2026)
+
+### Phase 5 Production Pilot — All 8 phases complete:
+- **Phase 1 - Messaging Abstraction**: `pkg/messaging/` backend-agnostic Publisher/Consumer (NATS/Pub/Sub)
+- **Phase 2 - GCP Terraform IaC**: Full Cloud SQL, Memorystore, Artifact Registry, Cloud Run, Pub/Sub, VPC, Secret Manager setup
+- **Phase 3 - CI/CD Pipeline**: `.github/workflows/` with WIF auth, parallel Docker build/deploy, migration job
+- **Phase 4 - Security Hardening**: CORS control, SSL enforced, rate limiting, frontend envsubst runtime injection
+- **Phase 5 - CSV Bulk Import**: POST /api/admin/import/teachers/students with row-level error reporting
+- **Phase 6 - Observability**: `/health` endpoint with dependency checks, X-Request-ID propagation, monitoring alerts
+- **Phase 7 - Quality**: gosec fixes, npm audit, k6 load tests (3 scripts: auth-flow, api-crud, mixed-workload)
+- **Phase 8 - User Guides**: 5 markdown guides + in-app help page with tabbed UI
+
 ## Known Gaps & Limitations
 
-1. **Notifications**: Email + in-app system architecture designed; deferred to Phase 4.4 (Q2 2026)
-2. **Auth**: No token rotation; no 2FA; password reset workflow pending
-3. **Chat**: Message storage in PostgreSQL (will migrate to MongoDB for non-critical data)
-4. **Monitoring**: Prometheus metrics not yet integrated (Phase 5)
-5. **Scale**: NATS single-instance (needs clustering for HA in Phase 4)
-6. **Tenancy**: Single-tenant MVP; multi-tenant planned for Phase 5
-7. **Mobile**: React Native app deferred to Phase 5 (post-pilot)
+1. **Auth**: No token rotation; no 2FA; password reset workflow pending
+2. **Chat**: Message storage in PostgreSQL (will migrate to MongoDB for non-critical data)
+3. **Scale**: NATS single-instance (needs clustering for HA in Phase 4)
+4. **Tenancy**: Single-tenant MVP; multi-tenant planned for future phases
+5. **Mobile**: React Native app deferred to future releases
 
 ## Analytics & Testing Infrastructure (Feb 26)
 
@@ -542,6 +554,83 @@ make demo
 
 ### Frontend Chat Enhancement
 - Added `react-markdown` to `chat-message.tsx` for markdown rendering in AI chat bubble
+
+## Phase 5 Production Pilot — Deployment & Operations (Mar 5, 2026)
+
+### Messaging Abstraction Layer
+- `pkg/messaging/publisher.go` — Pluggable backend (NATS/Pub/Sub/NoopPublisher)
+- `pkg/messaging/consumer.go` — Consumer interface with Subscribe/Receive pattern
+- `MESSAGING_BACKEND=pubsub|nats` env var controls backend across all 7 services
+- Enables seamless migration from NATS (dev) to Google Cloud Pub/Sub (production)
+
+### GCP Cloud Run Deployment (Terraform IaC)
+- `deploy/terraform/` — 8 modules: networking, cloud-sql, artifact-registry, cloud-run, pubsub, secret-manager, iam, monitoring
+- Cloud SQL: PostgreSQL 16 with SSL enforced (ssl_mode=ENCRYPTED_ONLY)
+- Memorystore: Redis 7 for cache backend
+- Artifact Registry: Docker image registry (us-central1)
+- Cloud Run: 7 services with auto-scaling (min 1, max 10 replicas)
+- Pub/Sub: Fully managed message broker (replaces NATS in production)
+- Secret Manager: Centralized secrets (API keys, DB credentials, JWT secret)
+- VPC: Custom VPC with Cloud NAT for egress control
+- IAM: Fine-grained service account roles (least privilege)
+
+### CI/CD Pipeline
+- `.github/workflows/ci.yml` — Lint + test all 7 services on PR
+- `.github/workflows/deploy.yml` — Full CD pipeline:
+  - WIF authentication (Workload Identity Federation) — no long-lived secrets
+  - Parallel Docker build for 8 images (core, 6 modules, frontend)
+  - Push to Artifact Registry
+  - Cloud Run Job: myrmex-migrate (goose migrations)
+  - Parallel Cloud Run deployment (7 services)
+  - Smoke test: `GET /health` health check validation
+- `.github/workflows/test.yml` — Extended testing with coverage reports
+
+### Security Hardening
+- `cors_middleware.go` — CORS_ALLOWED_ORIGINS env var (comma-separated), fallback to wildcard in dev
+- Auth rate limit: 10 req/min (reduced from 100 for password brute-force protection)
+- API rate limit: 100 req/min (per IP)
+- SSL enforcement on Cloud SQL + TLS in transit
+- Frontend: `nginx-cloudrun.conf` template with envsubst runtime injection of `${CORE_SERVICE_URL}`
+- `frontend/docker-entrypoint.sh` — Runtime environment variable substitution
+
+### CSV Bulk Import
+- `services/core/internal/interface/http/import_handler.go`:
+  - POST /api/admin/import/teachers (admin/super_admin only)
+  - POST /api/admin/import/students (admin/super_admin only)
+  - GET /api/admin/import/template/teachers, /api/admin/import/template/students
+- Row-level error reporting: Track which rows failed + reason (duplicate, validation)
+- Skip duplicates gracefully (by email for teachers, by student_code for students)
+- Frontend: `frontend/src/routes/_authenticated/admin/import/` with:
+  - File upload with CSV preview
+  - Results summary + error CSV download
+  - Progress indicators
+
+### Observability & Monitoring
+- `/health` endpoint with dependency checks: DB + Redis connectivity
+- `request_id_middleware.go` — X-Request-ID propagation across services (for tracing)
+- `deploy/terraform/monitoring.tf`:
+  - Uptime check for `/health` (5-minute intervals)
+  - 5xx error rate alert (>1% triggers notification)
+  - Cloud SQL connection count alert (>80% capacity)
+  - Custom dashboard for latency, error rate, CPU usage
+
+### Quality Assurance
+- **gosec fixes**: Fixed G109 (int32 overflow via strconv.ParseInt)
+- **npm audit**: Applied all critical/high fixes (frontend dependencies)
+- **k6 load tests**: 3 scripts in `deploy/load-tests/`:
+  - `auth-flow.js` — 100 VUs, login → create subject → logout
+  - `api-crud.js` — 200 VUs, CRUD operations across modules
+  - `mixed-workload.js` — 500 VUs, realistic traffic pattern (ramp-up/down)
+
+### User Guides & In-App Help
+- `docs/user-guide/` — 5 markdown files:
+  - `index.md` — Overview + navigation
+  - `admin-guide.md` — System administration, user management, audit logs
+  - `teacher-guide.md` — Subject creation, availability, schedule view
+  - `student-guide.md` — Enrollment, transcript, prerequisites
+  - `department-head-guide.md` — Department management, workload analytics
+- Frontend: `frontend/src/routes/_authenticated/help/index.tsx` — Tabbed in-app help page
+- Sidebar: Navigation link to help + documentation
 
 ## Proto & API Updates (Feb 26)
 

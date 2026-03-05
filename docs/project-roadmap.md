@@ -411,7 +411,70 @@ Phase 4: Enterprise
 
 ---
 
+## Phase 5: Production Pilot (100% COMPLETE)
+
+**Timeline**: Q1 2026 (Mar 1-5) | **Status**: All 8 phases complete by Mar 5, 2026
+
+### Phase 5.1: Messaging Abstraction (COMPLETE - Mar 1)
+- [x] `pkg/messaging/` backend-agnostic Publisher/Consumer interfaces
+- [x] NATS + Pub/Sub + NoopPublisher implementations
+- [x] `MESSAGING_BACKEND` env var controls backend across all services
+
+### Phase 5.2: GCP Terraform IaC (COMPLETE - Mar 2)
+- [x] Cloud SQL, Memorystore, Artifact Registry, Cloud Run, Pub/Sub, VPC, Secret Manager, IAM
+- [x] Terraform modules for infrastructure-as-code
+- [x] Pre-configured health checks + monitoring
+
+### Phase 5.3: CI/CD Pipeline (COMPLETE - Mar 2)
+- [x] WIF authentication (no long-lived secrets)
+- [x] Parallel Docker build matrix (8 images)
+- [x] Cloud Run Job: goose migrations
+- [x] Parallel service deployment
+- [x] Smoke test validation
+
+### Phase 5.4: Security Hardening (COMPLETE - Mar 3)
+- [x] CORS_ALLOWED_ORIGINS env var control
+- [x] Rate limiting (auth 10/min, api 100/min)
+- [x] SSL enforced on Cloud SQL
+- [x] Frontend runtime environment injection via envsubst
+
+### Phase 5.5: CSV Bulk Import (COMPLETE - Mar 3)
+- [x] POST /api/admin/import/teachers, /api/admin/import/students
+- [x] Row-level error reporting + duplicate detection
+- [x] Frontend import page with CSV preview + results download
+
+### Phase 5.6: Observability (COMPLETE - Mar 4)
+- [x] `/health` endpoint with dependency checks
+- [x] X-Request-ID middleware for request tracing
+- [x] Cloud monitoring: uptime checks, 5xx alerts, connection alerts
+
+### Phase 5.7: Quality Assurance (COMPLETE - Mar 4)
+- [x] gosec security fixes (G109 int32 overflow)
+- [x] npm audit fixes (all critical/high)
+- [x] k6 load tests (3 scripts: 100/200/500 VUs)
+
+### Phase 5.8: User Guides (COMPLETE - Mar 5)
+- [x] 5 markdown user guides (admin, teacher, student, department-head)
+- [x] In-app help page with tabbed UI
+- [x] Sidebar help navigation link
+
+---
+
 ## Change Log
+
+### 2026-03-05 (Phase 5: Production Pilot Complete)
+- Phase 5 Production Pilot: All 8 phases (messaging, terraform, cicd, security, import, observability, quality, guides) complete
+- 380+ files, 320K+ tokens, 1.2M+ characters codebase
+- 7 backend services (core, hr, subject, timetable, student, analytics, notification)
+- GCP Cloud Run deployment: Cloud SQL, Memorystore, Artifact Registry, Pub/Sub, Secret Manager, VPC, monitoring
+- Terraform: 8 modules (networking, database, registry, compute, messaging, secrets, iam, monitoring)
+- GitHub Actions: CI (lint, test), CD (build, migrate, deploy, smoke-test)
+- Security: CORS control, rate limiting, SSL enforcement, least-privilege IAM
+- Bulk import: POST /api/admin/import/teachers and /api/admin/import/students with error reporting
+- Observability: /health endpoint, X-Request-ID tracing, Cloud Monitoring alerts
+- Load testing: k6 scripts (auth-flow 100VU, api-crud 200VU, mixed-workload 500VU)
+- User guides: 5 markdown files + in-app help page (tabbed UI)
+- Status: Phase 5 Complete — Production ready with full observability and security hardening
 
 ### 2026-03-04 (Phase 4.4: Notifications System Complete)
 - New module-notification microservice on port 8056 with HTTP API
