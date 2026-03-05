@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/auth"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/interface/middleware"
@@ -30,24 +32,25 @@ type RouterConfig struct {
 	StudentHandler          *StudentHandler
 	StudentPortalHandler    *StudentPortalHandler
 	DashboardHandler        *DashboardHandler
-	ImportHandler          *ImportHandler
+	ImportHandler           *ImportHandler
 	AnalyticsHTTPAddr       string // e.g. "http://module-analytics:8055"
 	NotificationHTTPAddr    string // e.g. "http://module-notification:8056"
 	JWTService              *auth.JWTService
 	Logger                  *zap.Logger
+	DB                      *pgxpool.Pool  // for health check
+	Rdb                     *redis.Client  // for health check
 }
 
 func NewRouter(cfg RouterConfig) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Recovery())
+	r.Use(middleware.RequestIDMiddleware())
 	r.Use(middleware.CORSMiddleware())
 	r.Use(middleware.LoggingMiddleware(cfg.Logger))
 
 	// Health check
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
-	})
+	r.GET("/health", healthHandler(cfg.DB, cfg.Rdb))
 
 	// WebSocket endpoints — auth via ?token= query param
 	if cfg.ChatHandler != nil {
@@ -265,6 +268,46 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 	}
 
 	return r
+}
+
+// healthHandler checks database and Redis connectivity and returns aggregate health status.
+func healthHandler(db *pgxpool.Pool, rdb *redis.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		checks := gin.H{}
+		allOk := true
+
+		// DB check
+		if db != nil {
+			if err := db.Ping(c.Request.Context()); err != nil {
+				checks["database"] = "error: " + err.Error()
+				allOk = false
+			} else {
+				checks["database"] = "ok"
+			}
+		} else {
+			checks["database"] = "unconfigured"
+		}
+
+		// Redis check
+		if rdb != nil {
+			if err := rdb.Ping(c.Request.Context()).Err(); err != nil {
+				checks["redis"] = "error: " + err.Error()
+				allOk = false
+			} else {
+				checks["redis"] = "ok"
+			}
+		} else {
+			checks["redis"] = "unconfigured"
+		}
+
+		status := "ok"
+		code := 200
+		if !allOk {
+			status = "degraded"
+			code = 503
+		}
+		c.JSON(code, gin.H{"status": status, "checks": checks})
+	}
 }
 
 // newNotificationProxy creates a gin handler that reverse-proxies to module-notification.
