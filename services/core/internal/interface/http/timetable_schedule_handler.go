@@ -52,13 +52,13 @@ func (h *TimetableHandler) GetSchedule(c *gin.Context) {
 // ListSchedules calls the TimetableService.ListSchedules RPC and returns
 // a ListResponse-compatible JSON body: { data, total, page, page_size }.
 func (h *TimetableHandler) ListSchedules(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "25"))
+	page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 32)
+	pageSize, _ := strconv.ParseInt(c.DefaultQuery("page_size", "25"), 10, 32)
 
 	resp, err := h.timetable.ListSchedules(c.Request.Context(), &timetablev1.ListSchedulesRequest{
 		SemesterId: c.Query("semester_id"),
-		Page:       int32(page),
-		PageSize:   int32(pageSize),
+		Page:       int32(page),    // safe: ParseInt bitSize=32
+		PageSize:   int32(pageSize), // safe: ParseInt bitSize=32
 	})
 	if err != nil {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})
@@ -145,15 +145,15 @@ func (h *TimetableHandler) SuggestTeachers(c *gin.Context) {
 		return
 	}
 
-	dayOfWeek, _ := strconv.Atoi(c.Query("day_of_week"))
-	startPeriod, _ := strconv.Atoi(c.Query("start_period"))
-	endPeriod, _ := strconv.Atoi(c.Query("end_period"))
+	dayOfWeek, _ := strconv.ParseInt(c.Query("day_of_week"), 10, 32)
+	startPeriod, _ := strconv.ParseInt(c.Query("start_period"), 10, 32)
+	endPeriod, _ := strconv.ParseInt(c.Query("end_period"), 10, 32)
 
 	resp, err := h.timetable.SuggestTeachers(c.Request.Context(), &timetablev1.SuggestTeachersRequest{
 		SubjectId:   subjectID,
-		DayOfWeek:   int32(dayOfWeek),
-		StartPeriod: int32(startPeriod),
-		EndPeriod:   int32(endPeriod),
+		DayOfWeek:   int32(dayOfWeek),   // safe: ParseInt bitSize=32
+		StartPeriod: int32(startPeriod), // safe: ParseInt bitSize=32
+		EndPeriod:   int32(endPeriod),   // safe: ParseInt bitSize=32
 	})
 	if err != nil {
 		c.JSON(grpcToHTTPStatus(err), gin.H{"error": err.Error()})

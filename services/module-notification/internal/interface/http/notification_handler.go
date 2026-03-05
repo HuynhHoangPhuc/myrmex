@@ -38,8 +38,8 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 
 func parseInt32Query(r *http.Request, key string, fallback int32) int32 {
 	if s := r.URL.Query().Get(key); s != "" {
-		if v, err := strconv.Atoi(s); err == nil && v > 0 {
-			return int32(v)
+		if v, err := strconv.ParseInt(s, 10, 32); err == nil && v > 0 {
+			return int32(v) // safe: ParseInt with bitSize=32 guarantees no overflow
 		}
 	}
 	return fallback
