@@ -108,6 +108,7 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
             children: [
               { label: 'Role Management', to: '/admin/roles' },
               { label: 'Audit Logs', to: '/admin/audit-logs' },
+              { label: 'Bulk Import', to: '/admin/import' },
             ],
           },
         ]

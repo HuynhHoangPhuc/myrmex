@@ -22,6 +22,7 @@ type moduleHandlers struct {
 	Student       *httpif.StudentHandler
 	Dashboard     *httpif.DashboardHandler
 	StudentClient studentv1.StudentServiceClient // exposed for AuthHandler
+	TeacherClient hrv1.TeacherServiceClient    // exposed for ImportHandler
 	conns         []*grpc.ClientConn
 }
 
@@ -53,6 +54,7 @@ func buildModuleHandlers(v *viper.Viper, js jetstream.JetStream, log *zap.Logger
 		} else {
 			h.conns = append(h.conns, conn)
 			teacherClient = hrv1.NewTeacherServiceClient(conn)
+			h.TeacherClient = teacherClient
 			departmentClient = hrv1.NewDepartmentServiceClient(conn)
 			h.HR = httpif.NewHRHandler(teacherClient, departmentClient)
 			log.Info("hr handler ready", zap.String("addr", addr))

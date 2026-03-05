@@ -30,6 +30,7 @@ type RouterConfig struct {
 	StudentHandler          *StudentHandler
 	StudentPortalHandler    *StudentPortalHandler
 	DashboardHandler        *DashboardHandler
+	ImportHandler          *ImportHandler
 	AnalyticsHTTPAddr       string // e.g. "http://module-analytics:8055"
 	NotificationHTTPAddr    string // e.g. "http://module-notification:8056"
 	JWTService              *auth.JWTService
@@ -247,6 +248,18 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 				analytics.GET("/schedule-metrics", analyticsProxy)
 				analytics.GET("/schedule-heatmap", analyticsProxy)
 				analytics.GET("/export", analyticsProxy)
+			}
+		}
+
+		// Bulk import routes (admin/super_admin only)
+		if cfg.ImportHandler != nil {
+			imports := protected.Group("/admin/import")
+			imports.Use(middleware.RequireRole("admin", "super_admin"))
+			{
+				imports.POST("/teachers", cfg.ImportHandler.ImportTeachers)
+				imports.POST("/students", cfg.ImportHandler.ImportStudents)
+				imports.GET("/template/teachers", cfg.ImportHandler.TeacherTemplate)
+				imports.GET("/template/students", cfg.ImportHandler.StudentTemplate)
 			}
 		}
 	}

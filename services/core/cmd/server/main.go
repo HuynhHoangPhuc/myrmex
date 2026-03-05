@@ -183,6 +183,8 @@ func main() {
 	modHandlers := buildModuleHandlers(v, js, zapLog)
 	defer modHandlers.Close()
 
+	importHandler := httpif.NewImportHandler(registerUserHandler, modHandlers.TeacherClient, modHandlers.StudentClient)
+
 	authHandler := httpif.NewAuthHandler(registerUserHandler, loginHandler, jwtSvc,
 		userRepo, updateUserHandler, deleteUserHandler, modHandlers.StudentClient)
 	adminRoleHandler := httpif.NewAdminRoleHandler(updateUserRoleHandler)
@@ -250,6 +252,7 @@ func main() {
 		SubjectHandler:      modHandlers.Subject,
 		TimetableHandler:    modHandlers.Timetable,
 		StudentHandler:      modHandlers.Student,
+		ImportHandler:       importHandler,
 		DashboardHandler:    modHandlers.Dashboard,
 		AnalyticsHTTPAddr:   v.GetString("analytics.http_addr"),
 		NotificationHTTPAddr: v.GetString("notification.http_addr"),
