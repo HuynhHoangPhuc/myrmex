@@ -18,6 +18,7 @@ import (
 	subjectv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/subject/v1"
 	pkgmessaging "github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
 	msgnats "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/nats"
+	msgpubsub "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/pubsub"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/application/command"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/application/query"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/service"
@@ -138,21 +139,32 @@ func main() {
 }
 
 func newPublisher(ctx context.Context, v *viper.Viper, log *zap.Logger, stream pkgmessaging.StreamConfig) pkgmessaging.Publisher {
-	if backend := v.GetString("messaging.backend"); backend == "pubsub" {
-		log.Warn("pubsub backend not yet wired in module-subject, falling back to nats")
+	switch v.GetString("messaging.backend") {
+	case "pubsub":
+		pub, err := msgpubsub.NewPublisher(ctx, v.GetString("gcp.project_id"), log)
+		if err != nil {
+			log.Warn("Pub/Sub publisher unavailable", zap.Error(err))
+			return &pkgmessaging.NoopPublisher{}
+		}
+		if err := pub.EnsureStream(ctx, stream); err != nil {
+			log.Warn("ensure pubsub topic failed", zap.Error(err))
+		}
+		log.Info("messaging backend: Cloud Pub/Sub", zap.String("stream", stream.Name))
+		return pub
+	default: // "nats" or ""
+		natsURL := v.GetString("nats.url")
+		if natsURL == "" {
+			return &pkgmessaging.NoopPublisher{}
+		}
+		p, err := msgnats.NewPublisher(natsURL)
+		if err != nil {
+			log.Warn("NATS publisher unavailable", zap.Error(err))
+			return &pkgmessaging.NoopPublisher{}
+		}
+		if err := p.EnsureStream(ctx, stream); err != nil {
+			log.Warn("ensure stream failed", zap.Error(err))
+		}
+		log.Info("messaging backend: NATS", zap.String("stream", stream.Name))
+		return p
 	}
-	natsURL := v.GetString("nats.url")
-	if natsURL == "" {
-		return &pkgmessaging.NoopPublisher{}
-	}
-	p, err := msgnats.NewPublisher(natsURL)
-	if err != nil {
-		log.Warn("NATS unavailable, events disabled", zap.Error(err))
-		return &pkgmessaging.NoopPublisher{}
-	}
-	if err := p.EnsureStream(ctx, stream); err != nil {
-		log.Warn("ensure stream failed", zap.String("stream", stream.Name), zap.Error(err))
-	}
-	log.Info("messaging backend: NATS", zap.String("stream", stream.Name))
-	return p
 }

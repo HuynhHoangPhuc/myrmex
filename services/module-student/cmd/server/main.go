@@ -14,6 +14,7 @@ import (
 	pkgcache "github.com/HuynhHoangPhuc/myrmex/pkg/cache"
 	pkgmessaging "github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
 	msgnats "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/nats"
+	msgpubsub "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/pubsub"
 	subjectv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/subject/v1"
 	studentv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/student/v1"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-student/internal/application/command"
@@ -105,20 +106,15 @@ func main() {
 			time.Hour,
 		)
 
-		// Start prerequisite cache invalidator if Redis and NATS are available
+		// Start prerequisite cache invalidator if Redis and messaging consumer are available
 		if cacheStore != nil {
-			natsURL := v.GetString("nats.url")
-			if natsURL != "" {
-				natsConsumer, err := msgnats.NewConsumer(natsURL)
-				if err != nil {
-					zapLog.Warn("NATS unavailable, prerequisite cache invalidator disabled", zap.Error(err))
+			consumer := newConsumer(ctx, v, zapLog)
+			if consumer != nil {
+				defer consumer.Close() //nolint:errcheck
+				if err := messaging.NewPrerequisiteCacheInvalidator(cacheStore).Start(ctx, consumer); err != nil {
+					zapLog.Warn("failed to start prerequisite cache invalidator", zap.Error(err))
 				} else {
-					defer natsConsumer.Close() //nolint:errcheck
-					if err := messaging.NewPrerequisiteCacheInvalidator(cacheStore).Start(ctx, natsConsumer); err != nil {
-						zapLog.Warn("failed to start prerequisite cache invalidator", zap.Error(err))
-					} else {
-						zapLog.Info("started prerequisite cache invalidator")
-					}
+					zapLog.Info("started prerequisite cache invalidator")
 				}
 			}
 		}
@@ -194,18 +190,57 @@ func main() {
 }
 
 func newPublisher(ctx context.Context, v *viper.Viper, log *zap.Logger, stream pkgmessaging.StreamConfig) pkgmessaging.Publisher {
-	natsURL := v.GetString("nats.url")
-	if natsURL == "" {
-		return &pkgmessaging.NoopPublisher{}
+	switch v.GetString("messaging.backend") {
+	case "pubsub":
+		pub, err := msgpubsub.NewPublisher(ctx, v.GetString("gcp.project_id"), log)
+		if err != nil {
+			log.Warn("Pub/Sub publisher unavailable", zap.Error(err))
+			return &pkgmessaging.NoopPublisher{}
+		}
+		if err := pub.EnsureStream(ctx, stream); err != nil {
+			log.Warn("ensure pubsub topic failed", zap.Error(err))
+		}
+		log.Info("messaging backend: Cloud Pub/Sub", zap.String("stream", stream.Name))
+		return pub
+	default: // "nats" or ""
+		natsURL := v.GetString("nats.url")
+		if natsURL == "" {
+			return &pkgmessaging.NoopPublisher{}
+		}
+		p, err := msgnats.NewPublisher(natsURL)
+		if err != nil {
+			log.Warn("NATS publisher unavailable", zap.Error(err))
+			return &pkgmessaging.NoopPublisher{}
+		}
+		if err := p.EnsureStream(ctx, stream); err != nil {
+			log.Warn("ensure stream failed", zap.Error(err))
+		}
+		log.Info("messaging backend: NATS", zap.String("stream", stream.Name))
+		return p
 	}
-	p, err := msgnats.NewPublisher(natsURL)
-	if err != nil {
-		log.Warn("NATS unavailable, events disabled", zap.Error(err))
-		return &pkgmessaging.NoopPublisher{}
+}
+
+func newConsumer(ctx context.Context, v *viper.Viper, log *zap.Logger) pkgmessaging.Consumer {
+	switch v.GetString("messaging.backend") {
+	case "pubsub":
+		c, err := msgpubsub.NewConsumer(ctx, v.GetString("gcp.project_id"), log)
+		if err != nil {
+			log.Warn("Pub/Sub consumer unavailable", zap.Error(err))
+			return nil
+		}
+		log.Info("messaging consumer: Cloud Pub/Sub")
+		return c
+	default: // "nats" or ""
+		natsURL := v.GetString("nats.url")
+		if natsURL == "" {
+			return nil
+		}
+		c, err := msgnats.NewConsumer(natsURL)
+		if err != nil {
+			log.Warn("NATS consumer unavailable", zap.Error(err))
+			return nil
+		}
+		log.Info("messaging consumer: NATS")
+		return c
 	}
-	if err := p.EnsureStream(ctx, stream); err != nil {
-		log.Warn("ensure stream failed", zap.String("stream", stream.Name), zap.Error(err))
-	}
-	log.Info("messaging backend: NATS", zap.String("stream", stream.Name))
-	return p
 }

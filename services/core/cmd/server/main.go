@@ -23,6 +23,7 @@ import (
 	pkgnats "github.com/HuynhHoangPhuc/myrmex/pkg/nats"
 	pkgmessaging "github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
 	msgnats "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/nats"
+	msgpubsub "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/pubsub"
 	msgredis "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/redis"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/command"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/query"
@@ -191,10 +192,27 @@ func main() {
 		oauthHandler = httpif.NewOAuthHandler(oauthSvc, jwtSvc, userRepo)
 	}
 
-	// Audit consumer + publisher: only active when NATS is available
+	// Audit consumer + publisher: backend-agnostic selection
 	auditHandler := httpif.NewAuditHandler(auditRepo)
 	var auditPub pkgmessaging.Publisher = &pkgmessaging.NoopPublisher{}
-	if nc != nil && js != nil {
+	if v.GetString("messaging.backend") == "pubsub" {
+		// Pub/Sub path: independent publisher + consumer for audit events
+		if pub, err := msgpubsub.NewPublisher(ctx, v.GetString("gcp.project_id"), zapLog); err != nil {
+			zapLog.Warn("Pub/Sub audit publisher unavailable", zap.Error(err))
+		} else {
+			auditPub = pub
+			zapLog.Info("audit publisher: Cloud Pub/Sub")
+		}
+		if c, err := msgpubsub.NewConsumer(ctx, v.GetString("gcp.project_id"), zapLog); err != nil {
+			zapLog.Warn("Pub/Sub audit consumer unavailable", zap.Error(err))
+		} else {
+			auditConsumer := messaging.NewAuditConsumer(c, auditRepo, zapLog)
+			if err := auditConsumer.Start(ctx); err != nil {
+				zapLog.Warn("audit consumer failed to start", zap.Error(err))
+			}
+		}
+	} else if nc != nil && js != nil {
+		// NATS path: reuse shared JetStream connection
 		auditConsumer := messaging.NewAuditConsumer(msgnats.NewConsumerFromJS(nc, js), auditRepo, zapLog)
 		if err := auditConsumer.Start(ctx); err != nil {
 			zapLog.Warn("audit consumer failed to start", zap.Error(err))

@@ -1,0 +1,21 @@
+# Copy this file to terraform.tfvars and fill in your values.
+# NEVER commit terraform.tfvars — it may contain sensitive project IDs.
+
+project_id  = "your-gcp-project-id"
+region      = "asia-southeast1"
+environment = "production"
+
+# Cloud SQL — upgrade to db-g1-small or db-n1-standard-2 for production load
+db_instance_tier = "db-f1-micro"
+
+# Memorystore Redis — increase if session/cache pressure grows
+redis_memory_size_gb = 1
+
+# Keep core at min=1 to avoid WebSocket cold-start latency
+core_min_instances = 1
+
+# Keep notification at min=1 for reliable email/in-app dispatch
+notification_min_instances = 1
+
+# Docker image tag to deploy — use a specific SHA or semver tag in production
+docker_image_tag = "latest"

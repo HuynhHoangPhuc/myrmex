@@ -14,7 +14,9 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
+	pkgmessaging "github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
 	msgnats "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/nats"
+	msgpubsub "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/pubsub"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-analytics/internal/application/export"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-analytics/internal/application/query"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-analytics/internal/infrastructure/messaging"
@@ -61,22 +63,17 @@ func main() {
 	repo := persistence.NewAnalyticsRepository(pool)
 
 	// 5. Start event consumers (optional — analytics is best-effort)
-	natsURL := v.GetString("nats.url")
-	if natsURL != "" {
-		natsConsumer, err := msgnats.NewConsumer(natsURL)
-		if err != nil {
-			zapLog.Warn("NATS unavailable, analytics consumers disabled", zap.Error(err))
+	msgConsumer := newConsumer(ctx, v, zapLog)
+	if msgConsumer != nil {
+		consumer := messaging.NewConsumer(msgConsumer, repo, zapLog)
+		if err := consumer.Start(ctx); err != nil {
+			zapLog.Warn("analytics consumer start failed", zap.Error(err))
 		} else {
-			consumer := messaging.NewConsumer(natsConsumer, repo, zapLog)
-			if err := consumer.Start(ctx); err != nil {
-				zapLog.Warn("analytics consumer start failed", zap.Error(err))
-			} else {
-				defer natsConsumer.Close() //nolint:errcheck
-				zapLog.Info("analytics consumers started")
-			}
+			defer msgConsumer.Close() //nolint:errcheck
+			zapLog.Info("analytics consumers started")
 		}
 	} else {
-		zapLog.Warn("NATS URL not configured, analytics consumers disabled")
+		zapLog.Warn("messaging consumer not configured, analytics consumers disabled")
 	}
 
 	// 6. Query handlers
@@ -120,4 +117,29 @@ func main() {
 		zapLog.Error("http shutdown error", zap.Error(err))
 	}
 	zapLog.Info("Analytics module stopped")
+}
+
+func newConsumer(ctx context.Context, v *viper.Viper, log *zap.Logger) pkgmessaging.Consumer {
+	switch v.GetString("messaging.backend") {
+	case "pubsub":
+		c, err := msgpubsub.NewConsumer(ctx, v.GetString("gcp.project_id"), log)
+		if err != nil {
+			log.Warn("Pub/Sub consumer unavailable", zap.Error(err))
+			return nil
+		}
+		log.Info("messaging consumer: Cloud Pub/Sub")
+		return c
+	default: // "nats" or ""
+		natsURL := v.GetString("nats.url")
+		if natsURL == "" {
+			return nil
+		}
+		c, err := msgnats.NewConsumer(natsURL)
+		if err != nil {
+			log.Warn("NATS consumer unavailable", zap.Error(err))
+			return nil
+		}
+		log.Info("messaging consumer: NATS")
+		return c
+	}
 }

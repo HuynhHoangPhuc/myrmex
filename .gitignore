@@ -41,3 +41,9 @@ repomix-output.xml
 
 # Claude Code local config
 .claude/
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+deploy/terraform/terraform.tfvars
+deploy/terraform/*.tfplan
