@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
@@ -48,7 +49,15 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	pool, err := pgxpool.New(ctx, v.GetString("database.url"))
+	poolCfg, err := pgxpool.ParseConfig(v.GetString("database.url"))
+	if err != nil {
+		zapLog.Fatal("parse database config", zap.Error(err))
+	}
+	poolCfg.MaxConns = 15
+	poolCfg.MinConns = 3
+	poolCfg.MaxConnLifetime = 30 * time.Minute
+	poolCfg.MaxConnIdleTime = 5 * time.Minute
+	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
 	if err != nil {
 		zapLog.Fatal("connect to database", zap.Error(err))
 	}

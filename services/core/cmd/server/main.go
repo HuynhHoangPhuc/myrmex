@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -56,9 +57,32 @@ func main() {
 	}
 	defer zapLog.Sync()
 
+	// 2b. Init Sentry (optional — only when DSN is configured)
+	if sentryDSN := v.GetString("sentry.dsn"); sentryDSN != "" {
+		if err := sentry.Init(sentry.ClientOptions{
+			Dsn:              sentryDSN,
+			Environment:      v.GetString("environment"),
+			TracesSampleRate: 0.1,
+		}); err != nil {
+			zapLog.Warn("sentry init failed, continuing without error tracking", zap.Error(err))
+		} else {
+			defer sentry.Flush(2 * time.Second)
+			zapLog.Info("sentry initialized")
+		}
+	}
+
 	// 3. Connect to database
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, v.GetString("database.url"))
+	poolCfg, err := pgxpool.ParseConfig(v.GetString("database.url"))
+	if err != nil {
+		zapLog.Fatal("parse database config", zap.Error(err))
+	}
+	// Connection pool sizing: core handles all HTTP/WS traffic (max 200 total DB connections)
+	poolCfg.MaxConns = 30
+	poolCfg.MinConns = 3
+	poolCfg.MaxConnLifetime = 30 * time.Minute
+	poolCfg.MaxConnIdleTime = 5 * time.Minute
+	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
 	if err != nil {
 		zapLog.Fatal("connect to database", zap.Error(err))
 	}

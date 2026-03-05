@@ -49,7 +49,15 @@ func main() {
 	defer zapLog.Sync() //nolint:errcheck
 
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, v.GetString("database.url"))
+	poolCfg, err := pgxpool.ParseConfig(v.GetString("database.url"))
+	if err != nil {
+		zapLog.Fatal("parse database config", zap.Error(err))
+	}
+	poolCfg.MaxConns = 20
+	poolCfg.MinConns = 3
+	poolCfg.MaxConnLifetime = 30 * time.Minute
+	poolCfg.MaxConnIdleTime = 5 * time.Minute
+	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
 	if err != nil {
 		zapLog.Fatal("connect to database", zap.Error(err))
 	}

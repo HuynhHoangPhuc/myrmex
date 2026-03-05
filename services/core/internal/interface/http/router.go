@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 	"github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
@@ -44,6 +45,8 @@ type RouterConfig struct {
 func NewRouter(cfg RouterConfig) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
+	// Sentry middleware first so it captures panics from all subsequent handlers
+	r.Use(sentrygin.New(sentrygin.Options{Repanic: true}))
 	r.Use(gin.Recovery())
 	r.Use(middleware.RequestIDMiddleware())
 	r.Use(middleware.CORSMiddleware())
