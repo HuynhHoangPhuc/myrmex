@@ -23,6 +23,7 @@ import { Route as AuthenticatedSubjectsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedStudentsIndexRouteImport } from './routes/_authenticated/students/index'
 import { Route as AuthenticatedNotificationsIndexRouteImport } from './routes/_authenticated/notifications/index'
 import { Route as AuthenticatedHrIndexRouteImport } from './routes/_authenticated/hr/index'
+import { Route as AuthenticatedHelpIndexRouteImport } from './routes/_authenticated/help/index'
 import { Route as AuthenticatedGradesIndexRouteImport } from './routes/_authenticated/grades/index'
 import { Route as AuthenticatedEnrollmentsIndexRouteImport } from './routes/_authenticated/enrollments/index'
 import { Route as AuthenticatedAnalyticsIndexRouteImport } from './routes/_authenticated/analytics/index'
@@ -42,6 +43,7 @@ import { Route as AuthenticatedStudentsStudentIdIndexRouteImport } from './route
 import { Route as AuthenticatedHrTeachersIndexRouteImport } from './routes/_authenticated/hr/teachers/index'
 import { Route as AuthenticatedHrDepartmentsIndexRouteImport } from './routes/_authenticated/hr/departments/index'
 import { Route as AuthenticatedAdminRolesIndexRouteImport } from './routes/_authenticated/admin/roles/index'
+import { Route as AuthenticatedAdminImportIndexRouteImport } from './routes/_authenticated/admin/import/index'
 import { Route as AuthenticatedAdminAuditLogsIndexRouteImport } from './routes/_authenticated/admin/audit-logs/index'
 import { Route as AuthenticatedTimetableSemestersNewRouteImport } from './routes/_authenticated/timetable/semesters/new'
 import { Route as AuthenticatedTimetableSemestersIdRouteImport } from './routes/_authenticated/timetable/semesters/$id'
@@ -123,6 +125,11 @@ const AuthenticatedNotificationsIndexRoute =
 const AuthenticatedHrIndexRoute = AuthenticatedHrIndexRouteImport.update({
   id: '/hr/',
   path: '/hr/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedHelpIndexRoute = AuthenticatedHelpIndexRouteImport.update({
+  id: '/help/',
+  path: '/help/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedGradesIndexRoute =
@@ -236,6 +243,12 @@ const AuthenticatedAdminRolesIndexRoute =
     path: '/roles/',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminImportIndexRoute =
+  AuthenticatedAdminImportIndexRouteImport.update({
+    id: '/import/',
+    path: '/import/',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminAuditLogsIndexRoute =
   AuthenticatedAdminAuditLogsIndexRouteImport.update({
     id: '/audit-logs/',
@@ -308,6 +321,7 @@ export interface FileRoutesByFullPath {
   '/analytics/': typeof AuthenticatedAnalyticsIndexRoute
   '/enrollments/': typeof AuthenticatedEnrollmentsIndexRoute
   '/grades/': typeof AuthenticatedGradesIndexRoute
+  '/help/': typeof AuthenticatedHelpIndexRoute
   '/hr/': typeof AuthenticatedHrIndexRoute
   '/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/students/': typeof AuthenticatedStudentsIndexRoute
@@ -319,6 +333,7 @@ export interface FileRoutesByFullPath {
   '/timetable/semesters/$id': typeof AuthenticatedTimetableSemestersIdRoute
   '/timetable/semesters/new': typeof AuthenticatedTimetableSemestersNewRoute
   '/admin/audit-logs/': typeof AuthenticatedAdminAuditLogsIndexRoute
+  '/admin/import/': typeof AuthenticatedAdminImportIndexRoute
   '/admin/roles/': typeof AuthenticatedAdminRolesIndexRoute
   '/hr/departments/': typeof AuthenticatedHrDepartmentsIndexRoute
   '/hr/teachers/': typeof AuthenticatedHrTeachersIndexRoute
@@ -349,6 +364,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AuthenticatedAnalyticsIndexRoute
   '/enrollments': typeof AuthenticatedEnrollmentsIndexRoute
   '/grades': typeof AuthenticatedGradesIndexRoute
+  '/help': typeof AuthenticatedHelpIndexRoute
   '/hr': typeof AuthenticatedHrIndexRoute
   '/notifications': typeof AuthenticatedNotificationsIndexRoute
   '/students': typeof AuthenticatedStudentsIndexRoute
@@ -360,6 +376,7 @@ export interface FileRoutesByTo {
   '/timetable/semesters/$id': typeof AuthenticatedTimetableSemestersIdRoute
   '/timetable/semesters/new': typeof AuthenticatedTimetableSemestersNewRoute
   '/admin/audit-logs': typeof AuthenticatedAdminAuditLogsIndexRoute
+  '/admin/import': typeof AuthenticatedAdminImportIndexRoute
   '/admin/roles': typeof AuthenticatedAdminRolesIndexRoute
   '/hr/departments': typeof AuthenticatedHrDepartmentsIndexRoute
   '/hr/teachers': typeof AuthenticatedHrTeachersIndexRoute
@@ -394,6 +411,7 @@ export interface FileRoutesById {
   '/_authenticated/analytics/': typeof AuthenticatedAnalyticsIndexRoute
   '/_authenticated/enrollments/': typeof AuthenticatedEnrollmentsIndexRoute
   '/_authenticated/grades/': typeof AuthenticatedGradesIndexRoute
+  '/_authenticated/help/': typeof AuthenticatedHelpIndexRoute
   '/_authenticated/hr/': typeof AuthenticatedHrIndexRoute
   '/_authenticated/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/_authenticated/students/': typeof AuthenticatedStudentsIndexRoute
@@ -405,6 +423,7 @@ export interface FileRoutesById {
   '/_authenticated/timetable/semesters/$id': typeof AuthenticatedTimetableSemestersIdRoute
   '/_authenticated/timetable/semesters/new': typeof AuthenticatedTimetableSemestersNewRoute
   '/_authenticated/admin/audit-logs/': typeof AuthenticatedAdminAuditLogsIndexRoute
+  '/_authenticated/admin/import/': typeof AuthenticatedAdminImportIndexRoute
   '/_authenticated/admin/roles/': typeof AuthenticatedAdminRolesIndexRoute
   '/_authenticated/hr/departments/': typeof AuthenticatedHrDepartmentsIndexRoute
   '/_authenticated/hr/teachers/': typeof AuthenticatedHrTeachersIndexRoute
@@ -438,6 +457,7 @@ export interface FileRouteTypes {
     | '/analytics/'
     | '/enrollments/'
     | '/grades/'
+    | '/help/'
     | '/hr/'
     | '/notifications/'
     | '/students/'
@@ -449,6 +469,7 @@ export interface FileRouteTypes {
     | '/timetable/semesters/$id'
     | '/timetable/semesters/new'
     | '/admin/audit-logs/'
+    | '/admin/import/'
     | '/admin/roles/'
     | '/hr/departments/'
     | '/hr/teachers/'
@@ -479,6 +500,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/enrollments'
     | '/grades'
+    | '/help'
     | '/hr'
     | '/notifications'
     | '/students'
@@ -490,6 +512,7 @@ export interface FileRouteTypes {
     | '/timetable/semesters/$id'
     | '/timetable/semesters/new'
     | '/admin/audit-logs'
+    | '/admin/import'
     | '/admin/roles'
     | '/hr/departments'
     | '/hr/teachers'
@@ -523,6 +546,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics/'
     | '/_authenticated/enrollments/'
     | '/_authenticated/grades/'
+    | '/_authenticated/help/'
     | '/_authenticated/hr/'
     | '/_authenticated/notifications/'
     | '/_authenticated/students/'
@@ -534,6 +558,7 @@ export interface FileRouteTypes {
     | '/_authenticated/timetable/semesters/$id'
     | '/_authenticated/timetable/semesters/new'
     | '/_authenticated/admin/audit-logs/'
+    | '/_authenticated/admin/import/'
     | '/_authenticated/admin/roles/'
     | '/_authenticated/hr/departments/'
     | '/_authenticated/hr/teachers/'
@@ -656,6 +681,13 @@ declare module '@tanstack/react-router' {
       path: '/hr'
       fullPath: '/hr/'
       preLoaderRoute: typeof AuthenticatedHrIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/help/': {
+      id: '/_authenticated/help/'
+      path: '/help'
+      fullPath: '/help/'
+      preLoaderRoute: typeof AuthenticatedHelpIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/grades/': {
@@ -791,6 +823,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRolesIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/import/': {
+      id: '/_authenticated/admin/import/'
+      path: '/import'
+      fullPath: '/admin/import/'
+      preLoaderRoute: typeof AuthenticatedAdminImportIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/audit-logs/': {
       id: '/_authenticated/admin/audit-logs/'
       path: '/audit-logs'
@@ -859,6 +898,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAuditLogsIndexRoute: typeof AuthenticatedAdminAuditLogsIndexRoute
+  AuthenticatedAdminImportIndexRoute: typeof AuthenticatedAdminImportIndexRoute
   AuthenticatedAdminRolesIndexRoute: typeof AuthenticatedAdminRolesIndexRoute
 }
 
@@ -866,6 +906,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
   {
     AuthenticatedAdminAuditLogsIndexRoute:
       AuthenticatedAdminAuditLogsIndexRoute,
+    AuthenticatedAdminImportIndexRoute: AuthenticatedAdminImportIndexRoute,
     AuthenticatedAdminRolesIndexRoute: AuthenticatedAdminRolesIndexRoute,
   }
 
@@ -896,6 +937,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSubjectsPrerequisitesRoute: typeof AuthenticatedSubjectsPrerequisitesRoute
   AuthenticatedEnrollmentsIndexRoute: typeof AuthenticatedEnrollmentsIndexRoute
   AuthenticatedGradesIndexRoute: typeof AuthenticatedGradesIndexRoute
+  AuthenticatedHelpIndexRoute: typeof AuthenticatedHelpIndexRoute
   AuthenticatedHrIndexRoute: typeof AuthenticatedHrIndexRoute
   AuthenticatedNotificationsIndexRoute: typeof AuthenticatedNotificationsIndexRoute
   AuthenticatedStudentsIndexRoute: typeof AuthenticatedStudentsIndexRoute
@@ -930,6 +972,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedSubjectsPrerequisitesRoute,
   AuthenticatedEnrollmentsIndexRoute: AuthenticatedEnrollmentsIndexRoute,
   AuthenticatedGradesIndexRoute: AuthenticatedGradesIndexRoute,
+  AuthenticatedHelpIndexRoute: AuthenticatedHelpIndexRoute,
   AuthenticatedHrIndexRoute: AuthenticatedHrIndexRoute,
   AuthenticatedNotificationsIndexRoute: AuthenticatedNotificationsIndexRoute,
   AuthenticatedStudentsIndexRoute: AuthenticatedStudentsIndexRoute,

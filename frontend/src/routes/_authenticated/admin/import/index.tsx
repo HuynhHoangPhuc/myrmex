@@ -5,9 +5,9 @@ import { apiClient } from '@/lib/api/client'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { ImportPreviewTable } from './import-preview-table'
-import { ImportResults } from './import-results'
-import type { ImportResult } from './import-results'
+import { ImportPreviewTable } from './-import-preview-table'
+import { ImportResults } from './-import-results'
+import type { ImportResult } from './-import-results'
 
 export const Route = createFileRoute('/_authenticated/admin/import/')({
   component: BulkImportPage,
