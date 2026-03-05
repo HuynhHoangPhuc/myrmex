@@ -21,6 +21,10 @@ locals {
     "LLM_API_KEY",
     "LLM_PROVIDER",
     "LLM_MODEL",
+    "SENTRY_DSN",
+    # Staging-specific secrets (separate credentials, no production data risk)
+    "DATABASE_URL_STAGING",
+    "JWT_SECRET_STAGING",
   ]
 }
 

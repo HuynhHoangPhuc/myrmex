@@ -27,7 +27,7 @@ resource "google_cloud_run_v2_service" "frontend" {
     service_account = google_service_account.myrmex_run.email
 
     scaling {
-      min_instance_count = 0
+      min_instance_count = var.frontend_min_instances
       max_instance_count = 10
     }
 
@@ -159,6 +159,7 @@ resource "google_cloud_run_v2_service" "core" {
           { name = "LLM_API_KEY",                  secret = "LLM_API_KEY" },
           { name = "LLM_PROVIDER",                 secret = "LLM_PROVIDER" },
           { name = "LLM_MODEL",                    secret = "LLM_MODEL" },
+          { name = "SENTRY_DSN",                   secret = "SENTRY_DSN" },
         ]
         content {
           name = env.value.name
@@ -203,7 +204,7 @@ resource "google_cloud_run_v2_service" "module_hr" {
     service_account = google_service_account.myrmex_run.email
 
     scaling {
-      min_instance_count = 0
+      min_instance_count = var.module_min_instances
       max_instance_count = 10
     }
 
@@ -255,7 +256,7 @@ resource "google_cloud_run_v2_service" "module_subject" {
     service_account = google_service_account.myrmex_run.email
 
     scaling {
-      min_instance_count = 0
+      min_instance_count = var.module_min_instances
       max_instance_count = 10
     }
 
@@ -307,7 +308,7 @@ resource "google_cloud_run_v2_service" "module_timetable" {
     service_account = google_service_account.myrmex_run.email
 
     scaling {
-      min_instance_count = 0
+      min_instance_count = var.module_min_instances
       max_instance_count = 10
     }
 
@@ -359,7 +360,7 @@ resource "google_cloud_run_v2_service" "module_student" {
     service_account = google_service_account.myrmex_run.email
 
     scaling {
-      min_instance_count = 0
+      min_instance_count = var.module_min_instances
       max_instance_count = 10
     }
 
@@ -411,7 +412,7 @@ resource "google_cloud_run_v2_service" "module_analytics" {
     service_account = google_service_account.myrmex_run.email
 
     scaling {
-      min_instance_count = 0
+      min_instance_count = var.module_min_instances
       max_instance_count = 10
     }
 

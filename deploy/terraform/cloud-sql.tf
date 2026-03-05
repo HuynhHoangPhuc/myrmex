@@ -35,7 +35,7 @@ resource "google_sql_database_instance" "postgres" {
 
     database_flags {
       name  = "max_connections"
-      value = "100"
+      value = "200"
     }
 
     insights_config {
@@ -55,4 +55,40 @@ resource "google_sql_database_instance" "postgres" {
 resource "google_sql_database" "myrmex" {
   name     = "myrmex"
   instance = google_sql_database_instance.postgres.name
+}
+
+# ---------------------------------------------------------------------------
+# Staging Cloud SQL — separate instance, no prevent_destroy, cheaper config
+# ---------------------------------------------------------------------------
+resource "google_sql_database_instance" "postgres_staging" {
+  name             = "myrmex-postgres-staging"
+  database_version = "POSTGRES_16"
+  region           = var.region
+
+  settings {
+    tier = "db-f1-micro"
+
+    ip_configuration {
+      ipv4_enabled                                  = false
+      private_network                               = google_compute_network.myrmex.id
+      enable_private_path_for_google_cloud_services = true
+      ssl_mode                                      = "ENCRYPTED_ONLY"
+    }
+
+    backup_configuration {
+      enabled = false # no PITR for staging
+    }
+
+    database_flags {
+      name  = "max_connections"
+      value = "50"
+    }
+  }
+
+  depends_on = [google_service_networking_connection.private_vpc_connection]
+}
+
+resource "google_sql_database" "myrmex_staging" {
+  name     = "myrmex"
+  instance = google_sql_database_instance.postgres_staging.name
 }

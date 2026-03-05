@@ -39,6 +39,31 @@ variable "notification_min_instances" {
   default     = 1
 }
 
+variable "module_min_instances" {
+  description = "Minimum Cloud Run instances for module services (hr, subject, timetable, student, analytics)"
+  type        = number
+  default     = 1
+}
+
+variable "frontend_min_instances" {
+  description = "Minimum Cloud Run instances for frontend service"
+  type        = number
+  default     = 1
+}
+
+variable "alert_email" {
+  description = "Email address for monitoring alert notifications"
+  type        = string
+  default     = ""
+}
+
+variable "alert_slack_webhook_url" {
+  description = "Slack webhook URL for monitoring alert notifications (optional)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "docker_image_tag" {
   description = "Docker image tag to deploy across all services"
   type        = string

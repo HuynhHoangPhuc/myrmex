@@ -39,7 +39,7 @@ resource "google_monitoring_alert_policy" "high_error_rate" {
     }
   }
 
-  notification_channels = [] # Add email/Slack channel IDs after setup
+  notification_channels = local.notification_channel_ids
 
   alert_strategy {
     auto_close = "604800s"
@@ -51,12 +51,12 @@ resource "google_monitoring_alert_policy" "cloudsql_connections" {
   combiner     = "OR"
 
   conditions {
-    display_name = "DB connections > 20"
+    display_name = "DB connections > 150"
     condition_threshold {
       filter          = "resource.type=\"cloudsql_database\" AND metric.type=\"cloudsql.googleapis.com/database/postgresql/num_backends\""
       duration        = "300s"
       comparison      = "COMPARISON_GT"
-      threshold_value = 20
+      threshold_value = 150
       aggregations {
         alignment_period   = "60s"
         per_series_aligner = "ALIGN_MEAN"
@@ -64,7 +64,58 @@ resource "google_monitoring_alert_policy" "cloudsql_connections" {
     }
   }
 
-  notification_channels = []
+  notification_channels = local.notification_channel_ids
+
+  alert_strategy {
+    auto_close = "604800s"
+  }
+}
+
+resource "google_monitoring_alert_policy" "high_latency" {
+  display_name = "Myrmex High Request Latency"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "p95 latency > 2s"
+    condition_threshold {
+      filter          = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_latencies\""
+      duration        = "300s"
+      comparison      = "COMPARISON_GT"
+      threshold_value = 2000 # milliseconds
+      aggregations {
+        alignment_period     = "60s"
+        per_series_aligner   = "ALIGN_DELTA"
+        cross_series_reducer = "REDUCE_PERCENTILE_95"
+      }
+    }
+  }
+
+  notification_channels = local.notification_channel_ids
+
+  alert_strategy {
+    auto_close = "604800s"
+  }
+}
+
+resource "google_monitoring_alert_policy" "high_memory" {
+  display_name = "Myrmex High Memory Utilization"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "Memory utilization > 85%"
+    condition_threshold {
+      filter          = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/container/memory/utilizations\""
+      duration        = "300s"
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0.85
+      aggregations {
+        alignment_period   = "60s"
+        per_series_aligner = "ALIGN_MEAN"
+      }
+    }
+  }
+
+  notification_channels = local.notification_channel_ids
 
   alert_strategy {
     auto_close = "604800s"
