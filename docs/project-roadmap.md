@@ -284,6 +284,77 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 
 ---
 
+## Phase 5: Production Infrastructure (COMPLETE)
+
+**Timeline**: Q1 2026 | **Status**: 100% Complete (Mar 5, 2026)
+
+### Deliverables
+- [x] GCP Cloud Run deployment: 7 services (core, 5 modules, frontend) on asia-southeast1
+- [x] Cloud SQL PostgreSQL 16: PITR enabled, 7-day retention, private VPC only
+- [x] Memorystore Redis 7: Managed cache for WS push relay
+- [x] Pub/Sub: Managed messaging backend (replaces NATS in production)
+- [x] Terraform IaC: 14 .tf files (vpc, cloud-sql, cloud-run, monitoring, secret-manager, etc.)
+- [x] CI/CD: GitHub Actions WIF auth, parallel build/deploy, smoke tests
+
+---
+
+## Phase 6: HCMUS Production Deployment (IN PROGRESS)
+
+**Timeline**: Q1-Q2 2026 (~4-5 weeks) | **Status**: Infrastructure implemented (Mar 5, 2026)
+
+### Goals
+- Deploy to 200+ user faculty-wide HCMUS environment
+- Zero-downtime data migration from HCMUS source data
+- Staging environment for UAT with HCMUS admin team
+
+### Deliverables
+
+#### Phase 6.1: Ops Reliability (COMPLETE - Mar 5)
+- [x] Cloud SQL max_connections: 100 → 200
+- [x] pgxpool connection limits per service (core=30, student/notif=20, others=15; min=3)
+- [x] Circuit breaker: `pkg/circuitbreaker` — thread-safe 3-state breaker (7 tests)
+- [x] All Cloud Run services min_instances=1 (no cold starts)
+- [x] Monitoring: DB threshold 20→150, + latency (p95>2s) + memory (>85%) alerts
+- [x] Notification channels: email + Slack (conditional on tfvars config)
+- [x] Sentry Go SDK: core service error tracking with sentrygin middleware
+- [x] Sentry React SDK: frontend with source maps via `@sentry/vite-plugin`
+- [x] SENTRY_DSN added to Secret Manager
+
+#### Phase 6.2: Staging Environment + UAT (COMPLETE - Mar 5)
+- [x] Staging Cloud SQL instance: `myrmex-postgres-staging` (separate, no prevent_destroy)
+- [x] Staging Cloud Run services: `staging-{service}` (all 8, min_instances=0)
+- [x] Staging secrets: DATABASE_URL_STAGING, JWT_SECRET_STAGING
+- [x] `staging.tfvars`: cost-optimized overrides (all min=0)
+- [x] CD pipeline: push→main=staging auto, `v*` tag=production
+- [x] Staging seed script: 3 depts, 20 teachers, 10 subjects, 50 students, rooms
+- [x] Staging reset script: wipe + migrate + re-seed with confirmation
+- [x] GitHub UAT bug report template
+
+#### Phase 6.3: Domain, Email, Polish (COMPLETE - Mar 5)
+- [x] `domain-mapping.tf`: Cloud Run domain mappings (conditional, outputs DNS records)
+- [x] PWA manifest: `frontend/public/manifest.json` (installable on mobile)
+- [x] OG tags: index.html with og:title, og:description, og:image, twitter:card
+- [x] Theme color, apple-touch-icon, manifest link
+
+#### Phase 6.4: Data Migration + Go-Live (COMPLETE - Mar 5)
+- [x] `validate-data.py`: pre-flight validation (encoding, duplicates, cross-refs, departments)
+- [x] `transform-teachers.py`: HCMUS Excel → teachers.csv bulk import format
+- [x] `transform-students.py`: HCMUS Excel → students.csv bulk import format
+- [x] `bootstrap-admin.sh`: super_admin creation + login verification
+- [x] `import-data.sh`: ordered import orchestrator (depts→teachers→subjects→prereqs→students→semester→rooms)
+- [x] `verify-import.sh`: counts + orphan checks + integrity validation
+- [x] `rollback.sh`: schema wipe with 'ROLLBACK' confirmation gate
+
+### Pending (External Coordination Required)
+- [ ] `alert_email` + `alert_slack_webhook_url` set in terraform.tfvars
+- [ ] Custom domain DNS delegation from HCMUS IT (`frontend_domain`/`api_domain`)
+- [ ] PWA icons uploaded (`public/icons/icon-192.png`, `icon-512.png`)
+- [ ] Sentry project created; DSN + auth token set in Secret Manager + GitHub secrets
+- [ ] UAT sign-off from HCMUS admin team
+- [ ] Production go-live execution (see `deploy/migration/go-live-runbook.md`)
+
+---
+
 ## Quarterly Milestones
 
 ### Q1 2026 (Jan-Mar)

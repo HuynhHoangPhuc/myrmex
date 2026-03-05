@@ -9,8 +9,10 @@
 5. [Building Services](#building-services)
 6. [Running Services](#running-services)
 7. [Docker Compose Deployment](#docker-compose-deployment)
-8. [Troubleshooting](#troubleshooting)
-9. [Production Deployment](#production-deployment-future)
+8. [GCP Cloud Run Deployment (Production)](#gcp-cloud-run-deployment-production)
+9. [Staging Environment (Phase 6)](#staging-environment-phase-6)
+10. [HCMUS Data Migration (Phase 6)](#hcmus-data-migration-phase-6)
+11. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -649,9 +651,106 @@ k6 run deploy/load-tests/mixed-workload.js   # 500 VUs realistic traffic
 - [ ] Secrets in Secret Manager, WIF configured
 - [ ] Terraform applied + migrations executed
 - [ ] All 7 Cloud Run services deployed + health checks passing
-- [ ] Cloud Monitoring alerts configured
+- [ ] Cloud Monitoring alerts configured (email + Slack channels set in `alert_email`/`alert_slack_webhook_url`)
 - [ ] Load tests pass (p95 <500ms)
-- [ ] SSL + custom domain, backups enabled
+- [ ] SSL + custom domain configured (`frontend_domain`/`api_domain` in tfvars)
+- [ ] Backups enabled (Cloud SQL PITR + 7-day retention active)
+- [ ] SENTRY_DSN populated in Secret Manager
+- [ ] All services min_instances=1 (no cold starts for 200+ users)
+- [ ] DB connections confirmed below 150 (pool: core=30, student/notif=20, others=15)
+
+---
+
+## Staging Environment (Phase 6)
+
+### Overview
+
+Staging mirrors production in the same GCP project with `staging-` prefixed service names and a separate Cloud SQL instance (`myrmex-postgres-staging`).
+
+### CD Pipeline (Tag-Based Releases)
+
+| Trigger | Action |
+|---------|--------|
+| Push to `main` | Auto-deploy all services to `staging-*` Cloud Run services |
+| Push git tag `v*` | Deploy to production Cloud Run services |
+| `workflow_dispatch` | Manual deploy to either environment |
+
+### Provision Staging
+
+```bash
+# Set staging secrets
+gcloud secrets versions add DATABASE_URL_STAGING --data-file=- <<< "postgres://..."
+gcloud secrets versions add JWT_SECRET_STAGING --data-file=- <<< "staging-secret-32chars"
+
+# Terraform creates staging Cloud SQL + Cloud Run services automatically
+# (staging-cloud-run.tf provisions staging-core, staging-module-*, staging-frontend)
+terraform apply
+```
+
+### Seed / Reset Staging
+
+```bash
+# Initial seed
+./deploy/scripts/seed-staging.sh "postgres://user:pass@staging-host/myrmex"
+
+# Full wipe + re-seed (prompts for confirmation)
+./deploy/scripts/reset-staging.sh "postgres://..." myrmex-gcp-project asia-southeast1
+```
+
+---
+
+## HCMUS Data Migration (Phase 6)
+
+### Pipeline Overview
+
+```
+HCMUS Excel/CSV → Transform scripts → Validation → API import → Verification
+```
+
+### Step 1: Transform Source Data
+
+```bash
+pip install pandas openpyxl
+python3 deploy/migration/transform-teachers.py --input hcmus-teachers.xlsx --output data/teachers.csv
+python3 deploy/migration/transform-students.py --input hcmus-students.xlsx --output data/students.csv
+```
+
+### Step 2: Pre-flight Validation
+
+```bash
+python3 deploy/migration/validate-data.py --input data/ --report validation-report.md
+# Must exit 0 (PASS) before proceeding
+```
+
+### Step 3: Bootstrap Admin
+
+```bash
+ADMIN_PASSWORD="SecurePass@2026" \
+  ./deploy/migration/bootstrap-admin.sh "https://api.myrmex.hcmus.edu.vn" "postgres://..."
+# Exports ADMIN_TOKEN on success
+```
+
+### Step 4: Import Data
+
+```bash
+./deploy/migration/import-data.sh "https://api.myrmex.hcmus.edu.vn" "$ADMIN_TOKEN" data/
+```
+
+### Step 5: Verify
+
+```bash
+./deploy/migration/verify-import.sh "postgres://..."
+# Must exit 0 (PASS) before declaring go-live
+```
+
+### Rollback (Emergency)
+
+```bash
+./deploy/migration/rollback.sh "postgres://..."
+# Prompts: type 'ROLLBACK' to confirm schema wipe
+```
+
+See `deploy/migration/` for full runbook and script documentation.
 
 ---
 
