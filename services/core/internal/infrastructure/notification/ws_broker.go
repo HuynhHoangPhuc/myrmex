@@ -1,20 +1,22 @@
 package notification
 
 import (
+	"context"
 	"strings"
 	"sync"
 	"time"
 
-	natsgo "github.com/nats-io/nats.go"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
+
+	msgredis "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/redis"
 )
 
 const wsBrokerWriteTimeout = 5 * time.Second
 
-// WSBroker manages active WebSocket connections per user and relays NATS push events.
-// module-notification publishes to NOTIFICATION.push.{userID}; the broker forwards
-// the raw JSON payload to all connected WebSocket clients for that user.
+// WSBroker manages active WebSocket connections per user and relays Redis push events.
+// module-notification publishes to "notification.push.{userID}" via Redis Pub/Sub;
+// the broker forwards the raw JSON payload to all connected WebSocket clients.
 type WSBroker struct {
 	mu          sync.RWMutex
 	connections map[string][]*websocket.Conn // userID → open connections
@@ -76,26 +78,32 @@ func (b *WSBroker) send(userID string, payload []byte) {
 	}
 }
 
-// StartNATSRelay subscribes to NOTIFICATION.push.* and forwards each message
-// to connected WebSocket clients for the target user. nc may be nil (no-op).
-func (b *WSBroker) StartNATSRelay(nc *natsgo.Conn) {
-	if nc == nil {
-		b.log.Warn("NATS not available, WS push relay disabled")
+// StartRedisRelay subscribes to "notification.push.*" via Redis Pub/Sub and
+// forwards each message to connected WebSocket clients for the target user.
+// sub may be nil (no-op when Redis is unavailable).
+func (b *WSBroker) StartRedisRelay(ctx context.Context, sub *msgredis.PushSubscriber) {
+	if sub == nil {
+		b.log.Warn("Redis not available, WS push relay disabled")
 		return
 	}
 
-	_, err := nc.Subscribe("NOTIFICATION.push.*", func(msg *natsgo.Msg) {
-		// Subject format: NOTIFICATION.push.{userID}
-		parts := strings.Split(msg.Subject, ".")
-		if len(parts) < 3 {
-			return
-		}
-		userID := parts[2]
-		b.send(userID, msg.Data)
-	})
+	ch, err := sub.PSubscribe(ctx, "notification.push.*")
 	if err != nil {
-		b.log.Error("failed to subscribe to NOTIFICATION.push.*", zap.Error(err))
+		b.log.Error("failed to subscribe to notification.push.*", zap.Error(err))
 		return
 	}
-	b.log.Info("NATS → WS relay started on NOTIFICATION.push.*")
+
+	go func() {
+		for msg := range ch {
+			// Channel format: notification.push.{userID}
+			parts := strings.Split(msg.Channel, ".")
+			if len(parts) < 3 {
+				continue
+			}
+			userID := parts[2]
+			b.send(userID, msg.Payload)
+		}
+	}()
+
+	b.log.Info("Redis → WS relay started on notification.push.*")
 }

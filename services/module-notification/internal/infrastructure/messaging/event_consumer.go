@@ -3,11 +3,11 @@ package messaging
 import (
 	"context"
 	"encoding/json"
-	"time"
+	"strings"
 
-	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
 
+	"github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-notification/internal/application/command"
 	notif_email "github.com/HuynhHoangPhuc/myrmex/services/module-notification/internal/infrastructure/email"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-notification/internal/infrastructure/persistence"
@@ -27,9 +27,9 @@ var subscribedSubjects = []string{
 	"notification.system.announcement",
 }
 
-// EventConsumer subscribes to domain events via JetStream and dispatches notifications.
+// EventConsumer subscribes to domain events via the messaging backend and dispatches notifications.
 type EventConsumer struct {
-	js         jetstream.JetStream
+	consumer   messaging.Consumer
 	dispatch   *command.DispatchNotificationCommand
 	renderer   *notif_email.TemplateRenderer
 	emailQueue *persistence.EmailQueueRepository
@@ -38,7 +38,7 @@ type EventConsumer struct {
 }
 
 func NewEventConsumer(
-	js jetstream.JetStream,
+	consumer messaging.Consumer,
 	dispatch *command.DispatchNotificationCommand,
 	renderer *notif_email.TemplateRenderer,
 	emailQueue *persistence.EmailQueueRepository,
@@ -46,7 +46,7 @@ func NewEventConsumer(
 	log *zap.Logger,
 ) *EventConsumer {
 	return &EventConsumer{
-		js:         js,
+		consumer:   consumer,
 		dispatch:   dispatch,
 		renderer:   renderer,
 		emailQueue: emailQueue,
@@ -55,67 +55,34 @@ func NewEventConsumer(
 	}
 }
 
-// Start creates the NOTIFICATION_EVENTS stream and begins consuming.
+// Start subscribes to each domain event subject independently.
+// Each subscription creates a durable consumer on the source stream.
 func (c *EventConsumer) Start(ctx context.Context) error {
-	_, err := c.js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
-		Name:     "NOTIFICATION_EVENTS",
-		Subjects: subscribedSubjects,
-		MaxAge:   7 * 24 * time.Hour, // 7-day retention
-	})
-	if err != nil {
-		return err
-	}
-
-	cons, err := c.js.CreateOrUpdateConsumer(ctx, "NOTIFICATION_EVENTS", jetstream.ConsumerConfig{
-		Durable:   "notification-dispatcher",
-		AckPolicy: jetstream.AckExplicitPolicy,
-	})
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		iter, err := cons.Messages()
-		if err != nil {
-			c.log.Error("event consumer subscribe failed", zap.Error(err))
-			return
+	for _, subject := range subscribedSubjects {
+		// Durable name: "notif-dispatcher-" + sanitized subject
+		durable := "notif-dispatcher-" + strings.ReplaceAll(subject, ".", "-")
+		sub := subject // capture for closure
+		if err := c.consumer.Subscribe(ctx, durable, sub, func(msg *messaging.Message) error {
+			return c.handleMessage(ctx, msg)
+		}); err != nil {
+			return err
 		}
-		for {
-			select {
-			case <-ctx.Done():
-				iter.Stop()
-				return
-			default:
-				msg, err := iter.Next()
-				if err != nil {
-					if ctx.Err() != nil {
-						return
-					}
-					c.log.Warn("event consumer next error", zap.Error(err))
-					continue
-				}
-				c.handleMessage(ctx, msg)
-			}
-		}
-	}()
-
-	c.log.Info("notification event consumer started")
+	}
+	c.log.Info("notification event consumer started", zap.Int("subscriptions", len(subscribedSubjects)))
 	return nil
 }
 
-func (c *EventConsumer) handleMessage(ctx context.Context, msg jetstream.Msg) {
-	subject := msg.Subject()
+func (c *EventConsumer) handleMessage(ctx context.Context, msg *messaging.Message) error {
+	subject := msg.Subject
 	spec, ok := GetEventSpec(subject)
 	if !ok {
-		_ = msg.Ack() // unknown subject — skip silently
-		return
+		return nil // unknown subject — ack and skip
 	}
 
 	var payload map[string]any
-	if err := json.Unmarshal(msg.Data(), &payload); err != nil {
+	if err := json.Unmarshal(msg.Data, &payload); err != nil {
 		c.log.Warn("notification event: malformed payload", zap.String("subject", subject), zap.Error(err))
-		_ = msg.Ack() // bad payload is non-retryable
-		return
+		return nil // bad payload is non-retryable — ack and discard
 	}
 
 	title := spec.BuildTitle(payload)
@@ -125,18 +92,16 @@ func (c *EventConsumer) handleMessage(ctx context.Context, msg jetstream.Msg) {
 	if err != nil {
 		c.log.Warn("notification event: recipient resolution failed",
 			zap.String("subject", subject), zap.Error(err))
-		_ = msg.Nak() // transient failure — retry later
-		return
+		return err // transient failure — nack to retry
 	}
 	if len(recipients) == 0 {
-		_ = msg.Ack()
-		return
+		return nil
 	}
 
 	for _, r := range recipients {
 		c.dispatchToRecipient(ctx, spec, r, title, body)
 	}
-	_ = msg.Ack()
+	return nil
 }
 
 func (c *EventConsumer) dispatchToRecipient(
@@ -162,7 +127,6 @@ func (c *EventConsumer) dispatchToRecipient(
 			continue
 		}
 
-		// For email channel: render template and enqueue for SMTP delivery
 		if ch == "email" && notifID != "" && recipient.Email != "" {
 			emailSubject, html, renderErr := c.renderer.Render(spec.NotifType, title, body, "")
 			if renderErr != nil {

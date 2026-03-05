@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
+	msgnats "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/nats"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-analytics/internal/application/export"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-analytics/internal/application/query"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-analytics/internal/infrastructure/messaging"
@@ -56,34 +57,38 @@ func main() {
 	}
 	zapLog.Info("connected to database")
 
-	// 4. Create repository
+	// 4. Repository
 	repo := persistence.NewAnalyticsRepository(pool)
 
-	// 5. Connect to NATS and start consumers (optional — continue without if unavailable)
+	// 5. Start event consumers (optional — analytics is best-effort)
 	natsURL := v.GetString("nats.url")
 	if natsURL != "" {
-		consumer, err := messaging.NewConsumer(natsURL, repo, zapLog)
+		natsConsumer, err := msgnats.NewConsumer(natsURL)
 		if err != nil {
-			zapLog.Warn("NATS unavailable, consumers will not start", zap.Error(err))
+			zapLog.Warn("NATS unavailable, analytics consumers disabled", zap.Error(err))
 		} else {
-			consumer.Start(ctx)
-			zapLog.Info("connected to NATS, consumers started")
+			consumer := messaging.NewConsumer(natsConsumer, repo, zapLog)
+			if err := consumer.Start(ctx); err != nil {
+				zapLog.Warn("analytics consumer start failed", zap.Error(err))
+			} else {
+				defer natsConsumer.Close() //nolint:errcheck
+				zapLog.Info("analytics consumers started")
+			}
 		}
 	} else {
-		zapLog.Warn("NATS URL not configured, skipping consumers")
+		zapLog.Warn("NATS URL not configured, analytics consumers disabled")
 	}
 
-	// 6. Create query handlers
+	// 6. Query handlers
 	workloadHandler := query.NewGetWorkloadHandler(repo)
 	utilizationHandler := query.NewGetUtilizationHandler(repo)
 	dashboardHandler := query.NewGetDashboardSummaryHandler(repo)
 
-	// 7. Register HTTP routes
+	// 7. HTTP routes
 	server := httpif.NewAnalyticsHTTPServer(workloadHandler, utilizationHandler, dashboardHandler, repo, zapLog)
 	mux := http.NewServeMux()
 	server.RegisterRoutes(mux)
 
-	// 7b. Export handler (PDF / Excel downloads)
 	pdfGen := export.NewPDFGenerator(repo)
 	excelGen := export.NewExcelGenerator(repo)
 	exportHandler := httpexport.NewExportHandler(pdfGen, excelGen)
@@ -110,7 +115,7 @@ func main() {
 	<-quit
 	zapLog.Info("shutting down Analytics module...")
 
-	cancel() // stop NATS consumers
+	cancel()
 	if err := httpServer.Shutdown(context.Background()); err != nil {
 		zapLog.Error("http shutdown error", zap.Error(err))
 	}

@@ -1,13 +1,15 @@
 package middleware
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nats-io/nats.go"
+
+	"github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
 )
 
 const (
@@ -34,10 +36,10 @@ type AuditEvent struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-// AuditMiddleware publishes an AuditEvent to NATS after every state-mutating request.
-// Skipped when nc is nil (NATS not configured) or for read-only methods.
-func AuditMiddleware(nc *nats.Conn) gin.HandlerFunc {
-	if nc == nil {
+// AuditMiddleware publishes an AuditEvent to the messaging backend after every
+// state-mutating request. Skipped when pub is nil or for read-only methods.
+func AuditMiddleware(pub messaging.Publisher) gin.HandlerFunc {
+	if pub == nil {
 		return func(c *gin.Context) { c.Next() }
 	}
 
@@ -98,7 +100,7 @@ func AuditMiddleware(nc *nats.Conn) gin.HandlerFunc {
 		}
 
 		// Fire-and-forget: never block the response
-		_ = nc.Publish("AUDIT.logs", data)
+		_ = pub.Publish(context.Background(), "AUDIT.logs", data)
 	}
 }
 

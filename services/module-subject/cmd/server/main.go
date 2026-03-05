@@ -16,6 +16,8 @@ import (
 	"google.golang.org/grpc"
 
 	subjectv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/subject/v1"
+	pkgmessaging "github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
+	msgnats "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/nats"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/application/command"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/application/query"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-subject/internal/domain/service"
@@ -65,30 +67,21 @@ func main() {
 	// 5. Domain services
 	dagService := service.NewDAGService(prereqRepo)
 
-	// 5a. NATS publisher (optional — continue without if unavailable)
-	var publisher command.EventPublisher
-	natsURL := v.GetString("nats.url")
-	if natsURL != "" {
-		np, err := messaging.NewNATSPublisher(natsURL)
-		if err != nil {
-			zapLog.Warn("NATS unavailable, events will not be published", zap.Error(err))
-			publisher = command.NewNoopPublisher()
-		} else {
-			publisher = np
-			zapLog.Info("connected to NATS for event publishing")
-		}
-	} else {
-		publisher = command.NewNoopPublisher()
-	}
+	// 6. Messaging publisher — select backend via MESSAGING_BACKEND env var
+	pub := newPublisher(ctx, v, zapLog, pkgmessaging.StreamConfig{
+		Name: "SUBJECT_EVENTS", Subjects: []string{"subject.>"},
+	})
+	defer pub.Close() //nolint:errcheck
+	publisher := command.EventPublisher(messaging.NewEventPublisher(pub))
 
-	// 6. Command handlers
+	// 7. Command handlers
 	createSubjectHandler := command.NewCreateSubjectHandler(subjectRepo, publisher)
 	updateSubjectHandler := command.NewUpdateSubjectHandler(subjectRepo, publisher)
 	deleteSubjectHandler := command.NewDeleteSubjectHandler(subjectRepo, publisher)
 	addPrereqHandler := command.NewAddPrerequisiteHandler(prereqRepo, subjectRepo, dagService, publisher)
 	removePrereqHandler := command.NewRemovePrerequisiteHandler(prereqRepo, publisher)
 
-	// 7. Query handlers
+	// 8. Query handlers
 	getSubjectHandler := query.NewGetSubjectHandler(subjectRepo)
 	listSubjectsHandler := query.NewListSubjectsHandler(subjectRepo)
 	listPrereqsHandler := query.NewListPrerequisitesHandler(prereqRepo)
@@ -97,7 +90,7 @@ func main() {
 	fullDAGHandler := query.NewGetFullDAGHandler(subjectRepo, prereqRepo)
 	checkConflictsHandler := query.NewCheckConflictsHandler(dagService, subjectRepo)
 
-	// 8. gRPC servers (interface layer)
+	// 9. gRPC servers
 	subjectServer := grpcif.NewSubjectServer(
 		createSubjectHandler,
 		updateSubjectHandler,
@@ -115,7 +108,7 @@ func main() {
 		checkConflictsHandler,
 	)
 
-	// 9. gRPC server setup
+	// 10. gRPC server setup
 	grpcServer := grpc.NewServer()
 	subjectv1.RegisterSubjectServiceServer(grpcServer, subjectServer)
 	subjectv1.RegisterPrerequisiteServiceServer(grpcServer, prereqServer)
@@ -126,7 +119,6 @@ func main() {
 		zapLog.Fatal("listen grpc", zap.Error(err))
 	}
 
-	// 10. Start gRPC server in background
 	go func() {
 		zapLog.Info("starting gRPC server", zap.Int("port", grpcPort))
 		if err := grpcServer.Serve(lis); err != nil {
@@ -135,7 +127,7 @@ func main() {
 		}
 	}()
 
-	// 11. Graceful shutdown on SIGINT/SIGTERM
+	// 11. Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
@@ -143,4 +135,24 @@ func main() {
 	zapLog.Info("shutting down subject module...")
 	grpcServer.GracefulStop()
 	zapLog.Info("subject module stopped")
+}
+
+func newPublisher(ctx context.Context, v *viper.Viper, log *zap.Logger, stream pkgmessaging.StreamConfig) pkgmessaging.Publisher {
+	if backend := v.GetString("messaging.backend"); backend == "pubsub" {
+		log.Warn("pubsub backend not yet wired in module-subject, falling back to nats")
+	}
+	natsURL := v.GetString("nats.url")
+	if natsURL == "" {
+		return &pkgmessaging.NoopPublisher{}
+	}
+	p, err := msgnats.NewPublisher(natsURL)
+	if err != nil {
+		log.Warn("NATS unavailable, events disabled", zap.Error(err))
+		return &pkgmessaging.NoopPublisher{}
+	}
+	if err := p.EnsureStream(ctx, stream); err != nil {
+		log.Warn("ensure stream failed", zap.String("stream", stream.Name), zap.Error(err))
+	}
+	log.Info("messaging backend: NATS", zap.String("stream", stream.Name))
+	return p
 }

@@ -12,6 +12,8 @@ import (
 	"time"
 
 	pkgcache "github.com/HuynhHoangPhuc/myrmex/pkg/cache"
+	pkgmessaging "github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
+	msgnats "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/nats"
 	subjectv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/subject/v1"
 	studentv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/student/v1"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-student/internal/application/command"
@@ -28,10 +30,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type subscription interface {
-	Unsubscribe() error
-}
-
 func main() {
 	v := viper.New()
 	v.SetConfigName("local")
@@ -47,7 +45,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("init logger: %v", err)
 	}
-	defer zapLog.Sync()
+	defer zapLog.Sync() //nolint:errcheck
 
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, v.GetString("database.url"))
@@ -66,22 +64,12 @@ func main() {
 	enrollmentRepo := persistence.NewEnrollmentRepository(queries)
 	inviteCodeRepo := persistence.NewInviteCodeRepository(queries)
 
-	var publisher command.EventPublisher
-	var natsPublisher *messaging.NATSPublisher
-	natsURL := v.GetString("nats.url")
-	if natsURL != "" {
-		np, err := messaging.NewNATSPublisher(natsURL)
-		if err != nil {
-			zapLog.Warn("NATS unavailable, events will not be published", zap.Error(err))
-			publisher = command.NewNoopPublisher()
-		} else {
-			natsPublisher = np
-			publisher = np
-			zapLog.Info("connected to NATS for event publishing")
-		}
-	} else {
-		publisher = command.NewNoopPublisher()
-	}
+	// Messaging publisher — select backend via MESSAGING_BACKEND env var
+	pub := newPublisher(ctx, v, zapLog, pkgmessaging.StreamConfig{
+		Name: "STUDENT_EVENTS", Subjects: []string{"student.>"},
+	})
+	defer pub.Close() //nolint:errcheck
+	publisher := command.EventPublisher(messaging.NewEventPublisher(pub))
 
 	// Redis cache — shared by prerequisite checker and grade/transcript handlers
 	var cacheStore pkgcache.Cache
@@ -92,7 +80,6 @@ func main() {
 	}
 
 	var prerequisiteChecker command.PrerequisiteChecker
-	var prerequisiteInvalidationSubs []subscription
 	var subjectClient query.SubjectListClient
 	subjectGRPCAddr := strings.TrimSpace(v.GetString("subject.grpc_addr"))
 	if subjectGRPCAddr != "" {
@@ -117,16 +104,22 @@ func main() {
 			cacheStore,
 			time.Hour,
 		)
-		if cacheStore != nil && natsPublisher != nil {
-			subs, err := messaging.NewPrerequisiteCacheInvalidator(cacheStore).Start(ctx, natsPublisher)
-			if err != nil {
-				zapLog.Warn("failed to start prerequisite cache invalidator", zap.Error(err))
-			} else {
-				prerequisiteInvalidationSubs = make([]subscription, len(subs))
-				for i, sub := range subs {
-					prerequisiteInvalidationSubs[i] = sub
+
+		// Start prerequisite cache invalidator if Redis and NATS are available
+		if cacheStore != nil {
+			natsURL := v.GetString("nats.url")
+			if natsURL != "" {
+				natsConsumer, err := msgnats.NewConsumer(natsURL)
+				if err != nil {
+					zapLog.Warn("NATS unavailable, prerequisite cache invalidator disabled", zap.Error(err))
+				} else {
+					defer natsConsumer.Close() //nolint:errcheck
+					if err := messaging.NewPrerequisiteCacheInvalidator(cacheStore).Start(ctx, natsConsumer); err != nil {
+						zapLog.Warn("failed to start prerequisite cache invalidator", zap.Error(err))
+					} else {
+						zapLog.Info("started prerequisite cache invalidator")
+					}
 				}
-				zapLog.Info("started prerequisite cache invalidator", zap.Int("subjects", len(subs)))
 			}
 		}
 		zapLog.Info("connected to subject service for prerequisite checks", zap.String("addr", subjectGRPCAddr))
@@ -196,9 +189,23 @@ func main() {
 	<-quit
 	zapLog.Info("shutting down student module...")
 
-	for _, sub := range prerequisiteInvalidationSubs {
-		_ = sub.Unsubscribe()
-	}
 	grpcServer.GracefulStop()
 	zapLog.Info("student module stopped")
+}
+
+func newPublisher(ctx context.Context, v *viper.Viper, log *zap.Logger, stream pkgmessaging.StreamConfig) pkgmessaging.Publisher {
+	natsURL := v.GetString("nats.url")
+	if natsURL == "" {
+		return &pkgmessaging.NoopPublisher{}
+	}
+	p, err := msgnats.NewPublisher(natsURL)
+	if err != nil {
+		log.Warn("NATS unavailable, events disabled", zap.Error(err))
+		return &pkgmessaging.NoopPublisher{}
+	}
+	if err := p.EnsureStream(ctx, stream); err != nil {
+		log.Warn("ensure stream failed", zap.String("stream", stream.Name), zap.Error(err))
+	}
+	log.Info("messaging backend: NATS", zap.String("stream", stream.Name))
+	return p
 }

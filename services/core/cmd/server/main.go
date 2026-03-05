@@ -18,8 +18,12 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/redis/go-redis/v9"
 	"github.com/HuynhHoangPhuc/myrmex/pkg/eventstore"
 	pkgnats "github.com/HuynhHoangPhuc/myrmex/pkg/nats"
+	pkgmessaging "github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
+	msgnats "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/nats"
+	msgredis "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/redis"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/command"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/application/query"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/agent"
@@ -90,6 +94,23 @@ func main() {
 			zapLog.Warn("create CORE_EVENTS stream failed", zap.Error(err))
 		}
 		zapLog.Info("connected to NATS")
+	}
+
+	// 5b. Redis client (optional — used for WS push relay)
+	var rdb *redis.Client
+	if redisAddr := strings.TrimSpace(v.GetString("redis.addr")); redisAddr != "" {
+		rdb = redis.NewClient(&redis.Options{
+			Addr:     redisAddr,
+			Password: v.GetString("redis.password"),
+			DB:       v.GetInt("redis.db"),
+		})
+		if err := rdb.Ping(ctx).Err(); err != nil {
+			zapLog.Warn("Redis unavailable, WS push relay disabled", zap.Error(err))
+			rdb = nil
+		} else {
+			defer rdb.Close()
+			zapLog.Info("connected to Redis for WS push relay", zap.String("addr", redisAddr))
+		}
 	}
 
 	// 6. Auth services
@@ -170,20 +191,21 @@ func main() {
 		oauthHandler = httpif.NewOAuthHandler(oauthSvc, jwtSvc, userRepo)
 	}
 
-	// Audit consumer: only start when NATS is available
+	// Audit consumer + publisher: only active when NATS is available
 	auditHandler := httpif.NewAuditHandler(auditRepo)
-	if js != nil {
-		auditConsumer := messaging.NewAuditConsumer(js, auditRepo, zapLog)
+	var auditPub pkgmessaging.Publisher = &pkgmessaging.NoopPublisher{}
+	if nc != nil && js != nil {
+		auditConsumer := messaging.NewAuditConsumer(msgnats.NewConsumerFromJS(nc, js), auditRepo, zapLog)
 		if err := auditConsumer.Start(ctx); err != nil {
 			zapLog.Warn("audit consumer failed to start", zap.Error(err))
-		} else {
-			defer auditConsumer.Stop()
 		}
+		auditPub = msgnats.NewPublisherFromJS(nc, js)
 	}
 
-	// Notification infrastructure: WS broker relays NATS push events from module-notification
+	// Notification infrastructure: WS broker relays Redis push events from module-notification
 	wsBroker := notifinfra.NewWSBroker(zapLog)
-	wsBroker.StartNATSRelay(nc)
+	redisSub := msgredis.NewPushSubscriber(rdb)
+	wsBroker.StartRedisRelay(ctx, redisSub)
 	notifHandler := httpif.NewNotificationHandler(wsBroker, jwtSvc, zapLog)
 
 	// 10b. AI Chat: LLM provider + tool registry + executor + handler
@@ -200,7 +222,7 @@ func main() {
 		OAuthHandler:        oauthHandler,
 		AdminRoleHandler:    adminRoleHandler,
 		AuditHandler:        auditHandler,
-		NATSConn:            nc, // nil when NATS unavailable → audit middleware no-ops
+		AuditPublisher:      auditPub,
 		UserHandler:         userHandler,
 		ModuleHandler:       moduleHandler,
 		GatewayProxy:        gatewayProxy,

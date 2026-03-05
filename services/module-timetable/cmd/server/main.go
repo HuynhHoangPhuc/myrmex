@@ -16,15 +16,16 @@ import (
 	"google.golang.org/grpc"
 
 	timetablev1 "github.com/HuynhHoangPhuc/myrmex/gen/go/timetable/v1"
-
+	pkgmessaging "github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
+	msgnats "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/nats"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/application/command"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/application/query"
+	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/service"
 	infragrpc "github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/infrastructure/grpc"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/infrastructure/messaging"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/infrastructure/persistence"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/infrastructure/persistence/sqlc"
 	grpcif "github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/interface/grpc"
-	"github.com/HuynhHoangPhuc/myrmex/services/module-timetable/internal/domain/service"
 )
 
 func main() {
@@ -65,7 +66,7 @@ func main() {
 	roomRepo := persistence.NewRoomRepository(queries)
 	scheduleRepo := persistence.NewScheduleRepository(queries)
 
-	// 5. Infrastructure clients
+	// 5. Infrastructure gRPC clients
 	hrClient, err := infragrpc.NewHRClient(v.GetString("hr.grpc_addr"))
 	if err != nil {
 		zapLog.Fatal("connect to HR service", zap.Error(err))
@@ -76,26 +77,18 @@ func main() {
 		zapLog.Fatal("connect to Subject service", zap.Error(err))
 	}
 
-	natsPublisher, err := messaging.NewNATSPublisher(v.GetString("nats.url"))
-	if err != nil {
-		zapLog.Warn("connect to NATS (non-fatal, events disabled)", zap.Error(err))
-		// natsPublisher will be nil — use no-op publisher below
-	}
+	// 6. Messaging publisher — select backend via MESSAGING_BACKEND env var
+	pub := newPublisher(ctx, v, zapLog, pkgmessaging.StreamConfig{
+		Name: "TIMETABLE", Subjects: []string{"timetable.>"},
+	})
+	defer pub.Close() //nolint:errcheck
+	publisher := command.EventPublisher(messaging.NewEventPublisher(pub))
 
-	var publisher command.EventPublisher
-	if natsPublisher != nil {
-		publisher = natsPublisher
-	} else {
-		publisher = &noopPublisher{}
-	}
-
-	// 6. Domain services
-	// ConstraintChecker is initialised with empty maps here; the solver populates
-	// its own instance at generation time with fresh data from HR/Subject.
+	// 7. Domain services
 	emptyChecker := service.NewConstraintChecker(nil, nil, nil, nil)
 	ranker := service.NewTeacherRanker(emptyChecker)
 
-	// 7. Command handlers
+	// 8. Command handlers
 	createSemesterHandler := command.NewCreateSemesterHandler(semesterRepo, publisher)
 	createRoomHandler := command.NewCreateRoomHandler(roomRepo)
 	generateScheduleHandler := command.NewGenerateScheduleHandler(
@@ -106,12 +99,12 @@ func main() {
 	_ = createRoomHandler
 	_ = publishScheduleHandler
 
-	// 8. Query handlers
+	// 9. Query handlers
 	getScheduleHandler := query.NewGetScheduleHandler(scheduleRepo)
 	listSchedulesHandler := query.NewListSchedulesHandler(scheduleRepo)
 	suggestTeachersHandler := query.NewSuggestTeachersHandler(hrClient, ranker)
 
-	// 9. gRPC servers
+	// 10. gRPC servers
 	timetableServer := grpcif.NewTimetableServer(
 		generateScheduleHandler,
 		manualAssignHandler,
@@ -126,7 +119,7 @@ func main() {
 		semesterRepo,
 	)
 
-	// 10. Start gRPC
+	// 11. Start gRPC
 	grpcServer := grpc.NewServer()
 	timetablev1.RegisterTimetableServiceServer(grpcServer, timetableServer)
 	timetablev1.RegisterSemesterServiceServer(grpcServer, semesterServer)
@@ -144,7 +137,7 @@ func main() {
 		}
 	}()
 
-	// 11. Graceful shutdown
+	// 12. Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
@@ -153,7 +146,19 @@ func main() {
 	zapLog.Info("Timetable module stopped")
 }
 
-// noopPublisher silently discards events when NATS is unavailable.
-type noopPublisher struct{}
-
-func (n *noopPublisher) Publish(_ context.Context, _ string, _ any) error { return nil }
+func newPublisher(ctx context.Context, v *viper.Viper, log *zap.Logger, stream pkgmessaging.StreamConfig) pkgmessaging.Publisher {
+	natsURL := v.GetString("nats.url")
+	if natsURL == "" {
+		return &pkgmessaging.NoopPublisher{}
+	}
+	p, err := msgnats.NewPublisher(natsURL)
+	if err != nil {
+		log.Warn("NATS unavailable, events disabled", zap.Error(err))
+		return &pkgmessaging.NoopPublisher{}
+	}
+	if err := p.EnsureStream(ctx, stream); err != nil {
+		log.Warn("ensure stream failed", zap.String("stream", stream.Name), zap.Error(err))
+	}
+	log.Info("messaging backend: NATS", zap.String("stream", stream.Name))
+	return p
+}

@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
 
+	"github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/persistence"
 )
 
@@ -28,80 +28,41 @@ type auditPayload struct {
 
 // AuditConsumer subscribes to AUDIT.logs events and writes them to core.audit_logs.
 type AuditConsumer struct {
-	js     jetstream.JetStream
-	repo   *persistence.AuditLogRepository
-	logger *zap.Logger
-	cancel context.CancelFunc
+	consumer messaging.Consumer
+	repo     *persistence.AuditLogRepository
+	logger   *zap.Logger
 }
 
-func NewAuditConsumer(js jetstream.JetStream, repo *persistence.AuditLogRepository, logger *zap.Logger) *AuditConsumer {
-	return &AuditConsumer{js: js, repo: repo, logger: logger}
+func NewAuditConsumer(consumer messaging.Consumer, repo *persistence.AuditLogRepository, logger *zap.Logger) *AuditConsumer {
+	return &AuditConsumer{consumer: consumer, repo: repo, logger: logger}
 }
 
-// Start creates (or reuses) the AUDIT_EVENTS stream and begins the durable consumer goroutine.
+// Start ensures the AUDIT_EVENTS stream exists and begins consuming audit log events.
 func (c *AuditConsumer) Start(ctx context.Context) error {
-	ctx, cancel := context.WithCancel(ctx)
-	c.cancel = cancel
+	// ~12-month retention (in seconds)
+	const auditRetentionSecs = 366 * 24 * 60 * 60
 
-	_, err := c.js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
+	if err := c.consumer.EnsureStream(ctx, messaging.StreamConfig{
 		Name:     "AUDIT_EVENTS",
 		Subjects: []string{"AUDIT.>"},
-		MaxAge:   366 * 24 * time.Hour, // ~12-month retention
-	})
-	if err != nil {
+		MaxAge:   auditRetentionSecs,
+	}); err != nil {
 		return err
 	}
 
-	cons, err := c.js.CreateOrUpdateConsumer(ctx, "AUDIT_EVENTS", jetstream.ConsumerConfig{
-		Durable:       "audit-db-writer",
-		AckPolicy:     jetstream.AckExplicitPolicy,
-		FilterSubject: "AUDIT.logs",
-	})
-	if err != nil {
+	if err := c.consumer.Subscribe(ctx, "audit-db-writer", "AUDIT.logs", c.handleMessage); err != nil {
 		return err
 	}
-
-	go func() {
-		iter, err := cons.Messages()
-		if err != nil {
-			c.logger.Error("audit consumer subscribe failed", zap.Error(err))
-			return
-		}
-		for {
-			select {
-			case <-ctx.Done():
-				iter.Stop()
-				return
-			default:
-				msg, err := iter.Next()
-				if err != nil {
-					if ctx.Err() != nil {
-						return
-					}
-					c.logger.Warn("audit consumer next error", zap.Error(err))
-					continue
-				}
-				c.handleMessage(ctx, msg)
-			}
-		}
-	}()
 
 	c.logger.Info("audit consumer started")
 	return nil
 }
 
-func (c *AuditConsumer) Stop() {
-	if c.cancel != nil {
-		c.cancel()
-	}
-}
-
-func (c *AuditConsumer) handleMessage(ctx context.Context, msg jetstream.Msg) {
+func (c *AuditConsumer) handleMessage(msg *messaging.Message) error {
 	var event auditPayload
-	if err := json.Unmarshal(msg.Data(), &event); err != nil {
+	if err := json.Unmarshal(msg.Data, &event); err != nil {
 		c.logger.Warn("audit: malformed event, discarding", zap.Error(err))
-		_ = msg.Ack()
-		return
+		return nil // non-retryable — ack and discard
 	}
 
 	entry := persistence.AuditLogEntry{
@@ -118,11 +79,9 @@ func (c *AuditConsumer) handleMessage(ctx context.Context, msg jetstream.Msg) {
 		CreatedAt:    event.CreatedAt,
 	}
 
-	if err := c.repo.Insert(ctx, entry); err != nil {
+	if err := c.repo.Insert(context.Background(), entry); err != nil {
 		c.logger.Error("audit: DB insert failed", zap.Error(err), zap.String("action", event.Action))
-		_ = msg.Nak() // nack → JetStream retries
-		return
+		return err // retryable — nack
 	}
-
-	_ = msg.Ack()
+	return nil
 }

@@ -1,21 +1,23 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
-	natsgo "github.com/nats-io/nats.go"
 	"go.uber.org/zap"
+
+	"github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
 )
 
 // AnnouncementHandler publishes system-wide announcement events (admin only).
 type AnnouncementHandler struct {
-	nc  *natsgo.Conn
+	pub messaging.Publisher
 	log *zap.Logger
 }
 
-func NewAnnouncementHandler(nc *natsgo.Conn, log *zap.Logger) *AnnouncementHandler {
-	return &AnnouncementHandler{nc: nc, log: log}
+func NewAnnouncementHandler(pub messaging.Publisher, log *zap.Logger) *AnnouncementHandler {
+	return &AnnouncementHandler{pub: pub, log: log}
 }
 
 type announceRequest struct {
@@ -25,7 +27,7 @@ type announceRequest struct {
 }
 
 // HandleAnnounce serves POST /notifications/announce (admin/super_admin only).
-// Publishes notification.system.announcement to NATS → picked up by EventConsumer.
+// Publishes notification.system.announcement → picked up by EventConsumer.
 func (h *AnnouncementHandler) HandleAnnounce(w http.ResponseWriter, r *http.Request) {
 	role := r.Header.Get("X-User-Role")
 	if role != "admin" && role != "super_admin" {
@@ -53,11 +55,7 @@ func (h *AnnouncementHandler) HandleAnnounce(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if h.nc == nil {
-		writeError(w, http.StatusServiceUnavailable, "messaging unavailable")
-		return
-	}
-	if err := h.nc.Publish("notification.system.announcement", payload); err != nil {
+	if err := h.pub.Publish(context.Background(), "notification.system.announcement", payload); err != nil {
 		h.log.Error("announce: publish failed", zap.Error(err))
 		writeError(w, http.StatusInternalServerError, "failed to publish announcement")
 		return

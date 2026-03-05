@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nats-io/nats.go"
+	"github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/infrastructure/auth"
 	"github.com/HuynhHoangPhuc/myrmex/services/core/internal/interface/middleware"
 	"go.uber.org/zap"
@@ -18,7 +18,7 @@ type RouterConfig struct {
 	OAuthHandler            *OAuthHandler
 	AdminRoleHandler        *AdminRoleHandler
 	AuditHandler            *AuditHandler
-	NATSConn                *nats.Conn // nil → audit middleware disabled
+	AuditPublisher          messaging.Publisher // nil → audit middleware disabled
 	UserHandler             *UserHandler
 	ModuleHandler           *ModuleHandler
 	GatewayProxy            *GatewayProxy
@@ -81,7 +81,7 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 	// Protected routes
 	protected := api.Group("")
 	protected.Use(middleware.AuthMiddleware(cfg.JWTService))
-	protected.Use(middleware.AuditMiddleware(cfg.NATSConn))
+	protected.Use(middleware.AuditMiddleware(cfg.AuditPublisher))
 	{
 		// Current user profile
 		protected.GET("/auth/me", cfg.UserHandler.Me)

@@ -11,11 +11,13 @@ import (
 	"syscall"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	natsgo "github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
+	pkgmessaging "github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
+	msgnats "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/nats"
+	msgredis "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/redis"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-notification/internal/application/command"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-notification/internal/infrastructure/email"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-notification/internal/infrastructure/messaging"
@@ -57,34 +59,33 @@ func main() {
 	}
 	zapLog.Info("connected to database")
 
-	// 4. Connect to NATS (optional — gracefully degrade when unavailable)
-	var nc *natsgo.Conn
-	var js jetstream.JetStream
-	if natsURL := v.GetString("nats.url"); natsURL != "" {
-		nc, err = natsgo.Connect(natsURL)
-		if err != nil {
-			zapLog.Warn("NATS unavailable, event consumer disabled", zap.Error(err))
-		} else {
-			defer nc.Close()
-			js, err = jetstream.New(nc)
-			if err != nil {
-				zapLog.Warn("JetStream init failed, event consumer disabled", zap.Error(err))
-				js = nil
-			} else {
-				zapLog.Info("connected to NATS JetStream")
-			}
-		}
-	} else {
-		zapLog.Warn("NATS URL not configured, skipping connection")
-	}
-
-	// 5. Repositories
+	// 4. Repositories
 	notifRepo := persistence.NewNotificationRepository(pool)
 	emailQueueRepo := persistence.NewEmailQueueRepository(pool)
 	prefRepo := persistence.NewPreferenceRepository(pool)
 
-	// 6. NATS publisher (WS push relay)
-	publisher := messaging.NewNATSPublisher(nc, zapLog)
+	// 5. Redis client (optional — used for WS push relay)
+	var rdb *redis.Client
+	if redisAddr := strings.TrimSpace(v.GetString("redis.addr")); redisAddr != "" {
+		rdb = redis.NewClient(&redis.Options{
+			Addr:     redisAddr,
+			Password: v.GetString("redis.password"),
+			DB:       v.GetInt("redis.db"),
+		})
+		if err := rdb.Ping(ctx).Err(); err != nil {
+			zapLog.Warn("Redis unavailable, WS push relay disabled", zap.Error(err))
+			rdb = nil
+		} else {
+			defer rdb.Close()
+			zapLog.Info("connected to Redis for WS push relay", zap.String("addr", redisAddr))
+		}
+	} else {
+		zapLog.Warn("redis.addr not configured, WS push relay disabled")
+	}
+
+	// 6. Push publisher (Redis → core WSBroker → WebSocket clients)
+	pushPub := msgredis.NewPushPublisher(rdb)
+	pushPublisher := messaging.NewRedisPushPublisher(pushPub, zapLog)
 
 	// 7. Email infrastructure
 	renderer, err := email.NewTemplateRenderer()
@@ -105,21 +106,42 @@ func main() {
 	go queueWorker.Start(ctx)
 
 	// 8. Dispatch command (preference-filtered notification dispatcher)
-	dispatchCmd := command.NewDispatchNotificationCommand(notifRepo, prefRepo, publisher, zapLog)
+	dispatchCmd := command.NewDispatchNotificationCommand(notifRepo, prefRepo, pushPublisher, zapLog)
 
-	// 9. Event consumer (JetStream — optional, skipped when NATS unavailable)
-	if js != nil {
-		resolver := messaging.NewRecipientResolver(pool)
-		consumer := messaging.NewEventConsumer(js, dispatchCmd, renderer, emailQueueRepo, resolver, zapLog)
-		if err := consumer.Start(ctx); err != nil {
-			zapLog.Warn("event consumer start failed", zap.Error(err))
+	// 9. NATS messaging (optional — announcement publisher + event consumer)
+	natsURL := v.GetString("nats.url")
+	var announcePub pkgmessaging.Publisher = &pkgmessaging.NoopPublisher{}
+	if natsURL != "" {
+		natsPub, err := msgnats.NewPublisher(natsURL)
+		if err != nil {
+			zapLog.Warn("NATS unavailable, announcement publishing disabled", zap.Error(err))
+		} else {
+			defer natsPub.Close() //nolint:errcheck
+			announcePub = natsPub
+			zapLog.Info("NATS publisher connected for announcements")
 		}
+
+		natsConsumer, err := msgnats.NewConsumer(natsURL)
+		if err != nil {
+			zapLog.Warn("NATS unavailable, event consumer disabled", zap.Error(err))
+		} else {
+			defer natsConsumer.Close() //nolint:errcheck
+			resolver := messaging.NewRecipientResolver(pool)
+			consumer := messaging.NewEventConsumer(natsConsumer, dispatchCmd, renderer, emailQueueRepo, resolver, zapLog)
+			if err := consumer.Start(ctx); err != nil {
+				zapLog.Warn("event consumer start failed", zap.Error(err))
+			} else {
+				zapLog.Info("notification event consumer started")
+			}
+		}
+	} else {
+		zapLog.Warn("NATS URL not configured, messaging disabled")
 	}
 
 	// 10. HTTP handlers + router
 	notifHandler := httpif.NewNotificationHandler(notifRepo, zapLog)
 	prefHandler := httpif.NewPreferenceHandler(prefRepo, zapLog)
-	announceHandler := httpif.NewAnnouncementHandler(nc, zapLog)
+	announceHandler := httpif.NewAnnouncementHandler(announcePub, zapLog)
 	mux := httpif.NewRouter(notifHandler, prefHandler, announceHandler)
 
 	// 11. Start HTTP server

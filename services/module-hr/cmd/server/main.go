@@ -16,6 +16,8 @@ import (
 	"google.golang.org/grpc"
 
 	hrv1 "github.com/HuynhHoangPhuc/myrmex/gen/go/hr/v1"
+	pkgmessaging "github.com/HuynhHoangPhuc/myrmex/pkg/messaging"
+	msgnats "github.com/HuynhHoangPhuc/myrmex/pkg/messaging/nats"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/application/command"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/application/query"
 	"github.com/HuynhHoangPhuc/myrmex/services/module-hr/internal/infrastructure/messaging"
@@ -41,7 +43,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("init logger: %v", err)
 	}
-	defer zapLog.Sync()
+	defer zapLog.Sync() //nolint:errcheck
 
 	// 3. Connect to database
 	ctx := context.Background()
@@ -61,21 +63,12 @@ func main() {
 	teacherRepo := persistence.NewTeacherRepository(queries)
 	deptRepo := persistence.NewDepartmentRepository(queries)
 
-	// 5. NATS publisher (optional — continue without if unavailable)
-	var publisher command.EventPublisher
-	natsURL := v.GetString("nats.url")
-	if natsURL != "" {
-		np, err := messaging.NewNATSPublisher(natsURL)
-		if err != nil {
-			zapLog.Warn("NATS unavailable, events will not be published", zap.Error(err))
-			publisher = command.NewNoopPublisher()
-		} else {
-			publisher = np
-			zapLog.Info("connected to NATS for event publishing")
-		}
-	} else {
-		publisher = command.NewNoopPublisher()
-	}
+	// 5. Messaging publisher — select backend via MESSAGING_BACKEND env var
+	pub := newPublisher(ctx, v, zapLog, pkgmessaging.StreamConfig{
+		Name: "HR_EVENTS", Subjects: []string{"hr.>"},
+	})
+	defer pub.Close() //nolint:errcheck
+	publisher := command.EventPublisher(messaging.NewEventPublisher(pub))
 
 	// 6. Command handlers
 	createTeacherHandler := command.NewCreateTeacherHandler(teacherRepo, publisher)
@@ -84,13 +77,13 @@ func main() {
 	updateAvailabilityHandler := command.NewUpdateAvailabilityHandler(teacherRepo, publisher)
 	createDepartmentHandler := command.NewCreateDepartmentHandler(deptRepo, publisher)
 
-	// 6. Query handlers
+	// 7. Query handlers
 	getTeacherHandler := query.NewGetTeacherHandler(teacherRepo)
 	listTeachersHandler := query.NewListTeachersHandler(teacherRepo)
 	getAvailabilityHandler := query.NewGetAvailabilityHandler(teacherRepo)
 	listDepartmentsHandler := query.NewListDepartmentsHandler(deptRepo)
 
-	// 7. gRPC servers
+	// 8. gRPC servers
 	teacherServer := grpcif.NewTeacherServer(
 		createTeacherHandler,
 		updateTeacherHandler,
@@ -106,7 +99,7 @@ func main() {
 		deptRepo,
 	)
 
-	// 8. Start gRPC server
+	// 9. Start gRPC server
 	grpcServer := grpc.NewServer()
 	hrv1.RegisterTeacherServiceServer(grpcServer, teacherServer)
 	hrv1.RegisterDepartmentServiceServer(grpcServer, departmentServer)
@@ -124,7 +117,7 @@ func main() {
 		}
 	}()
 
-	// 9. Graceful shutdown
+	// 10. Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
@@ -132,4 +125,33 @@ func main() {
 
 	grpcServer.GracefulStop()
 	zapLog.Info("HR module stopped")
+}
+
+// newPublisher creates a messaging.Publisher based on MESSAGING_BACKEND config.
+// Ensures the given stream exists (NATS backend only). Falls back to NoopPublisher.
+func newPublisher(ctx context.Context, v *viper.Viper, log *zap.Logger, stream pkgmessaging.StreamConfig) pkgmessaging.Publisher {
+	backend := v.GetString("messaging.backend")
+	if backend == "" {
+		backend = "nats"
+	}
+	switch backend {
+	case "nats":
+		natsURL := v.GetString("nats.url")
+		if natsURL == "" {
+			return &pkgmessaging.NoopPublisher{}
+		}
+		p, err := msgnats.NewPublisher(natsURL)
+		if err != nil {
+			log.Warn("NATS unavailable, events disabled", zap.Error(err))
+			return &pkgmessaging.NoopPublisher{}
+		}
+		if err := p.EnsureStream(ctx, stream); err != nil {
+			log.Warn("ensure stream failed", zap.String("stream", stream.Name), zap.Error(err))
+		}
+		log.Info("messaging backend: NATS", zap.String("stream", stream.Name))
+		return p
+	default:
+		log.Warn("unknown MESSAGING_BACKEND, events disabled", zap.String("backend", backend))
+		return &pkgmessaging.NoopPublisher{}
+	}
 }
