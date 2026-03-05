@@ -60,7 +60,7 @@ func NewRouter(cfg RouterConfig) *gin.Engine {
 
 	// Auth routes (public, rate-limited)
 	authGroup := api.Group("/auth")
-	authGroup.Use(middleware.RateLimitMiddleware(100, time.Minute))
+	authGroup.Use(middleware.RateLimitMiddleware(10, time.Minute))
 	{
 		authGroup.POST("/register", cfg.AuthHandler.Register)
 		authGroup.POST("/register-student", cfg.AuthHandler.RegisterStudent)

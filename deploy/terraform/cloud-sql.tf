@@ -7,11 +7,12 @@ resource "google_sql_database_instance" "postgres" {
   settings {
     tier = var.db_instance_tier
 
-    # Private IP only — no public IP exposure
+    # Private IP only — no public IP exposure; SSL required for all connections
     ip_configuration {
       ipv4_enabled                                  = false
       private_network                               = google_compute_network.myrmex.id
       enable_private_path_for_google_cloud_services = true
+      ssl_mode                                      = "ENCRYPTED_ONLY"
     }
 
     # Daily automated backups with 7-day retention
