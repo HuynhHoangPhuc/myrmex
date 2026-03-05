@@ -23,19 +23,19 @@ jobs:
 
       - name: Build all services
         run: |
-          for dir in gen/go pkg services/core services/module-hr services/module-subject services/module-timetable; do
+          for dir in gen/go pkg services/core services/module-hr services/module-subject services/module-timetable services/module-student services/module-analytics services/module-notification; do
             go build ./$dir/...
           done
 
       - name: Vet
         run: |
-          for dir in gen/go pkg services/core services/module-hr services/module-subject services/module-timetable; do
+          for dir in gen/go pkg services/core services/module-hr services/module-subject services/module-timetable services/module-student services/module-analytics services/module-notification; do
             go vet ./$dir/...
           done
 
       - name: Run tests with coverage
         run: |
-          for dir in pkg services/core services/module-hr services/module-subject services/module-timetable; do
+          for dir in pkg services/core services/module-hr services/module-subject services/module-timetable services/module-student services/module-analytics services/module-notification; do
             echo "=== $dir ==="
             go test ./$dir/... -timeout 120s -coverprofile=$dir/coverage.out -covermode=atomic
             go tool cover -func=$dir/coverage.out | tail -1
@@ -44,7 +44,7 @@ jobs:
       - name: Coverage summary
         run: |
           echo "## Go Coverage" >> $GITHUB_STEP_SUMMARY
-          for dir in pkg services/core services/module-hr services/module-subject services/module-timetable; do
+          for dir in pkg services/core services/module-hr services/module-subject services/module-timetable services/module-student services/module-analytics services/module-notification; do
             total=$(go tool cover -func=$dir/coverage.out | tail -1 | awk '{print $3}')
             echo "- **$dir**: $total" >> $GITHUB_STEP_SUMMARY
           done

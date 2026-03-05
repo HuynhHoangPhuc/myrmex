@@ -1,0 +1,231 @@
+name: Deploy to GCP Cloud Run
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options: [production, staging]
+
+# Prevent concurrent deploys to the same environment
+concurrency:
+  group: deploy-${{ github.event.inputs.environment || 'production' }}
+  cancel-in-progress: false
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION }}
+  REGISTRY: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/myrmex
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'production' }}
+
+jobs:
+  # ─── Build & push all Docker images in parallel ───────────────────────────
+  build-and-push:
+    name: Build & Push (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # required for Workload Identity Federation
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: core
+            context: .
+            dockerfile: services/core/Dockerfile
+          - service: module-hr
+            context: .
+            dockerfile: services/module-hr/Dockerfile
+          - service: module-subject
+            context: .
+            dockerfile: services/module-subject/Dockerfile
+          - service: module-timetable
+            context: .
+            dockerfile: services/module-timetable/Dockerfile
+          - service: module-student
+            context: .
+            dockerfile: services/module-student/Dockerfile
+          - service: module-analytics
+            context: .
+            dockerfile: services/module-analytics/Dockerfile
+          - service: module-notification
+            context: .
+            dockerfile: services/module-notification/Dockerfile
+          - service: frontend
+            context: frontend
+            dockerfile: frontend/Dockerfile
+            target: cloudrun
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Set image tags
+        id: tags
+        run: |
+          SHA_TAG="${{ env.REGISTRY }}/${{ matrix.service }}:${{ github.sha }}"
+          LATEST_TAG="${{ env.REGISTRY }}/${{ matrix.service }}:latest"
+          echo "sha_tag=$SHA_TAG" >> $GITHUB_OUTPUT
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        run: |
+          BUILD_ARGS="--tag ${{ steps.tags.outputs.sha_tag }} --tag ${{ steps.tags.outputs.latest_tag }}"
+          if [ -n "${{ matrix.target }}" ]; then
+            BUILD_ARGS="$BUILD_ARGS --target ${{ matrix.target }}"
+          fi
+          docker build $BUILD_ARGS \
+            --file ${{ matrix.dockerfile }} \
+            --cache-from ${{ steps.tags.outputs.latest_tag }} \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            ${{ matrix.context }}
+
+      - name: Push to Artifact Registry
+        run: |
+          docker push ${{ steps.tags.outputs.sha_tag }}
+          docker push ${{ steps.tags.outputs.latest_tag }}
+
+  # ─── Run database migrations ───────────────────────────────────────────────
+  migrate:
+    name: Run Migrations
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - name: Build migration image
+        run: |
+          docker build \
+            --tag ${{ env.REGISTRY }}/migrate:${{ github.sha }} \
+            --file deploy/docker/Dockerfile.migrate \
+            .
+          docker push ${{ env.REGISTRY }}/migrate:${{ github.sha }}
+
+      - name: Execute migration Cloud Run Job
+        run: |
+          # Update migration job image then execute
+          gcloud run jobs update myrmex-migrate \
+            --image=${{ env.REGISTRY }}/migrate:${{ github.sha }} \
+            --region=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }} || \
+          gcloud run jobs create myrmex-migrate \
+            --image=${{ env.REGISTRY }}/migrate:${{ github.sha }} \
+            --region=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }} \
+            --set-secrets=DATABASE_URL=DATABASE_URL:latest \
+            --vpc-connector=myrmex-connector \
+            --vpc-egress=all-traffic
+
+          gcloud run jobs execute myrmex-migrate \
+            --region=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }} \
+            --wait
+
+  # ─── Deploy all Cloud Run services in parallel ────────────────────────────
+  deploy:
+    name: Deploy (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    needs: migrate
+    permissions:
+      contents: read
+      id-token: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - core
+          - module-hr
+          - module-subject
+          - module-timetable
+          - module-student
+          - module-analytics
+          - module-notification
+          - frontend
+
+    steps:
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run services update ${{ matrix.service }} \
+            --image=${{ env.REGISTRY }}/${{ matrix.service }}:${{ github.sha }} \
+            --region=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }} \
+            --quiet
+
+  # ─── Smoke tests ──────────────────────────────────────────────────────────
+  smoke-test:
+    name: Smoke Test
+    runs-on: ubuntu-latest
+    needs: deploy
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - name: Get service URLs
+        id: urls
+        run: |
+          CORE_URL=$(gcloud run services describe core \
+            --region=${{ env.REGION }} --project=${{ env.PROJECT_ID }} \
+            --format='value(status.url)')
+          FRONTEND_URL=$(gcloud run services describe frontend \
+            --region=${{ env.REGION }} --project=${{ env.PROJECT_ID }} \
+            --format='value(status.url)')
+          echo "core=$CORE_URL" >> $GITHUB_OUTPUT
+          echo "frontend=$FRONTEND_URL" >> $GITHUB_OUTPUT
+
+      - name: Health checks
+        run: |
+          echo "Checking core API..."
+          curl -sf "${{ steps.urls.outputs.core }}/health" | jq .
+
+          echo "Checking frontend..."
+          curl -sf --head "${{ steps.urls.outputs.frontend }}" | grep "200"
+
+          echo "All smoke tests passed"
+
+      - name: Write deployment summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ env.ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Core**: ${{ steps.urls.outputs.core }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend**: ${{ steps.urls.outputs.frontend }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Rollback**: \`gcloud run services update-traffic SERVICE --to-revisions=PREV_REVISION=100 --region=${{ env.REGION }}\`" >> $GITHUB_STEP_SUMMARY
