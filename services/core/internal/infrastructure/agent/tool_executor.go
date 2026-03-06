@@ -97,7 +97,13 @@ func (e *ToolExecutor) invokeViaGRPC(ctx context.Context, conn *grpc.ClientConn,
 
 // invokeViaHTTP calls a module's REST endpoint derived from the tool method name.
 func (e *ToolExecutor) invokeViaHTTP(ctx context.Context, baseURL string, tool RegisteredTool, args map[string]interface{}) (string, error) {
-	endpoint, httpMethod, body := buildEndpoint(baseURL, tool.ModuleName, tool.MethodName, args)
+	path, httpMethod, bodyArgs, err := e.buildEndpoint(tool.ModuleName+"."+tool.MethodName, args)
+	if err != nil {
+		return "", fmt.Errorf("build endpoint: %w", err)
+	}
+
+	base := strings.TrimRight(baseURL, "/")
+	endpoint := base + path
 
 	e.log.Debug("executing tool via HTTP",
 		zap.String("tool", tool.Definition.Name),
@@ -105,15 +111,14 @@ func (e *ToolExecutor) invokeViaHTTP(ctx context.Context, baseURL string, tool R
 		zap.String("endpoint", endpoint),
 	)
 
-	var bodyReader *bytes.Reader
-	if body != nil {
-		bodyReader = bytes.NewReader(body)
+	var bodyBytes []byte
+	if bodyArgs != nil {
+		bodyBytes, _ = json.Marshal(bodyArgs)
 	}
 
 	var req *http.Request
-	var err error
-	if bodyReader != nil {
-		req, err = http.NewRequestWithContext(ctx, httpMethod, endpoint, bodyReader)
+	if bodyBytes != nil {
+		req, err = http.NewRequestWithContext(ctx, httpMethod, endpoint, bytes.NewReader(bodyBytes))
 	} else {
 		req, err = http.NewRequestWithContext(ctx, httpMethod, endpoint, nil)
 	}
@@ -121,7 +126,7 @@ func (e *ToolExecutor) invokeViaHTTP(ctx context.Context, baseURL string, tool R
 		return "", fmt.Errorf("build HTTP request: %w", err)
 	}
 	req.Header.Set("Accept", "application/json")
-	if body != nil {
+	if bodyBytes != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
 	if e.internalJWT != "" {
@@ -147,265 +152,50 @@ func (e *ToolExecutor) invokeViaHTTP(ctx context.Context, baseURL string, tool R
 	return string(out), nil
 }
 
-// buildEndpoint constructs the REST URL, HTTP method, and optional request body for a module method call.
-// Returns (url, httpMethod, body) — body is nil for GET/read-only, non-nil JSON bytes for mutations.
-func buildEndpoint(baseURL, module, method string, args map[string]interface{}) (string, string, []byte) {
-	base := strings.TrimRight(baseURL, "/")
+// buildEndpoint dispatches to the per-module sub-builder based on the "module.method" name.
+// Returns (path, httpMethod, bodyArgs, error) — bodyArgs is nil for GET/read-only operations.
+func (e *ToolExecutor) buildEndpoint(name string, args map[string]interface{}) (string, string, map[string]interface{}, error) {
+	parts := strings.SplitN(name, ".", 2)
+	if len(parts) != 2 {
+		return "", "", nil, fmt.Errorf("invalid tool name format %q, expected module.method", name)
+	}
+	module, method := parts[0], parts[1]
 
-	switch module + "." + method {
-	case "hr.list_teachers":
-		url := base + "/api/hr/teachers"
-		if params := buildQueryParams(args, "search", "department_id", "specialization"); params != "" {
-			url += "?" + params
-		}
-		return url, http.MethodGet, nil
-
-	case "hr.get_teacher":
-		id, _ := args["teacher_id"].(string)
-		return fmt.Sprintf("%s/api/hr/teachers/%s", base, id), http.MethodGet, nil
-
-	case "hr.list_departments":
-		return base + "/api/hr/departments", http.MethodGet, nil
-
-	case "hr.get_teacher_availability":
-		id, _ := args["teacher_id"].(string)
-		return fmt.Sprintf("%s/api/hr/teachers/%s/availability", base, id), http.MethodGet, nil
-
-	case "subjects.list_subjects":
-		url := base + "/api/subjects"
-		if params := buildQueryParams(args, "search", "credits"); params != "" {
-			url += "?" + params
-		}
-		return url, http.MethodGet, nil
-
-	case "subjects.get_prerequisites":
-		id, _ := args["subject_id"].(string)
-		return fmt.Sprintf("%s/api/subjects/%s/prerequisites", base, id), http.MethodGet, nil
-
-	case "subjects.get_subject":
-		id, _ := args["subject_id"].(string)
-		return fmt.Sprintf("%s/api/subjects/%s", base, id), http.MethodGet, nil
-
-	case "subjects.validate_dag":
-		return base + "/api/subjects/dag/validate", http.MethodGet, nil
-
-	case "subjects.topological_sort":
-		return base + "/api/subjects/dag/topological-sort", http.MethodGet, nil
-
-	case "subjects.full_dag":
-		return base + "/api/subjects/dag/full", http.MethodGet, nil
-
-	case "timetable.list_semesters":
-		return base + "/api/timetable/semesters?page=1&page_size=50", http.MethodGet, nil
-
-	case "timetable.generate":
-		// POST: triggers schedule generation for a semester
-		id, _ := args["semester_id"].(string)
-		return fmt.Sprintf("%s/api/timetable/semesters/%s/generate", base, id), http.MethodPost, nil
-
-	case "timetable.suggest_teachers":
-		url := base + "/api/timetable/suggest-teachers"
-		if params := buildQueryParams(args, "subject_id"); params != "" {
-			url += "?" + params
-		}
-		return url, http.MethodGet, nil
-
-	case "timetable.get_semester":
-		id, _ := args["semester_id"].(string)
-		return fmt.Sprintf("%s/api/timetable/semesters/%s", base, id), http.MethodGet, nil
-
-	case "timetable.list_schedules":
-		url := base + "/api/timetable/schedules"
-		if params := buildQueryParams(args, "semester_id"); params != "" {
-			url += "?" + params
-		}
-		return url, http.MethodGet, nil
-
-	case "timetable.get_schedule":
-		id, _ := args["schedule_id"].(string)
-		return fmt.Sprintf("%s/api/timetable/schedules/%s", base, id), http.MethodGet, nil
-
-	case "timetable.list_rooms":
-		return base + "/api/timetable/rooms", http.MethodGet, nil
-
-	case "student.list":
-		url := base + "/api/students"
-		if params := buildQueryParams(args, "department_id", "status"); params != "" {
-			url += "?" + params
-		}
-		return url, http.MethodGet, nil
-
-	case "student.get":
-		id, _ := args["id"].(string)
-		return fmt.Sprintf("%s/api/students/%s", base, id), http.MethodGet, nil
-
-	case "student.transcript":
-		id, _ := args["student_id"].(string)
-		return fmt.Sprintf("%s/api/students/%s/transcript", base, id), http.MethodGet, nil
-
-	case "student.list_enrollments":
-		url := base + "/api/enrollments"
-		if params := buildQueryParams(args, "student_id", "subject_id", "status"); params != "" {
-			url += "?" + params
-		}
-		return url, http.MethodGet, nil
-
-	case "analytics.workload":
-		url := base + "/api/analytics/workload"
-		if params := buildQueryParams(args, "semester_id"); params != "" {
-			url += "?" + params
-		}
-		return url, http.MethodGet, nil
-
-	case "analytics.utilization":
-		url := base + "/api/analytics/utilization"
-		if params := buildQueryParams(args, "semester_id"); params != "" {
-			url += "?" + params
-		}
-		return url, http.MethodGet, nil
-
-	case "analytics.dashboard":
-		return base + "/api/analytics/dashboard", http.MethodGet, nil
-
-	case "analytics.department_metrics":
-		url := base + "/api/analytics/department-metrics"
-		if params := buildQueryParams(args, "department_id"); params != "" {
-			url += "?" + params
-		}
-		return url, http.MethodGet, nil
-
-	case "analytics.schedule_metrics":
-		url := base + "/api/analytics/schedule-metrics"
-		if params := buildQueryParams(args, "schedule_id"); params != "" {
-			url += "?" + params
-		}
-		return url, http.MethodGet, nil
-
-	case "analytics.schedule_heatmap":
-		url := base + "/api/analytics/schedule-heatmap"
-		if params := buildQueryParams(args, "schedule_id"); params != "" {
-			url += "?" + params
-		}
-		return url, http.MethodGet, nil
-
-	// --- HR mutations ---
-
-	case "hr.create_teacher":
-		body, _ := json.Marshal(args)
-		return base + "/api/hr/teachers", http.MethodPost, body
-
-	case "hr.update_teacher":
-		id := stringArg(args, "teacher_id")
-		body, _ := json.Marshal(copyWithout(args, "teacher_id"))
-		return fmt.Sprintf("%s/api/hr/teachers/%s", base, id), http.MethodPatch, body
-
-	case "hr.delete_teacher":
-		id := stringArg(args, "teacher_id")
-		return fmt.Sprintf("%s/api/hr/teachers/%s", base, id), http.MethodDelete, nil
-
-	case "hr.update_teacher_availability":
-		id := stringArg(args, "teacher_id")
-		body, _ := json.Marshal(copyWithout(args, "teacher_id"))
-		return fmt.Sprintf("%s/api/hr/teachers/%s/availability", base, id), http.MethodPut, body
-
-	case "hr.create_department":
-		body, _ := json.Marshal(args)
-		return base + "/api/hr/departments", http.MethodPost, body
-
-	// --- Subject mutations ---
-
-	case "subjects.create_subject":
-		body, _ := json.Marshal(args)
-		return base + "/api/subjects", http.MethodPost, body
-
-	case "subjects.update_subject":
-		id := stringArg(args, "subject_id")
-		body, _ := json.Marshal(copyWithout(args, "subject_id"))
-		return fmt.Sprintf("%s/api/subjects/%s", base, id), http.MethodPatch, body
-
-	case "subjects.delete_subject":
-		id := stringArg(args, "subject_id")
-		return fmt.Sprintf("%s/api/subjects/%s", base, id), http.MethodDelete, nil
-
-	case "subjects.add_prerequisite":
-		id := stringArg(args, "subject_id")
-		body, _ := json.Marshal(copyWithout(args, "subject_id"))
-		return fmt.Sprintf("%s/api/subjects/%s/prerequisites", base, id), http.MethodPost, body
-
-	case "subjects.remove_prerequisite":
-		id := stringArg(args, "subject_id")
-		prereqID := stringArg(args, "prerequisite_id")
-		return fmt.Sprintf("%s/api/subjects/%s/prerequisites/%s", base, id, prereqID), http.MethodDelete, nil
-
-	case "subjects.check_conflicts":
-		body, _ := json.Marshal(args)
-		return base + "/api/subjects/dag/check-conflicts", http.MethodPost, body
-
-	// --- Timetable mutations ---
-
-	case "timetable.create_semester":
-		body, _ := json.Marshal(args)
-		return base + "/api/timetable/semesters", http.MethodPost, body
-
-	case "timetable.set_semester_rooms":
-		id := stringArg(args, "semester_id")
-		body, _ := json.Marshal(copyWithout(args, "semester_id"))
-		return fmt.Sprintf("%s/api/timetable/semesters/%s/rooms", base, id), http.MethodPut, body
-
-	case "timetable.create_time_slot":
-		id := stringArg(args, "semester_id")
-		body, _ := json.Marshal(copyWithout(args, "semester_id"))
-		return fmt.Sprintf("%s/api/timetable/semesters/%s/slots", base, id), http.MethodPost, body
-
-	case "timetable.delete_time_slot":
-		semID := stringArg(args, "semester_id")
-		slotID := stringArg(args, "slot_id")
-		return fmt.Sprintf("%s/api/timetable/semesters/%s/slots/%s", base, semID, slotID), http.MethodDelete, nil
-
-	case "timetable.apply_time_slot_preset":
-		id := stringArg(args, "semester_id")
-		body, _ := json.Marshal(copyWithout(args, "semester_id"))
-		return fmt.Sprintf("%s/api/timetable/semesters/%s/slots/preset", base, id), http.MethodPost, body
-
-	case "timetable.add_offered_subject":
-		id := stringArg(args, "semester_id")
-		body, _ := json.Marshal(copyWithout(args, "semester_id"))
-		return fmt.Sprintf("%s/api/timetable/semesters/%s/offered-subjects", base, id), http.MethodPost, body
-
-	case "timetable.remove_offered_subject":
-		semID := stringArg(args, "semester_id")
-		subjectID := stringArg(args, "subject_id")
-		return fmt.Sprintf("%s/api/timetable/semesters/%s/offered-subjects/%s", base, semID, subjectID), http.MethodDelete, nil
-
-	case "timetable.manual_assign":
-		schedID := stringArg(args, "schedule_id")
-		entryID := stringArg(args, "entry_id")
-		body, _ := json.Marshal(copyWithout(args, "schedule_id", "entry_id"))
-		return fmt.Sprintf("%s/api/timetable/schedules/%s/entries/%s", base, schedID, entryID), http.MethodPut, body
-
-	// --- Student mutations ---
-
-	case "student.create":
-		body, _ := json.Marshal(args)
-		return base + "/api/students", http.MethodPost, body
-
-	case "student.update":
-		id := stringArg(args, "id")
-		body, _ := json.Marshal(copyWithout(args, "id"))
-		return fmt.Sprintf("%s/api/students/%s", base, id), http.MethodPatch, body
-
-	case "student.delete":
-		id := stringArg(args, "id")
-		return fmt.Sprintf("%s/api/students/%s", base, id), http.MethodDelete, nil
-
-	case "student.review_enrollment":
-		id := stringArg(args, "enrollment_id")
-		body, _ := json.Marshal(copyWithout(args, "enrollment_id"))
-		return fmt.Sprintf("%s/api/enrollments/%s/review", base, id), http.MethodPatch, body
-
+	switch module {
+	case "hr":
+		return buildHREndpoint(method, args)
+	case "subjects":
+		return buildSubjectEndpoint(method, args)
+	case "timetable":
+		return buildTimetableEndpoint(method, args)
+	case "student":
+		return buildStudentEndpoint(method, args)
+	case "analytics":
+		return buildAnalyticsEndpoint(method, args)
 	default:
+		// Fallback: derive path from module/method name
+		path := fmt.Sprintf("/api/%s/%s", module, strings.ReplaceAll(method, "_", "/"))
+		return path, http.MethodGet, nil, nil
+	}
+}
+
+// buildEndpoint is a package-level helper used by tests.
+// It wraps the method receiver version, prepending baseURL to the returned path.
+// Returns (fullURL, httpMethod, bodyBytes) — body is nil for read-only calls.
+func buildEndpoint(baseURL, module, method string, args map[string]interface{}) (string, string, []byte) {
+	e := &ToolExecutor{}
+	path, httpMethod, bodyArgs, err := e.buildEndpoint(module+"."+method, args)
+	if err != nil {
+		// Fallback: derive URL from module/method like the original
+		base := strings.TrimRight(baseURL, "/")
 		return fmt.Sprintf("%s/api/%s/%s", base, module, strings.ReplaceAll(method, "_", "/")), http.MethodGet, nil
 	}
+	base := strings.TrimRight(baseURL, "/")
+	var body []byte
+	if bodyArgs != nil {
+		body, _ = json.Marshal(bodyArgs)
+	}
+	return base + path, httpMethod, body
 }
 
 // stringArg safely extracts a string argument from args.

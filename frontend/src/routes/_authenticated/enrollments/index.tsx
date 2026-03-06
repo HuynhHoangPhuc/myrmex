@@ -1,26 +1,19 @@
 import * as React from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
-import { Check, Search, X } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { PageHeader } from '@/components/shared/page-header'
 import { DataTable } from '@/components/shared/data-table'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { useEnrollments, useReviewEnrollment } from '@/modules/student/hooks/use-enrollments'
 import { useStudents } from '@/modules/student/hooks/use-students'
 import { useAllSubjects } from '@/modules/subject/hooks/use-subjects'
 import { useAllSemesters } from '@/modules/timetable/hooks/use-semesters'
 import { toast } from '@/lib/hooks/use-toast'
-import type { ColumnDef } from '@tanstack/react-table'
-import type { EnrollmentRequest } from '@/modules/student/types'
+import { buildEnrollmentColumns } from './components/enrollment-columns'
+import { RejectEnrollmentDialog } from './components/reject-enrollment-dialog'
+import { useEnrollmentFilters } from './hooks/use-enrollment-filters'
 
 const searchSchema = z.object({
   page: z.number().catch(1),
@@ -36,13 +29,6 @@ export const Route = createFileRoute('/_authenticated/enrollments/')({
   component: EnrollmentQueuePage,
 })
 
-const STATUS_VARIANT = {
-  pending: 'secondary',
-  approved: 'default',
-  rejected: 'destructive',
-  completed: 'outline',
-} as const
-
 const SELECT_CLS =
   'h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring'
 
@@ -56,59 +42,30 @@ function EnrollmentQueuePage() {
   const { data: allSubjects } = useAllSubjects()
   const { data: allStudents } = useStudents({ page: 1, pageSize: 1000 })
 
-  // Auto-select latest (active) semester only when URL has no semesterId at all (first visit).
-  // Using sentinel 'all' so "All semesters" is an explicit URL value, not undefined.
-  const latestSemester = React.useMemo(() => {
-    if (!semesters?.length) return undefined
-    return (
-      semesters.find((s) => s.is_active) ??
-      [...semesters].sort((a, b) => b.start_date.localeCompare(a.start_date))[0]
-    )
-  }, [semesters])
-
-  React.useEffect(() => {
-    if (semesterId === undefined && latestSemester) {
-      void navigate({
-        search: (prev) => ({ ...prev, semesterId: latestSemester.id }),
-        replace: true,
-      })
-    }
-  }, [latestSemester]) // intentionally omit semesterId — only run when semesters first load
-
-  // 'all' sentinel means no semester filter; any real UUID is passed through
-  const effectiveSemesterId = semesterId === 'all' ? undefined : semesterId
-
   const { data, isLoading } = useEnrollments({
     page,
     pageSize,
-    semesterId: effectiveSemesterId,
+    semesterId: semesterId === 'all' ? undefined : semesterId,
     status: status ?? 'pending',
   })
   const reviewMutation = useReviewEnrollment()
 
-  const studentMap = React.useMemo(
-    () => new Map((allStudents?.data ?? []).map((s) => [s.id, s.full_name])),
-    [allStudents],
-  )
-  const subjectMap = React.useMemo(
-    () => new Map((allSubjects ?? []).map((s) => [s.id, `${s.code} — ${s.name}`])),
-    [allSubjects],
-  )
-  const semesterMap = React.useMemo(
-    () => new Map((semesters ?? []).map((s) => [s.id, s.name])),
-    [semesters],
-  )
+  const { latestSemester, studentMap, subjectMap, semesterMap, filteredData } = useEnrollmentFilters({
+    semesters: semesters,
+    allSubjects: allSubjects,
+    allStudents: allStudents,
+    data,
+    semesterId,
+    subjectId,
+    search,
+  })
 
-  // Client-side filter for subject and name search (semester is handled server-side)
-  const filteredData = React.useMemo(() => {
-    let rows = data?.data ?? []
-    if (subjectId) rows = rows.filter((e) => e.subject_id === subjectId)
-    if (search) {
-      const q = search.toLowerCase()
-      rows = rows.filter((e) => (studentMap.get(e.student_id) ?? '').toLowerCase().includes(q))
+  // Auto-select latest (active) semester only on first visit (no semesterId in URL)
+  React.useEffect(() => {
+    if (semesterId === undefined && latestSemester) {
+      void navigate({ search: (prev) => ({ ...prev, semesterId: latestSemester.id }), replace: true })
     }
-    return rows
-  }, [data, subjectId, search, studentMap])
+  }, [latestSemester]) // intentionally omit semesterId — only run when semesters first load
 
   function approve(id: string) {
     reviewMutation.mutate(
@@ -135,86 +92,19 @@ function EnrollmentQueuePage() {
     )
   }
 
-  const columns = React.useMemo<ColumnDef<EnrollmentRequest>[]>(
-    () => [
-      {
-        accessorKey: 'student_id',
-        header: 'Student',
-        cell: ({ row }) => (
-          <span className="text-sm font-medium">
-            {studentMap.get(row.original.student_id) ?? row.original.student_id.slice(0, 8)}
-          </span>
-        ),
-      },
-      {
-        accessorKey: 'subject_id',
-        header: 'Subject',
-        cell: ({ row }) => (
-          <span className="text-sm">
-            {subjectMap.get(row.original.subject_id) ?? row.original.subject_id.slice(0, 8)}
-          </span>
-        ),
-      },
-      {
-        accessorKey: 'semester_id',
-        header: 'Semester',
-        cell: ({ row }) => (
-          <span className="text-sm">
-            {semesterMap.get(row.original.semester_id) ?? row.original.semester_id.slice(0, 8)}
-          </span>
-        ),
-      },
-      {
-        accessorKey: 'requested_at',
-        header: 'Requested',
-        cell: ({ row }) => new Date(row.original.requested_at).toLocaleDateString(),
-      },
-      {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }) => (
-          <Badge variant={STATUS_VARIANT[row.original.status] ?? 'outline'}>
-            {row.original.status}
-          </Badge>
-        ),
-      },
-      {
-        id: 'actions',
-        cell: ({ row }) => {
-          if (row.original.status !== 'pending') return null
-          return (
-            <div className="flex gap-1">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs"
-                onClick={() => approve(row.original.id)}
-                disabled={reviewMutation.isPending}
-              >
-                <Check className="mr-1 h-3 w-3" /> Approve
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs text-destructive"
-                onClick={() => { setRejectId(row.original.id); setAdminNote('') }}
-              >
-                <X className="mr-1 h-3 w-3" /> Reject
-              </Button>
-            </div>
-          )
-        },
-      },
-    ],
+  const columns = React.useMemo(
+    () => buildEnrollmentColumns({
+      studentMap, subjectMap, semesterMap,
+      isPending: reviewMutation.isPending,
+      onApprove: approve,
+      onRejectOpen: (id) => { setRejectId(id); setAdminNote('') },
+    }),
     [studentMap, subjectMap, semesterMap, reviewMutation.isPending],
   )
 
   return (
     <div>
-      <PageHeader
-        title="Enrollment Requests"
-        description="Review and process student enrollment requests."
-      />
+      <PageHeader title="Enrollment Requests" description="Review and process student enrollment requests." />
 
       {/* Status filter */}
       <div className="mb-4 flex gap-2">
@@ -240,21 +130,15 @@ function EnrollmentQueuePage() {
             placeholder="Search student name…"
             value={search ?? ''}
             onChange={(e) =>
-              void navigate({
-                search: (prev) => ({ ...prev, page: 1, search: e.target.value || undefined }),
-              })
+              void navigate({ search: (prev) => ({ ...prev, page: 1, search: e.target.value || undefined }) })
             }
           />
         </div>
-
         <select
           className={SELECT_CLS + ' w-48'}
           value={semesterId ?? 'all'}
           onChange={(e) =>
-            void navigate({
-              // Use 'all' sentinel so semesterId is never undefined after user interaction
-              search: (prev) => ({ ...prev, page: 1, semesterId: e.target.value || 'all' }),
-            })
+            void navigate({ search: (prev) => ({ ...prev, page: 1, semesterId: e.target.value || 'all' }) })
           }
         >
           <option value="all">All semesters</option>
@@ -262,14 +146,11 @@ function EnrollmentQueuePage() {
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
-
         <select
           className={SELECT_CLS + ' w-64'}
           value={subjectId ?? ''}
           onChange={(e) =>
-            void navigate({
-              search: (prev) => ({ ...prev, page: 1, subjectId: e.target.value || undefined }),
-            })
+            void navigate({ search: (prev) => ({ ...prev, page: 1, subjectId: e.target.value || undefined }) })
           }
         >
           <option value="">All subjects</option>
@@ -287,30 +168,14 @@ function EnrollmentQueuePage() {
         onPageChange={(p) => void navigate({ search: (prev) => ({ ...prev, page: p }) })}
       />
 
-      {/* Reject dialog */}
-      <Dialog open={Boolean(rejectId)} onOpenChange={(o) => !o && setRejectId(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Reject Enrollment</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label>Reason (optional)</Label>
-              <Input
-                value={adminNote}
-                onChange={(e) => setAdminNote(e.target.value)}
-                placeholder="Explain the reason…"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setRejectId(null)}>Cancel</Button>
-              <Button variant="destructive" onClick={reject} disabled={reviewMutation.isPending}>
-                Reject
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <RejectEnrollmentDialog
+        open={Boolean(rejectId)}
+        adminNote={adminNote}
+        isPending={reviewMutation.isPending}
+        onNoteChange={setAdminNote}
+        onConfirm={reject}
+        onClose={() => setRejectId(null)}
+      />
     </div>
   )
 }

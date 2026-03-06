@@ -5,9 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
@@ -17,14 +15,14 @@ import (
 
 // OAuthConfig holds provider-specific credentials loaded from config.
 type OAuthConfig struct {
-	GoogleClientID       string
-	GoogleClientSecret   string
-	GoogleRedirectURL    string
-	MicrosoftClientID    string
+	GoogleClientID        string
+	GoogleClientSecret    string
+	GoogleRedirectURL     string
+	MicrosoftClientID     string
 	MicrosoftClientSecret string
-	MicrosoftTenantID    string
-	MicrosoftRedirectURL string
-	FrontendCallbackURL  string // e.g. http://localhost:3000/auth/callback
+	MicrosoftTenantID     string
+	MicrosoftRedirectURL  string
+	FrontendCallbackURL   string // e.g. http://localhost:3000/auth/callback
 }
 
 // authCode is a short-lived code linking an OAuth callback to frontend token exchange.
@@ -90,9 +88,9 @@ func NewOAuthService(ctx context.Context, cfg OAuthConfig) (*OAuthService, error
 
 // OAuthParams holds state, nonce, and PKCE fields used during the OAuth handshake.
 type OAuthParams struct {
-	State        string
-	Nonce        string
-	CodeVerifier string
+	State         string
+	Nonce         string
+	CodeVerifier  string
 	CodeChallenge string
 }
 
@@ -140,209 +138,6 @@ func (s *OAuthService) AuthURL(provider, state, nonce, challenge string) (string
 	default:
 		return "", fmt.Errorf("unknown provider: %s", provider)
 	}
-}
-
-// UserInfo holds the verified identity returned from a provider's ID token.
-type UserInfo struct {
-	Subject string
-	Email   string
-	Name    string
-	Picture string
-}
-
-// ExchangeAndVerify exchanges the auth code for tokens and validates the ID token.
-// Returns verified user claims from the provider.
-func (s *OAuthService) ExchangeAndVerify(ctx context.Context, provider, code, verifier, nonce string) (UserInfo, error) {
-	switch provider {
-	case "google":
-		return s.exchangeGoogle(ctx, code, verifier, nonce)
-	case "microsoft":
-		return s.exchangeMicrosoft(ctx, code, verifier, nonce)
-	default:
-		return UserInfo{}, fmt.Errorf("unknown provider: %s", provider)
-	}
-}
-
-func (s *OAuthService) exchangeGoogle(ctx context.Context, code, verifier, nonce string) (UserInfo, error) {
-	token, err := s.googleOAuth.Exchange(ctx, code,
-		oauth2.SetAuthURLParam("code_verifier", verifier),
-	)
-	if err != nil {
-		return UserInfo{}, fmt.Errorf("google token exchange: %w", err)
-	}
-
-	rawIDToken, ok := token.Extra("id_token").(string)
-	if !ok {
-		return UserInfo{}, fmt.Errorf("google: no id_token in response")
-	}
-
-	verifierOIDC := s.googleProvider.Verifier(&oidc.Config{ClientID: s.cfg.GoogleClientID})
-	idToken, err := verifierOIDC.Verify(ctx, rawIDToken)
-	if err != nil {
-		return UserInfo{}, fmt.Errorf("google id_token verify: %w", err)
-	}
-
-	var claims struct {
-		Email   string `json:"email"`
-		Name    string `json:"name"`
-		Picture string `json:"picture"`
-		HD      string `json:"hd"`    // hosted domain (Google Workspace)
-		Nonce   string `json:"nonce"`
-	}
-	if err := idToken.Claims(&claims); err != nil {
-		return UserInfo{}, fmt.Errorf("google claims: %w", err)
-	}
-
-	// Server-side hosted domain validation — must be @hcmus.edu.vn
-	if claims.HD != "hcmus.edu.vn" {
-		return UserInfo{}, fmt.Errorf("google: unauthorized domain %q (expected hcmus.edu.vn)", claims.HD)
-	}
-	if claims.Nonce != nonce {
-		return UserInfo{}, fmt.Errorf("google: nonce mismatch")
-	}
-
-	return UserInfo{
-		Subject: idToken.Subject,
-		Email:   claims.Email,
-		Name:    claims.Name,
-		Picture: claims.Picture,
-	}, nil
-}
-
-func (s *OAuthService) exchangeMicrosoft(ctx context.Context, code, verifier, nonce string) (UserInfo, error) {
-	token, err := s.microsoftOAuth.Exchange(ctx, code,
-		oauth2.SetAuthURLParam("code_verifier", verifier),
-	)
-	if err != nil {
-		return UserInfo{}, fmt.Errorf("microsoft token exchange: %w", err)
-	}
-
-	rawIDToken, ok := token.Extra("id_token").(string)
-	if !ok {
-		return UserInfo{}, fmt.Errorf("microsoft: no id_token in response")
-	}
-
-	verifierOIDC := s.msProvider.Verifier(&oidc.Config{ClientID: s.cfg.MicrosoftClientID})
-	idToken, err := verifierOIDC.Verify(ctx, rawIDToken)
-	if err != nil {
-		return UserInfo{}, fmt.Errorf("microsoft id_token verify: %w", err)
-	}
-
-	var claims struct {
-		Email             string `json:"email"`
-		PreferredUsername string `json:"preferred_username"`
-		Name              string `json:"name"`
-		TenantID          string `json:"tid"`
-		Nonce             string `json:"nonce"`
-	}
-	if err := idToken.Claims(&claims); err != nil {
-		return UserInfo{}, fmt.Errorf("microsoft claims: %w", err)
-	}
-
-	if claims.TenantID != s.cfg.MicrosoftTenantID {
-		return UserInfo{}, fmt.Errorf("microsoft: unauthorized tenant %q", claims.TenantID)
-	}
-	if claims.Nonce != nonce {
-		return UserInfo{}, fmt.Errorf("microsoft: nonce mismatch")
-	}
-
-	email := claims.Email
-	if email == "" {
-		email = claims.PreferredUsername
-	}
-
-	return UserInfo{
-		Subject: idToken.Subject,
-		Email:   email,
-		Name:    claims.Name,
-	}, nil
-}
-
-// IssueAuthCode stores a short-lived (60s) code mapping to a JWT pair.
-// The frontend exchanges this code for tokens via POST /api/auth/oauth/exchange.
-func (s *OAuthService) IssueAuthCode(accessToken, refreshToken string) string {
-	code := generateHex(16)
-	s.mu.Lock()
-	s.codes[code] = authCode{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		ExpiresAt:    time.Now().Add(60 * time.Second),
-	}
-	s.mu.Unlock()
-	return code
-}
-
-// ConsumeAuthCode returns and deletes a stored auth code. Returns false if expired or not found.
-func (s *OAuthService) ConsumeAuthCode(code string) (accessToken, refreshToken string, ok bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	entry, exists := s.codes[code]
-	if !exists || time.Now().After(entry.ExpiresAt) {
-		delete(s.codes, code)
-		return "", "", false
-	}
-	delete(s.codes, code)
-	return entry.AccessToken, entry.RefreshToken, true
-}
-
-// OAuthStateCookie is serialized into the httpOnly state cookie.
-type OAuthStateCookie struct {
-	State        string `json:"state"`
-	Nonce        string `json:"nonce"`
-	CodeVerifier string `json:"code_verifier"`
-	Provider     string `json:"provider"`
-}
-
-// MarshalStateCookie serializes state into a JSON string for cookie storage.
-func MarshalStateCookie(params OAuthParams, provider string) (string, error) {
-	sc := OAuthStateCookie{
-		State:        params.State,
-		Nonce:        params.Nonce,
-		CodeVerifier: params.CodeVerifier,
-		Provider:     provider,
-	}
-	b, err := json.Marshal(sc)
-	if err != nil {
-		return "", err
-	}
-	return base64.RawURLEncoding.EncodeToString(b), nil
-}
-
-// ParseStateCookie deserializes the state cookie.
-func ParseStateCookie(encoded string) (OAuthStateCookie, error) {
-	b, err := base64.RawURLEncoding.DecodeString(encoded)
-	if err != nil {
-		return OAuthStateCookie{}, fmt.Errorf("decode state cookie: %w", err)
-	}
-	var sc OAuthStateCookie
-	if err := json.Unmarshal(b, &sc); err != nil {
-		return OAuthStateCookie{}, fmt.Errorf("unmarshal state cookie: %w", err)
-	}
-	return sc, nil
-}
-
-// SetStateCookie sets the OAuth state as an httpOnly cookie on the response.
-func SetStateCookie(w http.ResponseWriter, encoded string, secure bool) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     "oauth_state",
-		Value:    encoded,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   secure,
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   300, // 5 minutes
-	})
-}
-
-// ClearStateCookie removes the OAuth state cookie.
-func ClearStateCookie(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     "oauth_state",
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		MaxAge:   -1,
-	})
 }
 
 // FrontendCallbackURL returns the URL to redirect the browser after successful OAuth.
