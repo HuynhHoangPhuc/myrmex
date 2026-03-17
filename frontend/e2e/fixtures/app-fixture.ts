@@ -33,7 +33,9 @@ export const test = base.extend<AuthFixtures>({
     const loginRes = await page.request.post('/api/auth/login', {
       data: { email, password },
     })
-    expect(loginRes.ok()).toBeTruthy()
+    if (!loginRes.ok()) {
+      throw new Error(`authedPage login failed: ${loginRes.status()} ${await loginRes.text()}`)
+    }
 
     const { access_token, refresh_token, user } = await loginRes.json()
 
