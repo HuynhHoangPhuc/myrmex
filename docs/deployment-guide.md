@@ -347,9 +347,16 @@ CORE_GRPC_PORT=50051
 CORE_LLM_PROVIDER="claude"
 CORE_LLM_MODEL="claude-haiku-4-5-20251001"
 CORE_LLM_API_KEY="sk-ant-..."
-GOOGLE_CLIENT_ID="xxxxx.apps.googleusercontent.com"  # Optional
-MICROSOFT_CLIENT_ID="xxxxx"                           # Optional
-SMTP_HOST="smtp.sendgrid.net"                         # Optional
+
+# OAuth/SSO (Optional) - See oauth-provider-setup.md for configuration
+GOOGLE_CLIENT_ID="xxxxx.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="GOCSPX-xxxxx"
+MICROSOFT_CLIENT_ID="xxxxx"
+MICROSOFT_CLIENT_SECRET="xxxxx~xxxxx"
+MICROSOFT_TENANT_ID="xxxxx-xxxxx-xxxxx"
+
+# Email (Optional)
+SMTP_HOST="smtp.sendgrid.net"
 ```
 
 ### Module Services
@@ -501,7 +508,7 @@ make down
 - Services: core, module-hr, module-subject, module-timetable, module-student, module-analytics
 - Frontend: nginx-based React UI
 
-All services use environment variable overrides for configuration (DATABASE_URL, NATS_URL, gRPC addresses).
+All services use environment variable overrides for configuration (DATABASE_URL, NATS_URL, gRPC addresses). OAuth environment variables (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET, MICROSOFT_TENANT_ID) are passed to the core service from `deploy/docker/.env`.
 
 ```bash
 # Start all services
@@ -513,6 +520,8 @@ docker compose -f deploy/docker/compose.yml logs -f
 # Stop all
 docker compose -f deploy/docker/compose.yml down
 ```
+
+**OAuth Configuration for Docker**: To enable OAuth in the demo, create `deploy/docker/.env` (git-ignored) with your OAuth credentials. See [OAuth Provider Setup Guide](./oauth-provider-setup.md) for detailed instructions.
 
 ---
 
@@ -547,6 +556,8 @@ terraform apply -var="project_id=YOUR_GCP_PROJECT" -var="region=us-central1"
 ```
 
 Creates: VPC, Cloud NAT, Cloud SQL (PostgreSQL 16), Memorystore (Redis 7), Artifact Registry, Cloud Run services, Pub/Sub topics, monitoring.
+
+**OAuth Redirect URLs**: Terraform automatically configures OAuth redirect URLs based on `api_domain`, `frontend_domain`, `staging_api_domain`, and `staging_frontend_domain` variables in `terraform.tfvars`. Cloud Run services receive these as environment variables during deployment.
 
 ### Step 2: Populate Secret Manager
 

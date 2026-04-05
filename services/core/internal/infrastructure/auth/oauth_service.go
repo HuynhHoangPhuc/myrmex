@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"net/url"
 	"sync"
 	"time"
 
@@ -142,7 +143,7 @@ func (s *OAuthService) AuthURL(provider, state, nonce, challenge string) (string
 
 // FrontendCallbackURL returns the URL to redirect the browser after successful OAuth.
 func (s *OAuthService) FrontendCallbackURL(code string) string {
-	return s.cfg.FrontendCallbackURL + "?code=" + code
+	return s.cfg.FrontendCallbackURL + "?code=" + url.QueryEscape(code)
 }
 
 func (s *OAuthService) cleanupLoop() {

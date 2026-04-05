@@ -136,6 +136,20 @@ resource "google_cloud_run_v2_service" "staging_core" {
           }
         }
       }
+
+      # OAuth redirect URLs for staging
+      env {
+        name  = "OAUTH_GOOGLE_REDIRECT_URL"
+        value = var.staging_api_domain != "" ? "https://${var.staging_api_domain}/api/auth/oauth/google/callback" : ""
+      }
+      env {
+        name  = "OAUTH_MICROSOFT_REDIRECT_URL"
+        value = var.staging_api_domain != "" ? "https://${var.staging_api_domain}/api/auth/oauth/microsoft/callback" : ""
+      }
+      env {
+        name  = "OAUTH_FRONTEND_CALLBACK_URL"
+        value = var.staging_frontend_domain != "" ? "https://${var.staging_frontend_domain}/auth/callback" : ""
+      }
     }
   }
 

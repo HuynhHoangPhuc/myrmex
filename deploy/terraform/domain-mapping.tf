@@ -14,6 +14,18 @@ variable "api_domain" {
   default     = ""
 }
 
+variable "staging_api_domain" {
+  description = "Custom domain for the staging API (e.g. staging-api.myrmex.hcmus.edu.vn). Leave empty to skip."
+  type        = string
+  default     = ""
+}
+
+variable "staging_frontend_domain" {
+  description = "Custom domain for the staging frontend (e.g. staging.myrmex.hcmus.edu.vn). Leave empty to skip."
+  type        = string
+  default     = ""
+}
+
 resource "google_cloud_run_domain_mapping" "frontend" {
   count    = var.frontend_domain != "" ? 1 : 0
   name     = var.frontend_domain

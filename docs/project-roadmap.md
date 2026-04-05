@@ -533,6 +533,14 @@ Phase 4: Enterprise
 
 ## Change Log
 
+### 2026-04-05 (OAuth Login Fix & Documentation Update)
+- Fixed Docker Compose: OAuth environment variables now passed to core service
+- Fixed Terraform: OAuth redirect URL environment variables added to Cloud Run deployment
+- Fixed security: Cookie Secure flag corrected for reverse proxy (SameSite handling)
+- Created `docs/oauth-provider-setup.md`: Comprehensive OAuth provider configuration guide
+- Updated `docs/deployment-guide.md`: Added OAuth configuration references and environment variable documentation
+- Phase 4.2 (OAuth/SSO) reliability improvements: Production-ready with reverse proxy support
+
 ### 2026-03-05 (Phase 5: Production Pilot Complete)
 - Phase 5 Production Pilot: All 8 phases (messaging, terraform, cicd, security, import, observability, quality, guides) complete
 - 380+ files, 320K+ tokens, 1.2M+ characters codebase

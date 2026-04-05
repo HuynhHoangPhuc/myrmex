@@ -171,6 +171,20 @@ resource "google_cloud_run_v2_service" "core" {
           }
         }
       }
+
+      # OAuth redirect URLs (plain env vars, derived from domain config)
+      env {
+        name  = "OAUTH_GOOGLE_REDIRECT_URL"
+        value = var.api_domain != "" ? "https://${var.api_domain}/api/auth/oauth/google/callback" : ""
+      }
+      env {
+        name  = "OAUTH_MICROSOFT_REDIRECT_URL"
+        value = var.api_domain != "" ? "https://${var.api_domain}/api/auth/oauth/microsoft/callback" : ""
+      }
+      env {
+        name  = "OAUTH_FRONTEND_CALLBACK_URL"
+        value = var.frontend_domain != "" ? "https://${var.frontend_domain}/auth/callback" : ""
+      }
     }
   }
 

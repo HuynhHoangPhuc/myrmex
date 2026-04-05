@@ -92,7 +92,9 @@ func (h *OAuthHandler) initiateLogin(c *gin.Context, provider string) {
 		return
 	}
 
-	secure := c.Request.TLS != nil
+	// Cloud Run LB / nginx always sets X-Forwarded-Proto; direct access without
+	// a proxy is not expected in production.
+	secure := c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
 	auth.SetStateCookie(c.Writer, cookieVal, secure)
 
 	authURL, err := h.oauthSvc.AuthURL(provider, params.State, params.Nonce, params.CodeChallenge)
