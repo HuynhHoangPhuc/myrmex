@@ -68,9 +68,16 @@ reset-db:
 	$(MAKE) migrate
 	$(MAKE) seed
 
+GO_SERVICES := core module-hr module-subject module-timetable module-analytics module-notification module-student
+
 demo:
 	$(COMPOSE) down -v --remove-orphans 2>/dev/null || true
-	$(COMPOSE) up --build -d
+	$(COMPOSE) build frontend migrate
+	@for svc in $(GO_SERVICES); do \
+		echo "Building $$svc..."; \
+		$(COMPOSE) build $$svc; \
+	done
+	$(COMPOSE) up -d
 	@echo ""
 	@echo "Myrmex is starting up..."
 	@echo "  Frontend: http://localhost:3000"
