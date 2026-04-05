@@ -534,12 +534,18 @@ Phase 4: Enterprise
 ## Change Log
 
 ### 2026-04-05 (OAuth Login Fix & Documentation Update)
-- Fixed Docker Compose: OAuth environment variables now passed to core service
-- Fixed Terraform: OAuth redirect URL environment variables added to Cloud Run deployment
-- Fixed security: Cookie Secure flag corrected for reverse proxy (SameSite handling)
+- **Critical Fix**: OAuth login failures in Docker Compose, Terraform, and Cloud Run (4 root causes patched)
+  - Docker Compose: Added missing OAUTH_* env vars (ENABLED, client IDs, secrets)
+  - Terraform: Added OAUTH_*_REDIRECT_URL env vars with domain-based templating
+  - Cookie Secure flag: Fixed X-Forwarded-Proto header check for TLS termination scenarios
+  - URL encoding: Fixed authorization code escaping in error redirects
 - Created `docs/oauth-provider-setup.md`: Comprehensive OAuth provider configuration guide
-- Updated `docs/deployment-guide.md`: Added OAuth configuration references and environment variable documentation
-- Phase 4.2 (OAuth/SSO) reliability improvements: Production-ready with reverse proxy support
+- Updated `docs/deployment-guide.md`: Added OAuth redirect URL variables and env var checklist
+- Updated `docs/codebase-summary.md`: Added OAuth login fix section with technical details
+- Updated `docs/project-changelog.md`: Added detailed changelog entry with 4 root causes + fixes + lessons learned
+- See `docs/journals/2026-04-05-fix-oauth-login.md` for full root cause analysis
+- Phase 4.2 (OAuth/SSO) reliability improvements: Production-ready with reverse proxy + distributed environment support
+- Test coverage: 87 tests pass (no regressions)
 
 ### 2026-03-05 (Phase 5: Production Pilot Complete)
 - Phase 5 Production Pilot: All 8 phases (messaging, terraform, cicd, security, import, observability, quality, guides) complete

@@ -349,11 +349,18 @@ CORE_LLM_MODEL="claude-haiku-4-5-20251001"
 CORE_LLM_API_KEY="sk-ant-..."
 
 # OAuth/SSO (Optional) - See oauth-provider-setup.md for configuration
+OAUTH_ENABLED="true"
 GOOGLE_CLIENT_ID="xxxxx.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET="GOCSPX-xxxxx"
 MICROSOFT_CLIENT_ID="xxxxx"
 MICROSOFT_CLIENT_SECRET="xxxxx~xxxxx"
 MICROSOFT_TENANT_ID="xxxxx-xxxxx-xxxxx"
+
+# OAuth Redirect URLs (required for Docker Compose & Terraform deployments)
+# For local dev: use http://localhost:8080; for Cloud Run: terraform auto-templates from domain vars
+OAUTH_GOOGLE_REDIRECT_URL="http://localhost:8080/api/auth/oauth/google/callback"
+OAUTH_MICROSOFT_REDIRECT_URL="http://localhost:8080/api/auth/oauth/microsoft/callback"
+OAUTH_FRONTEND_CALLBACK_URL="http://localhost:3000/auth/callback"
 
 # Email (Optional)
 SMTP_HOST="smtp.sendgrid.net"

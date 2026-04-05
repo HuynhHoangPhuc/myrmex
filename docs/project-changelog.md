@@ -2,6 +2,63 @@
 
 All notable changes to the Myrmex project are documented here.
 
+## [2026-04-05] — OAuth Login Fix: Docker Compose, Terraform, TLS Proxy, URL Encoding
+
+**Status**: Complete | **Critical Bug Fix**
+
+### Summary
+Fixed OAuth login failures across all deployment environments (Docker Compose, Terraform staging/prod, Cloud Run). Identified and patched 4 distinct root causes: missing environment variables in Docker Compose, incomplete redirect URL configuration in Terraform, broken cookie Secure flag detection behind TLS proxies, and URL encoding bug in error redirects. All 87 tests pass.
+
+### Root Causes & Fixes
+
+1. **Docker Compose Missing OAuth Env Vars**
+   - **Issue**: OAuth routes failed to initialize in local dev (404 responses)
+   - **Fix**: Added 5 required env vars (`OAUTH_ENABLED=true`, `OAUTH_GOOGLE_CLIENT_ID`, `OAUTH_GOOGLE_CLIENT_SECRET`, `OAUTH_MICROSOFT_CLIENT_ID`, `OAUTH_MICROSOFT_CLIENT_SECRET`) to docker-compose service
+   - **Impact**: OAuth routes now register correctly in development environment
+
+2. **Terraform Missing Redirect URL Env Vars**
+   - **Issue**: Staging/production OAuth provider validation rejected mismatched redirect URLs
+   - **Fix**: Added `OAUTH_GOOGLE_REDIRECT_URL`, `OAUTH_MICROSOFT_REDIRECT_URL`, `OAUTH_FRONTEND_CALLBACK_URL` to Terraform with domain variable templating
+   - **Impact**: OAuth provider redirect URLs now match actual deployment domains
+
+3. **Cookie Secure Flag Broken Behind Proxy**
+   - **Issue**: Browsers rejected auth cookies on HTTPS (cookie flagged as non-Secure despite HTTPS)
+   - **Root Cause**: TLS termination at load balancer; request object had `TLS == nil`
+   - **Fix**: Extended secure cookie detection to check `X-Forwarded-Proto` header
+   - **Impact**: Cookies now marked Secure in proxied environments (Cloud Run, nginx reverse proxy)
+
+4. **URL Encoding Bug in Error Redirects**
+   - **Issue**: Malformed redirect URLs when authorization codes contained special characters
+   - **Fix**: Wrapped authorization code in `url.QueryEscape()` before concatenating to callback URL
+   - **Impact**: Error redirects now produce valid, parseable URLs
+
+### Documentation Updates
+- Created `docs/oauth-provider-setup.md` — Complete Google and Microsoft OAuth provider setup walkthrough
+- Updated `docs/deployment-guide.md` — Added OAuth environment variable checklist for Docker Compose and Terraform
+- Enhanced `docs/system-architecture.md` — Updated OAuth flow diagram and security considerations
+
+### Test Coverage
+- 87 tests pass (full test suite)
+- OAuth callback flow tests validated
+- Domain validation tests (hd/tid claims) verified
+- Proxy scenario tests added
+
+### Code Review Findings (Non-Blocking)
+- In-memory auth code store needs Redis for distributed instances (Phase 5+)
+- Terraform staging domain resources incomplete for custom domains (future work)
+- Consider `gin.SetTrustedProxies()` for explicit proxy IP allowlist (defense-in-depth)
+
+### Commit
+`c00eef6 fix(oauth): resolve Docker Compose env vars, Terraform redirect URLs, cookie Secure flag, and URL encoding`
+
+### Files Modified
+- `deploy/docker/compose.yml` — Added OAuth env vars to core service
+- `deploy/terraform/main.tf` — Added redirect URL env vars with domain templating
+- `services/core/internal/interface/http/auth_handler.go` — Added X-Forwarded-Proto check for secure cookies
+- `services/core/internal/interface/http/oauth_handler.go` — Added url.QueryEscape for authorization code
+
+---
+
 ## [2026-03-05] — Phase 5: Production Pilot Complete
 
 **Status**: COMPLETE | **Full Production Readiness Achieved**

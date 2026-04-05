@@ -271,7 +271,11 @@ myrmex/
     ├── code-standards.md
     ├── system-architecture.md
     ├── project-roadmap.md
-    └── deployment-guide.md
+    ├── deployment-guide.md
+    ├── oauth-provider-setup.md      # Google + Microsoft OAuth provider configuration
+    ├── journals/                     # Work logs
+    │   └── 2026-04-05-fix-oauth-login.md  # OAuth login fix root cause analysis
+    └── project-changelog.md
 ```
 
 ## Tech Stack Summary
@@ -752,3 +756,46 @@ make demo
 - **Collapsible Thinking Toggle**: Optional expanded thinking display in chat tool execution
 - **Dark Mode Visibility**: Improved contrast for chat panel and navigation in dark mode
 - **Error Handling**: Consistent error messaging across all modules
+
+## OAuth Login Fix (Apr 5, 2026)
+
+### Critical Fixes Across All Environments
+
+**Commit**: `c00eef6 fix(oauth): resolve Docker Compose env vars, Terraform redirect URLs, cookie Secure flag, and URL encoding`
+
+Fixed OAuth login failures in Docker Compose (local dev), Terraform (staging/prod), and Cloud Run by patching 4 distinct root causes:
+
+1. **Docker Compose Missing Env Vars**
+   - Added OAuth variables to `deploy/docker/compose.yml` (OAUTH_ENABLED, GOOGLE_CLIENT_*, MICROSOFT_CLIENT_*)
+   - OAuth routes now initialize correctly in development environment
+
+2. **Terraform Missing Redirect URLs**
+   - Added `OAUTH_GOOGLE_REDIRECT_URL`, `OAUTH_MICROSOFT_REDIRECT_URL`, `OAUTH_FRONTEND_CALLBACK_URL` to Cloud Run env vars
+   - URLs templated from domain variables for automatic domain-based configuration
+   - Fixes OAuth provider validation rejection in staging/production
+
+3. **Cookie Secure Flag Behind TLS Proxy**
+   - Extended secure cookie detection in `auth_handler.go` to check `X-Forwarded-Proto: https` header
+   - Resolves issue where `Request.TLS == nil` behind load balancer/nginx proxy, causing cookies to be marked insecure
+   - Browsers now accept session cookies on HTTPS in proxied environments
+
+4. **URL Encoding Bug in Error Redirects**
+   - Wrapped authorization code in `url.QueryEscape()` in `oauth_handler.go` before constructing callback URL
+   - Prevents malformed redirect URLs when codes contain special characters (&, =, etc.)
+
+### Documentation & Configuration
+- Created `docs/oauth-provider-setup.md` — Complete Google and Microsoft OAuth provider setup walkthrough with screenshots
+- Updated `docs/deployment-guide.md` — Added OAuth environment variable references and configuration sections
+- See `docs/journals/2026-04-05-fix-oauth-login.md` for detailed root cause analysis and lessons learned
+
+### Test Coverage
+- 87 tests pass (full test suite, no regressions)
+- OAuth callback flow tests validated
+- Domain validation tests (hd/tid claims) verified
+- Proxy scenario tests added for TLS termination edge cases
+
+### Related Files
+- `services/core/internal/interface/http/auth_handler.go` — Secure cookie detection
+- `services/core/internal/interface/http/oauth_handler.go` — URL encoding fix
+- `deploy/docker/compose.yml` — OAuth environment variables
+- `deploy/terraform/main.tf` — Redirect URL templating
