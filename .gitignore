@@ -47,3 +47,7 @@ repomix-output.xml
 .terraform.lock.hcl
 deploy/terraform/terraform.tfvars
 deploy/terraform/*.tfplan
+
+# Docs artifacts
+docs/screenshots/node_modules/
+docs/Myrmex-System-Specification.docx

@@ -97,12 +97,30 @@ resource "google_cloud_run_v2_service" "staging_core" {
       }
 
       # Module gRPC addresses pointing to staging- services
-      env { name = "SERVER_GRPC_HR_ADDR",           value = "staging-module-hr-${var.project_id}-${var.region}.a.run.app:443" }
-      env { name = "SERVER_GRPC_SUBJECT_ADDR",       value = "staging-module-subject-${var.project_id}-${var.region}.a.run.app:443" }
-      env { name = "SERVER_GRPC_TIMETABLE_ADDR",     value = "staging-module-timetable-${var.project_id}-${var.region}.a.run.app:443" }
-      env { name = "SERVER_GRPC_STUDENT_ADDR",       value = "staging-module-student-${var.project_id}-${var.region}.a.run.app:443" }
-      env { name = "SERVER_GRPC_ANALYTICS_ADDR",     value = "staging-module-analytics-${var.project_id}-${var.region}.a.run.app:443" }
-      env { name = "SERVER_GRPC_NOTIFICATION_ADDR",  value = "staging-module-notification-${var.project_id}-${var.region}.a.run.app:443" }
+      env {
+        name  = "SERVER_GRPC_HR_ADDR"
+        value = "staging-module-hr-${var.project_id}-${var.region}.a.run.app:443"
+      }
+      env {
+        name  = "SERVER_GRPC_SUBJECT_ADDR"
+        value = "staging-module-subject-${var.project_id}-${var.region}.a.run.app:443"
+      }
+      env {
+        name  = "SERVER_GRPC_TIMETABLE_ADDR"
+        value = "staging-module-timetable-${var.project_id}-${var.region}.a.run.app:443"
+      }
+      env {
+        name  = "SERVER_GRPC_STUDENT_ADDR"
+        value = "staging-module-student-${var.project_id}-${var.region}.a.run.app:443"
+      }
+      env {
+        name  = "SERVER_GRPC_ANALYTICS_ADDR"
+        value = "staging-module-analytics-${var.project_id}-${var.region}.a.run.app:443"
+      }
+      env {
+        name  = "SERVER_GRPC_NOTIFICATION_ADDR"
+        value = "staging-module-notification-${var.project_id}-${var.region}.a.run.app:443"
+      }
 
       dynamic "env" {
         for_each = local.staging_common_secrets

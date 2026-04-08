@@ -1,0 +1,71 @@
+name: Deploy Staging (GCE)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging-gce
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to GCE Staging
+    runs-on: ubuntu-latest
+    if: vars.STAGING_GCE_ENABLED == 'true'
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.STAGING_GCE_HOST }}
+          username: deploy
+          key: ${{ secrets.STAGING_GCE_SSH_KEY }}
+          script_stop: true
+          command_timeout: 10m
+          script: |
+            set -euo pipefail
+            cd /opt/myrmex
+
+            # Pull latest code
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Build sequentially to avoid OOM on e2-medium (4GB RAM)
+            for svc in core module-hr module-subject module-timetable module-student module-analytics module-notification frontend migrate; do
+              docker compose -f deploy/docker/compose.yml \
+                -f deploy/staging/compose.staging.yml \
+                --env-file deploy/staging/.env \
+                build "$svc"
+            done
+
+            # Run migrations
+            docker compose -f deploy/docker/compose.yml \
+              -f deploy/staging/compose.staging.yml \
+              --env-file deploy/staging/.env \
+              run --rm migrate
+
+            # Restart services
+            docker compose -f deploy/docker/compose.yml \
+              -f deploy/staging/compose.staging.yml \
+              --env-file deploy/staging/.env \
+              up -d --remove-orphans
+
+            # Health check with retry (Caddy uses HTTPS with self-signed cert)
+            for i in $(seq 1 30); do
+              STATUS=$(curl -sk https://localhost/api/auth/login -X POST -o /dev/null -w '%{http_code}' 2>/dev/null)
+              [ "$STATUS" = "400" ] && break
+              echo "Waiting for services... ($i/30)"
+              sleep 2
+            done
+            [ "$STATUS" = "400" ] && echo "Health OK: API responding" || exit 1
+            curl -sk https://localhost/ -o /dev/null && echo "Health OK: Frontend serving" || exit 1
+            echo "Deploy complete"
+
+      - name: Write summary
+        if: always()
+        run: |
+          echo "## GCE Staging Deploy" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

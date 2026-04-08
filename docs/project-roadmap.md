@@ -298,6 +298,53 @@ Myrmex is a multi-phase project to build an agent-first ERP for educational inst
 
 ---
 
+## Phase 5.5: GCE Staging Deployment (COMPLETE)
+
+**Timeline**: Q2 2026 (1 day) | **Status**: 100% Complete (Apr 8, 2026)
+
+### Goals
+- Replace Cloud Run staging (~$60/mo with Redis/VPC) with cost-effective GCE VM (~$25/mo)
+- Provide alternative staging with Docker Compose (faster iteration, easier local parity)
+- Enable GitHub Actions CD pipeline for push-to-main auto-deployment
+
+### Deliverables
+- [x] Terraform GCE module: e2-medium VM (2 vCPU, 4GB RAM) in asia-southeast1-b
+- [x] Firewall rules: SSH (22), HTTP (80), HTTPS (443)
+- [x] Static external IP: 34.142.154.81 (stable DNS)
+- [x] Docker + Compose pre-installed via startup script
+- [x] Caddy reverse proxy: Auto-HTTPS with Let's Encrypt, zero-config TLS renewal
+- [x] Docker Compose override: `deploy/staging/compose.staging.yml` adds Caddy container
+- [x] GitHub Actions CD: `.github/workflows/deploy-staging-gce.yml` with SSH deploy
+- [x] Sequential builds: Fixed Docker OOM by building images sequentially (not parallel)
+- [x] Backup cron: Daily pg_dump at 02:00 UTC → GCS bucket with 30-day retention
+- [x] GCS bucket: Terraform-managed with lifecycle auto-delete >30 days
+
+### Cost Savings
+- GCE VM: $24.27/mo (vs Cloud Run $60/mo for staging)
+- Infrastructure: ~$26/mo total (VM + disk + backups)
+- **Annual savings**: ~$400+ compared to Cloud Run staging
+
+### Architecture
+```
+GitHub → SSH → GCE VM (34.142.154.81)
+              ├── Caddy (:443, staging.internalsystem.org) ──X-Forwarded-* → services
+              ├── Docker Compose (12 containers)
+              │    ├── Core, HR, Subject, Timetable
+              │    ├── Student, Analytics, Notification
+              │    ├── PostgreSQL, NATS, Redis
+              │    └── Frontend (nginx)
+              └── Cron → backup.sh → GCS
+```
+
+### Success Criteria
+- [x] All 12 containers running on single VM
+- [x] HTTPS accessible with valid Let's Encrypt cert
+- [x] GitHub Actions CD functional (push main → auto-deploy)
+- [x] Health checks passing
+- [x] Backups automated + verified
+
+---
+
 ## Phase 6: HCMUS Production Deployment (IN PROGRESS)
 
 **Timeline**: Q1-Q2 2026 (~4-5 weeks) | **Status**: Infrastructure implemented (Mar 5, 2026)

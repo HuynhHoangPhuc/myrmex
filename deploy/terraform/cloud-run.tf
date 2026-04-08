@@ -7,11 +7,11 @@ locals {
 
   # Common secret env vars injected into every service
   common_secrets = [
-    { name = "DATABASE_URL",      secret = "DATABASE_URL" },
-    { name = "REDIS_ADDR",        secret = "REDIS_ADDR" },
-    { name = "JWT_SECRET",        secret = "JWT_SECRET" },
+    { name = "DATABASE_URL", secret = "DATABASE_URL" },
+    { name = "REDIS_ADDR", secret = "REDIS_ADDR" },
+    { name = "JWT_SECRET", secret = "JWT_SECRET" },
     { name = "MESSAGING_BACKEND", secret = "MESSAGING_BACKEND" },
-    { name = "GCP_PROJECT_ID",    secret = "GCP_PROJECT_ID" },
+    { name = "GCP_PROJECT_ID", secret = "GCP_PROJECT_ID" },
   ]
 }
 
@@ -151,15 +151,15 @@ resource "google_cloud_run_v2_service" "core" {
 
       dynamic "env" {
         for_each = [
-          { name = "OAUTH_GOOGLE_CLIENT_ID",       secret = "OAUTH_GOOGLE_CLIENT_ID" },
-          { name = "OAUTH_GOOGLE_CLIENT_SECRET",   secret = "OAUTH_GOOGLE_CLIENT_SECRET" },
-          { name = "OAUTH_MICROSOFT_CLIENT_ID",    secret = "OAUTH_MICROSOFT_CLIENT_ID" },
+          { name = "OAUTH_GOOGLE_CLIENT_ID", secret = "OAUTH_GOOGLE_CLIENT_ID" },
+          { name = "OAUTH_GOOGLE_CLIENT_SECRET", secret = "OAUTH_GOOGLE_CLIENT_SECRET" },
+          { name = "OAUTH_MICROSOFT_CLIENT_ID", secret = "OAUTH_MICROSOFT_CLIENT_ID" },
           { name = "OAUTH_MICROSOFT_CLIENT_SECRET", secret = "OAUTH_MICROSOFT_CLIENT_SECRET" },
-          { name = "OAUTH_MICROSOFT_TENANT_ID",    secret = "OAUTH_MICROSOFT_TENANT_ID" },
-          { name = "LLM_API_KEY",                  secret = "LLM_API_KEY" },
-          { name = "LLM_PROVIDER",                 secret = "LLM_PROVIDER" },
-          { name = "LLM_MODEL",                    secret = "LLM_MODEL" },
-          { name = "SENTRY_DSN",                   secret = "SENTRY_DSN" },
+          { name = "OAUTH_MICROSOFT_TENANT_ID", secret = "OAUTH_MICROSOFT_TENANT_ID" },
+          { name = "LLM_API_KEY", secret = "LLM_API_KEY" },
+          { name = "LLM_PROVIDER", secret = "LLM_PROVIDER" },
+          { name = "LLM_MODEL", secret = "LLM_MODEL" },
+          { name = "SENTRY_DSN", secret = "SENTRY_DSN" },
         ]
         content {
           name = env.value.name
@@ -517,12 +517,12 @@ resource "google_cloud_run_v2_service" "module_notification" {
 
       dynamic "env" {
         for_each = [
-          { name = "SMTP_HOST",       secret = "SMTP_HOST" },
-          { name = "SMTP_PORT",       secret = "SMTP_PORT" },
-          { name = "SMTP_USERNAME",   secret = "SMTP_USERNAME" },
-          { name = "SMTP_PASSWORD",   secret = "SMTP_PASSWORD" },
+          { name = "SMTP_HOST", secret = "SMTP_HOST" },
+          { name = "SMTP_PORT", secret = "SMTP_PORT" },
+          { name = "SMTP_USERNAME", secret = "SMTP_USERNAME" },
+          { name = "SMTP_PASSWORD", secret = "SMTP_PASSWORD" },
           { name = "SMTP_FROM_EMAIL", secret = "SMTP_FROM_EMAIL" },
-          { name = "SMTP_FROM_NAME",  secret = "SMTP_FROM_NAME" },
+          { name = "SMTP_FROM_NAME", secret = "SMTP_FROM_NAME" },
         ]
         content {
           name = env.value.name

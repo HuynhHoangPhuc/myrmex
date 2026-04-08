@@ -10,7 +10,7 @@ terraform {
 
   # GCS backend — replace PROJECT_ID before first init
   backend "gcs" {
-    bucket = "PROJECT_ID-terraform-state"
+    bucket = "mcshcmus-terraform-state"
     prefix = "myrmex"
   }
 }
@@ -33,6 +33,7 @@ resource "google_project_service" "apis" {
     "servicenetworking.googleapis.com",
     "iam.googleapis.com",
     "cloudresourcemanager.googleapis.com",
+    "compute.googleapis.com",
   ])
 
   project            = var.project_id

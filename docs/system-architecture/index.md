@@ -179,3 +179,81 @@ Async NATS pipeline + Module-Notification microservice for email + in-app delive
 - WebSocket Latency: ~50ms
 - Frontend Bundle: ~80KB gzipped (Vite tree-shaking)
 - Memory per Service: ~100MB (Go efficiency)
+
+---
+
+## Deployment Architecture
+
+### Production (Cloud Run)
+
+**Infrastructure**: Managed serverless on Google Cloud Platform
+
+```
+Cloud Load Balancer (TLS)
+         ↓
+┌─────────────────────────────────────────────┐
+│ Cloud Run Services (asia-southeast1)        │
+│ ├── myrmex-core (auto-scale 1-10)          │
+│ ├── myrmex-module-hr/subject/timetable     │
+│ ├── myrmex-module-student/analytics        │
+│ ├── myrmex-module-notification             │
+│ └── myrmex-frontend (nginx)                │
+└─────────────────────────────────────────────┘
+         ↓
+┌─────────────────────────────────────────────┐
+│ GCP Managed Services                        │
+│ ├── Cloud SQL (PostgreSQL 16, HA)          │
+│ ├── Memorystore (Redis 7)                  │
+│ ├── Cloud Pub/Sub (event bus)              │
+│ └── Secret Manager + Cloud Monitoring      │
+└─────────────────────────────────────────────┘
+```
+
+**Cost**: ~$400-600/mo | **Uptime SLA**: 99.9%
+
+### Staging (GCE + Docker Compose)
+
+**Infrastructure**: Single GCE VM with Docker Compose
+
+```
+Internet (HTTPS)
+    ↓
+Caddy Reverse Proxy (:443)
+    ├─ /api/* → core:8080
+    ├─ /ws/*  → core:8080 (WebSocket)
+    └─ /*     → frontend:3000
+
+┌─────────────────────────────────────────────┐
+│ GCE VM (e2-medium, asia-southeast1-b)       │
+│ ├── Core (HTTP gateway + gRPC)              │
+│ ├── Module-HR/Subject/Timetable/Student     │
+│ ├── Module-Analytics/Notification           │
+│ ├── PostgreSQL 16 (persistent volume)       │
+│ ├── NATS 2.10 (event bus)                  │
+│ ├── Redis 7 (cache)                        │
+│ └── Frontend (nginx, :3000)                │
+└─────────────────────────────────────────────┘
+    ↓
+   Cron (daily 02:00 UTC)
+    ├── pg_dump → gzip
+    └── gsutil cp → GCS (30-day retention)
+```
+
+**Cost**: ~$26/mo | **Backup**: Automated daily
+
+### Local Development (Docker Compose)
+
+```
+make up           # Start infrastructure (postgres, nats, redis)
+make build        # Build all Go services
+make migrate      # Run database migrations
+make seed         # Load seed data
+
+Terminal tabs:
+├── Core          (cd services/core && go run ./cmd/server)
+├── HR/Subject/...
+├── Frontend      (cd frontend && npm run dev)
+└── Logs          (docker compose logs -f)
+```
+
+**Cost**: Free | **Time to start**: ~2 min

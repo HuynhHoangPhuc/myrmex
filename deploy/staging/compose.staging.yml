@@ -1,0 +1,32 @@
+# Staging overlay — adds Caddy reverse proxy with auto-HTTPS
+# Usage: docker compose -f deploy/docker/compose.yml -f deploy/staging/compose.staging.yml --env-file deploy/staging/.env up -d
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../staging/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      STAGING_DOMAIN: "${STAGING_DOMAIN:-localhost}"
+    depends_on:
+      - core
+      - frontend
+    networks:
+      - default
+
+  # Override: remove direct port exposure (Caddy handles ingress)
+  core:
+    ports: !override
+      - "50051:50051"
+
+  frontend:
+    ports: !override []
+
+volumes:
+  caddy_data:
+  caddy_config:

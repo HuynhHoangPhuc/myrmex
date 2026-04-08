@@ -679,7 +679,113 @@ k6 run deploy/load-tests/mixed-workload.js   # 500 VUs realistic traffic
 
 ---
 
-## Staging Environment (Phase 6)
+## Staging Environment (GCE + Docker Compose)
+
+### Overview
+
+Staging runs on a single GCE VM (e2-medium, ~$25/mo) in asia-southeast1 with Docker Compose, Caddy HTTPS, and automated backups. Alternative to Cloud Run staging (~$60/mo).
+
+### Quick Start
+
+**VM Details**:
+- IP: `34.142.154.81`
+- Machine: `e2-medium` (2 vCPU, 4GB RAM, 20GB disk)
+- Region: `asia-southeast1-b`
+- Status: All 12 containers running
+
+**Access**:
+```bash
+# SSH to VM
+ssh deploy@34.142.154.81
+
+# View logs
+cd /opt/myrmex
+docker compose -f deploy/docker/compose.yml -f deploy/staging/compose.staging.yml logs -f
+
+# Restart services
+docker compose -f deploy/docker/compose.yml -f deploy/staging/compose.staging.yml restart
+```
+
+### Environment Setup
+
+1. **Copy `.env` to VM**:
+```bash
+scp deploy/staging/.env.example deploy@34.142.154.81:/opt/myrmex/deploy/staging/.env
+ssh deploy@34.142.154.81
+# Edit .env with actual OAuth/LLM credentials
+nano deploy/staging/.env
+```
+
+2. **Required Env Vars** (in `deploy/staging/.env`):
+```bash
+STAGING_DOMAIN=staging.internalsystem.org  # Update if using custom domain
+OAUTH_GOOGLE_CLIENT_ID=xxxxx
+OAUTH_GOOGLE_CLIENT_SECRET=xxxxx
+OAUTH_MICROSOFT_CLIENT_ID=xxxxx
+OAUTH_MICROSOFT_CLIENT_SECRET=xxxxx
+GCS_BACKUP_BUCKET=<project-id>-staging-backups
+```
+
+3. **DNS Setup** (one-time):
+   - Point A record `staging.internalsystem.org` to `34.142.154.81`
+   - Wait 5-10 min for propagation
+   - Caddy auto-generates Let's Encrypt cert on first HTTPS request
+
+### Deployment
+
+**Automatic** (via GitHub Actions on `push main`):
+- Workflow: `.github/workflows/deploy-staging-gce.yml`
+- Secrets required: `STAGING_GCE_HOST`, `STAGING_GCE_SSH_KEY`
+- Triggers: push to main or manual dispatch
+
+**Manual Deploy**:
+```bash
+ssh deploy@34.142.154.81
+cd /opt/myrmex
+git fetch origin main && git reset --hard origin/main
+docker compose -f deploy/docker/compose.yml -f deploy/staging/compose.staging.yml build
+docker compose -f deploy/docker/compose.yml -f deploy/staging/compose.staging.yml up -d
+```
+
+### Verification
+
+```bash
+# Health check (via VM)
+curl -s http://localhost:8080/api/health | jq
+
+# Via HTTPS (external)
+curl -s https://staging.internalsystem.org/api/health | jq
+
+# Container status
+docker ps | grep myrmex
+# Should show 12 running containers
+```
+
+### Backups
+
+**Automatic**: Daily at 02:00 UTC via cron
+- Location: `gs://<project-id>-staging-backups/backups/`
+- Retention: 30 days (GCS lifecycle rule)
+
+**Manual Backup**:
+```bash
+ssh deploy@34.142.154.81
+cd /opt/myrmex
+./deploy/staging/backup.sh
+```
+
+### Cost
+
+| Resource | Cost/mo |
+|----------|---------|
+| GCE VM (e2-medium) | ~$24.27 |
+| Boot disk (20GB) | ~$1.80 |
+| GCS backups (<1GB) | ~$0.02 |
+| **Total** | **~$26/mo** |
+
+---
+
+## Staging Environment (Cloud Run - Phase 6)
 
 ### Overview
 

@@ -8,12 +8,12 @@ resource "google_service_account" "myrmex_run" {
 # IAM bindings for the Cloud Run service account
 locals {
   run_sa_roles = [
-    "roles/cloudsql.client",          # Connect to Cloud SQL via private IP
-    "roles/redis.editor",             # Read/write Memorystore Redis
-    "roles/pubsub.publisher",         # Publish events to Pub/Sub topics
-    "roles/pubsub.subscriber",        # Pull and ack Pub/Sub subscriptions
+    "roles/cloudsql.client",              # Connect to Cloud SQL via private IP
+    "roles/redis.editor",                 # Read/write Memorystore Redis
+    "roles/pubsub.publisher",             # Publish events to Pub/Sub topics
+    "roles/pubsub.subscriber",            # Pull and ack Pub/Sub subscriptions
     "roles/secretmanager.secretAccessor", # Read secret versions at runtime
-    "roles/artifactregistry.reader",  # Pull Docker images from Artifact Registry
+    "roles/artifactregistry.reader",      # Pull Docker images from Artifact Registry
   ]
 }
 

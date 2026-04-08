@@ -1,0 +1,16 @@
+# Use STAGING_DOMAIN for auto-HTTPS with a real domain
+# For IP-only access, STAGING_DOMAIN should be prefixed with http:// (e.g., http://1.2.3.4)
+{$STAGING_DOMAIN::80} {
+    # API and WebSocket -> core service
+    handle /api/* {
+        reverse_proxy core:8080
+    }
+    handle /ws/* {
+        reverse_proxy core:8080
+    }
+
+    # Everything else -> frontend
+    handle {
+        reverse_proxy frontend:3000
+    }
+}
